@@ -13,6 +13,7 @@
 #define IDI_SMALL				108
 #define IDC_SWEATBOXTRAINER			109
 #define IDC_MYICON				2
+#define ID_FILE_CONNECT 40002
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #endif

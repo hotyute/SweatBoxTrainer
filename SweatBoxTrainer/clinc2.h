@@ -2,6 +2,7 @@
 #define CLINC2_H
 
 #include "aircraft.h"
+#include "SweatBoxTrainer.h"
 #include "Stream.h"
 
 #ifndef clinc2_tcpinterface_h
@@ -14,7 +15,7 @@ public:
 	DWORD run();
 	void sendMessage(Stream*);
 	void init_set();
-	int connectNew(HWND, std::string, unsigned short);
+	int connectNew(std::string, unsigned short);
 
 	char message[5000];
 	int packetSize;

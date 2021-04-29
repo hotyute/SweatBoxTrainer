@@ -162,7 +162,7 @@ void tcpinterface::init_set()
 	timeout1.tv_usec = 0;
 }
 
-int tcpinterface::connectNew(HWND hWnd, std::string saddr, unsigned short port) {
+int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 	long answer;
 	WSADATA wsaData;
 	WORD DLLVersion;
