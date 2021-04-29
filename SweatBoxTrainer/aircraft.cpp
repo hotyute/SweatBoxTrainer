@@ -1,5 +1,7 @@
 #include "aircraft.h"
 
+#include <iostream>
+
 Aircraft::Aircraft() {
 	Aircraft::aMutex = CreateMutex(NULL, FALSE, L"Aircraft Mutex");
 	Aircraft::created = false;

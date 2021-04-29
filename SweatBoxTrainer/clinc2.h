@@ -1,22 +1,18 @@
 #ifndef CLINC2_H
 #define CLINC2_H
 
-#include <windows.h>
-
-#include "Stream.h"
 #include "aircraft.h"
+#include "Stream.h"
 
 #ifndef clinc2_tcpinterface_h
 #define clinc2_tcpinterface_h
-class tcpinterface;
 class tcpinterface {
 public:
+	Aircraft* aircraft;
 	SOCKET sConnect;
 	tcpinterface();
-	static DWORD WINAPI staticStart(void*);
 	DWORD run();
 	void sendMessage(Stream*);
-	void startT(HWND);
 	void init_set();
 	int connectNew(HWND, std::string, unsigned short);
 

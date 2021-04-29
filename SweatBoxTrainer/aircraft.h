@@ -2,9 +2,10 @@
 #define AIRCFAFT_H
 
 #include <Windows.h>
-#include <iostream>
 #include <vector>
 #include <unordered_map>
+
+class tcpinterface;
 
 #include "clinc2.h"
 
@@ -47,9 +48,9 @@ private:
 	int altitude;
 	std::vector<History*> historyCount;
 	FlightPlan* flight_plan;
+	tcpinterface* intter;
 	int mode;
 	std::string transponder = "0000";
-	tcpinterface* intter;
 	long long update_time;
 	unsigned short visibility = 300;
 public:

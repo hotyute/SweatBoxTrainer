@@ -1,5 +1,6 @@
 #include "clinc2.h"
 
+#include <windows.h>
 #include <winsock.h>
 #include <iostream>
 #include <tchar.h>
@@ -20,11 +21,6 @@ static int packetSizes[256][2] = {
 
 tcpinterface::tcpinterface() {
 	this->out_stream = new Stream(5000);
-}
-
-DWORD WINAPI tcpinterface::staticStart(void* param) {
-	tcpinterface* tcp = (tcpinterface*)param;
-	return tcp->run();
 }
 
 DWORD tcpinterface::run() {
@@ -157,10 +153,6 @@ void tcpinterface::sendMessage(Stream* stream) {
 
 	DWORD what = send(tcpinterface::sConnect, stream->buffer, stream->currentOffset, NULL);
 	stream->currentOffset = 0;
-}
-
-void tcpinterface::startT(HWND hWnd) {
-	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)staticStart, (void*)this, 0, NULL);
 }
 
 void tcpinterface::init_set()
