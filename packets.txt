@@ -1,0 +1,29 @@
+$DISERVER:CLIENT:VATSIM FSD Sweatbox V1.1:03212c4d // from server
+
+
+$IDUSA456:SERVER:bcb8:TWRTrainer 1.0.101:1:0:1948212073:
+#APUSA456:SERVER:971202:daYWQkGV:1:100:11:TWRTrainer Version 1.0.101
+$FPUSA456:SERVER:I:B190/G:250:KBTV:1200Z:1200Z:25000:KBOS:1:0:1:0::/V/VFR/CHARTS:DCT GPS
+
+#TMserver:USA456:By using your VATSIM assigned identification number on this server you
+#TMserver:USA456:hereby agree to the terms of the VATSIM Code of Regulations and the
+#TMserver:USA456:VATSIM User Agreement and the VATSIM Code of Conduct which may be viewed
+#TMserver:USA456:at www.vatsim.net/docs.html.  All logins are tracked and identification
+#TMserver:USA456:numbers are recorded.
+#TMserver:USA456:Users must enter their real full first names and surnames when logging
+#TMserver:USA456:onto any of the VATSIM.net servers. 
+#TMserver:USA456:On Sweatbox set "Publish simulation data: NEVER" - Rev. 07-15-15 1834Z
+#TMserver:USA456:This server operates under license from VATSIM.net.  All rights are reserved to VATSIM.net
+$CQSERVER:USA456:CAPS
+
+
+$ZCSERVER:USA456:b5ccb775e262b790cc // from server
+
+
+$ZRUSA456:SERVER:85db763a6834d86d48fcd57842af5491
+
+
+
+@S:USA456:2201:1:44.468802:-73.154547:335:0:3912:0
+
+
