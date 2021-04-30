@@ -8,8 +8,20 @@
 class tcpinterface;
 
 #include "clinc2.h"
+#include "constants.h"
 
 class History {
+};
+
+struct Identity {
+	std::string callsign;
+	std::string login_name;
+	std::string password;
+	std::string username;
+	int id;
+	int controller_rating;
+	int pilot_rating;
+	AV_CLIENT type;
 };
 
 class FlightPlan {
@@ -30,7 +42,6 @@ private:
 	bool renderCallsign;
 	bool collision;
 	bool heavy;
-	std::string callsign;
 	std::string acfTitle;
 	double latitude;
 	double longitude;
@@ -40,6 +51,7 @@ private:
 	std::vector<History*> historyCount;
 	FlightPlan* flight_plan;
 	tcpinterface* intter;
+	Identity* identity;
 	int mode;
 	std::string transponder = "0000";
 	long long update_time;
@@ -60,10 +72,9 @@ public:
 	bool getRenderCallsign();
 	FlightPlan* getFlightPlan();
 	tcpinterface* getConnection() { return intter; }
+	Identity* getIdentity() { return identity; }
 	bool created, que_delete;
 	void setRenderCallsign(bool);
-	std::string getCallsign();
-	void setCallsign(std::string);
 	std::string getAcfTitle();
 	void setAcfTitle(std::string);
 	double getLatitude();

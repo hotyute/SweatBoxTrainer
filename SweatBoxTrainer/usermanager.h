@@ -2,8 +2,6 @@
 #define USERMANAGER_H
 
 #define MAX_AIRCRAFT_SIZE 1024
-#define CONTROLLER_CLIENT 0
-#define PILOT_CLIENT 1
 
 #include <vector>
 #include <unordered_map>

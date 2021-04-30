@@ -23,10 +23,10 @@ void decodePackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		stream.readString(username);
 		stream.readString(full_name);
 
-		if (type == CONTROLLER_CLIENT) {
+		if (type == AV_CLIENT::CONTROLLER) {
 
 		}
-		else if (type == PILOT_CLIENT) {
+		else if (type == AV_CLIENT::PILOT) {
 			char acfTitle[1024];
 			stream.readString(acfTitle);
 			char trans_code[1024];
@@ -74,7 +74,7 @@ void decodePackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		int cur_cycle = stream.readUnsignedWord();
 		int type = stream.readUnsignedByte();
 
-		if (type == PILOT_CLIENT) {
+		if (type == AV_CLIENT::PILOT) {
 			int flightRules = stream.readUnsignedByte();
 			char assigned_squawk[5], departure[5], arrival[5], alternate[5], cruise[6], ac_type[8], scratch[5], route[128], remarks[128];
 			stream.readString(assigned_squawk);

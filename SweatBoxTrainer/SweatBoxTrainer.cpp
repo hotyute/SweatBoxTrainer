@@ -11,8 +11,11 @@
 #include "usermanager.h"
 #include "events.h"
 #include "tools.h"
+#include "guicon.h"
 
 #define MAX_LOADSTRING 100
+
+#define PROTO_VERSION 32698
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -34,6 +37,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
+
+#ifdef _DEBUG
+	RedirectIOToConsole();
+#endif
 
 	// TODO: Place code here.
 
@@ -157,8 +164,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			Aircraft* cur = new Aircraft();
 			cur->lock();
+			cur->getIdentity()->type = AV_CLIENT::PILOT;
 			cur->setHeavy(true);
-			cur->setCallsign("AAL2");
+			cur->getIdentity()->callsign = "AAL2";
+			cur->getIdentity()->login_name = "Samuel Mason";
+			cur->getIdentity()->pilot_rating = 1;
 			cur->setLatitude(25.800704);
 			cur->setLongitude(-80.300770);
 			cur->setSpeed(0.0);
@@ -177,7 +187,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			cur->getConnection()->init_set();
 
-			AcfMap[cur->getCallsign()] = cur;
+			AcfMap[cur->getIdentity()->callsign] = cur;
 
 			userStorage1[0] = cur;
 		}
@@ -246,6 +256,45 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 void connect()
 {
+	for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)
+	{
+		Aircraft& aircraft = *(it->second);
+		if (!aircraft.connected) {
+			if (aircraft.getConnection()->connectNew("127.0.0.1", 4403))
+			{
+				aircraft.connected = true;
+				Stream stream = Stream(200);
+				int type = aircraft.getIdentity()->type;
+				tcpinterface& intter = *aircraft.getConnection();
+				intter.hand_shake = true;
+				intter.current_op = 45;
+				stream.createFrameVarSizeWord(45);
+				stream.writeDWord(PROTO_VERSION);
+				char* callsign = s2ca1(aircraft.getIdentity()->callsign);
+				char* fullname = s2ca1(aircraft.getIdentity()->login_name);
+				char* username = s2ca1(aircraft.getIdentity()->username);
+				char* pass = s2ca1(aircraft.getIdentity()->password);
+				stream.writeString(callsign);
+				stream.writeString(fullname);
+				stream.writeString(username);
+				stream.writeString(pass);
+				stream.writeByte(aircraft.getIdentity()->controller_rating);
+				stream.writeByte(aircraft.getIdentity()->pilot_rating);
+				stream.writeQWord(1000);//request time
+				stream.writeQWord(doubleToRawBits(aircraft.getLatitude()));
+				stream.writeQWord(doubleToRawBits(aircraft.getLongitude()));
+				stream.writeWord(600);
+				stream.writeByte(type);
+				if (type == AV_CLIENT::PILOT) {
+					stream.writeString((char*)aircraft.getAcfTitle().c_str());
+					stream.writeString((char*)aircraft.getSquawkCode().c_str());
+					stream.writeByte(0);
+				}
+				stream.endFrameVarSizeWord();
+				intter.sendMessage(&stream);
+			}
+		}
+	}
 }
 
 void disconnect()

@@ -56,7 +56,7 @@ DWORD tcpinterface1::run() {
 									{
 										if (array3[0].length() < 3)
 										{
-											printf("%s%s", "Invalid PDU type.", text);
+											//printf("%s%s", "Invalid PDU type.", text);
 											throw;
 										}
 										break;

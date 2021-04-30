@@ -4,7 +4,6 @@
 #include <winsock.h>
 #include <iostream>
 #include <tchar.h>
-#include <errno.h>
 
 #include "events.h"
 #include "config.h"
@@ -26,6 +25,7 @@ tcpinterface::tcpinterface() {
 	memset(tcpinterface::message, 0, 5000);
 	timeout1.tv_sec = TimeoutSec1;
 	timeout1.tv_usec = 0;
+	sConnect = INVALID_SOCKET;
 }
 
 DWORD tcpinterface::run() {
@@ -179,9 +179,11 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 
 	sConnect = socket(AF_INET, SOCK_STREAM, NULL);
 
-	int r = ioctlsocket(sConnect, FIONBIO, &iMode);
-	if (r != NO_ERROR)
-		printf("ioctlsocket failed with error: %ld\n", r);
+	if (sConnect == INVALID_SOCKET) {
+		printf("Error at socket(): %ld\n", WSAGetLastError());
+		WSACleanup();
+		return 0;
+	}
 
 	addr.sin_addr.s_addr = inet_addr(saddr.c_str());
 
@@ -189,11 +191,12 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 
 	addr.sin_family = AF_INET;
 
-	int iResult = connect(tcpinterface::sConnect, (SOCKADDR*)&addr, sizeof(addr));
+	int iResult = connect(sConnect, (SOCKADDR*)&addr, sizeof(addr));
 
 	if (iResult == SOCKET_ERROR) {
-		int iError = errno;
-		if (iError == EWOULDBLOCK)
+		int iError = WSAGetLastError();
+		std::cout << iError << std::endl;
+		if (iError == WSAEWOULDBLOCK)
 		{
 		#ifdef _DEBUG
 			std::cout << "Attempting to connect.\n";
@@ -204,8 +207,8 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 
 			FD_ZERO(&Write);
 			FD_ZERO(&Err);
-			FD_SET(tcpinterface::sConnect, &Write);
-			FD_SET(tcpinterface::sConnect, &Err);
+			FD_SET(sConnect, &Write);
+			FD_SET(sConnect, &Err);
 
 			Timeout.tv_sec = TimeoutSec;
 			Timeout.tv_usec = 0;
@@ -220,15 +223,14 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 				std::cout << "Connect Timeout (" << TimeoutSec << " Sec).\n";
 				system("pause");
 				return 1;
-
 			}
 			else
 			{
-				if (FD_ISSET(tcpinterface::sConnect, &Write))
+				if (FD_ISSET(sConnect, &Write))
 				{
 					std::cout << "Connected!\n";
 				}
-				if (FD_ISSET(tcpinterface::sConnect, &Err))
+				if (FD_ISSET(sConnect, &Err))
 				{
 					std::cout << "Select error.\n";
 					//system("pause");
@@ -245,6 +247,9 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 			return 0;
 		}
 	}
+	int r = ioctlsocket(sConnect, FIONBIO, &iMode);
+	if (r != NO_ERROR)
+		printf("ioctlsocket failed with error: %ld\n", r);
 	std::cout << "Connected!\n";
 	return 1;
 }

@@ -11,6 +11,10 @@ std::vector<std::string> split(const std::string&, const std::string&, int times
 
 std::vector<std::string> split(const std::string& s, const std::string& delim);
 
+char* s2ca1(const std::string& s);
+
 int random(int start, int end);
+
+long long doubleToRawBits(double x);
 
 #endif

@@ -13,12 +13,15 @@ Aircraft::Aircraft() {
 	Aircraft::heading = 0;
 	Aircraft::roll = 0;
 	Aircraft::flight_plan = new FlightPlan();
-	//Aircraft::intter = new tcpinterface();
+	Aircraft::intter = new tcpinterface();
+	Aircraft::identity = new Identity();
 }
 
 Aircraft::~Aircraft()
 {
 	delete flight_plan;
+	delete identity;
+	delete intter;
 }
 
 int Aircraft::getIndex() {
@@ -40,14 +43,6 @@ FlightPlan* Aircraft::getFlightPlan()
 
 void Aircraft::setRenderCallsign(bool value) {
 	Aircraft::renderCallsign = value;
-}
-
-std::string Aircraft::getCallsign() {
-	return Aircraft::callsign;
-}
-
-void Aircraft::setCallsign(std::string value) {
-	Aircraft::callsign = value;
 }
 
 std::string Aircraft::getAcfTitle() {

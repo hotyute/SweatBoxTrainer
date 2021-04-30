@@ -43,6 +43,12 @@ std::vector<std::string> split(const std::string& s, const std::string& delim) {
 	return split(s, delim, -1);
 }
 
+char* s2ca1(const std::string& s) {
+	char* res = new char[s.size() + 1];
+	strncpy_s(res, s.size() + 1, s.c_str(), s.size() + 1);
+	return res;
+}
+
 int random(int start, int end)
 {
 	if (end < start) {
@@ -51,6 +57,12 @@ int random(int start, int end)
 		end = temp;
 	}
 	return start + (rand() % end);
+}
+
+long long doubleToRawBits(double x) {
+	long long bits;
+	memcpy(&bits, &x, sizeof bits);
+	return bits;
 }
 
 
