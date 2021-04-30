@@ -9,14 +9,9 @@ class tcpinterface;
 
 #include "clinc2.h"
 
-#ifndef History_aircraft_h
-#define History_aircraft_h
 class History {
 };
-#endif
 
-#ifndef FlightPlan_aircraft_h
-#define FlightPlan_aircraft_h
 class FlightPlan {
 public:
 	FlightPlan();
@@ -26,11 +21,7 @@ public:
 	int cycle;
 	void updateFlightPlan(char* depart, char* arrive);
 };
-#endif
 
-#ifndef Aircraft_aircraft_h
-#define Aircraft_aircraft_h
-class Aircraft;
 class Aircraft {
 private:
 	int userIndex;
@@ -54,6 +45,7 @@ private:
 	long long update_time;
 	unsigned short visibility = 300;
 public:
+	bool connected = false;
 	Aircraft();
 	~Aircraft();
 	const int getUserIndex() const { return userIndex; }
@@ -67,6 +59,7 @@ public:
 	void setIndex(int);
 	bool getRenderCallsign();
 	FlightPlan* getFlightPlan();
+	tcpinterface* getConnection() { return intter; }
 	bool created, que_delete;
 	void setRenderCallsign(bool);
 	std::string getCallsign();
@@ -100,7 +93,6 @@ public:
 	int getMode();
 	void setMode(int mode);
 };
-#endif
 
 
 extern std::unordered_map<std::string, Aircraft*> AcfMap;

@@ -51,6 +51,12 @@
     <ClInclude Include="Stream.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="usermanager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="filereader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SweatBoxTrainer.cpp">
@@ -80,6 +86,12 @@
     <ClCompile Include="Stream.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="usermanager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="filereader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SweatBoxTrainer.rc">
@@ -91,6 +103,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="SweatBoxTrainer.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="SBT.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

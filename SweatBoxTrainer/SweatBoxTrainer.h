@@ -1,6 +1,8 @@
 #ifndef SWEATBOXTRAINER_H
 #define SWEATBOXTRAINER_H
 
+#include <Windows.h>
+
 #include "resource.h"
 
 static const int CLIENT_PORT = 6809;

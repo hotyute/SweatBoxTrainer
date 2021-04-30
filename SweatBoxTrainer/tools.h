@@ -7,6 +7,10 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-extern std::vector<std::string> split(const std::string&, const std::string&);
+std::vector<std::string> split(const std::string&, const std::string&, int times);
+
+std::vector<std::string> split(const std::string& s, const std::string& delim);
+
+int random(int start, int end);
 
 #endif

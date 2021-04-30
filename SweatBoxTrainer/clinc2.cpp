@@ -4,9 +4,11 @@
 #include <winsock.h>
 #include <iostream>
 #include <tchar.h>
+#include <errno.h>
 
 #include "events.h"
 #include "config.h"
+#include "usermanager.h"
 
 static int packetSizes[256][2] = {
 	{10, 8},
@@ -20,7 +22,10 @@ static int packetSizes[256][2] = {
 };
 
 tcpinterface::tcpinterface() {
-	this->out_stream = new Stream(5000);
+	this->in_stream = new Stream(5000);
+	memset(tcpinterface::message, 0, 5000);
+	timeout1.tv_sec = TimeoutSec1;
+	timeout1.tv_usec = 0;
 }
 
 DWORD tcpinterface::run() {
@@ -33,13 +38,13 @@ DWORD tcpinterface::run() {
 	FD_ZERO(&rfds);
 	FD_SET(tcpinterface::sConnect, &rfds);
 
-	retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
+	//retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1); // we comment this because we only use it for waiting for data
 
 	while (!fBreak) {
 		if (FD_ISSET(tcpinterface::sConnect, &rfds))
 		{
 			nBytesReceived = recv(tcpinterface::sConnect, message, 5000, 0);
-			if (nBytesReceived <= 0)
+			if (nBytesReceived < 0)
 			{
 				closed = true;
 				printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
@@ -118,16 +123,16 @@ DWORD tcpinterface::run() {
 					{
 						//packetSize = available; //Uncomment to auto buffer
 					}
-#ifdef _DEBUG
+				#ifdef _DEBUG
 					std::cout << "Packet_Id: " << (int)packetType << ", Packet_Size: " << packetSize << ", Bytes_Ava: " << available << std::endl;
-#endif
+				#endif
 					if (available >= packetSize)
 					{
 						Stream& stream_in = Stream(tcpinterface::packetSize);
 						stream_in.currentOffset = 0;
 						memcpy(stream_in.buffer, message + offset, packetSize);
 						//handle
-						//decodePackets(tcpinterface::packetType, stream_in);
+						decodePackets(aircraft, tcpinterface::packetType, stream_in);
 						fBreak = true;
 					}
 				}
@@ -136,7 +141,7 @@ DWORD tcpinterface::run() {
 		FD_ZERO(&rfds);
 		FD_SET(tcpinterface::sConnect, &rfds);
 
-		retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
+		//retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
 	}
 	if (retval == SOCKET_ERROR)
 	{
@@ -157,9 +162,7 @@ void tcpinterface::sendMessage(Stream* stream) {
 
 void tcpinterface::init_set()
 {
-	memset(tcpinterface::message, 0, 5000);
-	timeout1.tv_sec = TimeoutSec1;
-	timeout1.tv_usec = 0;
+	
 }
 
 int tcpinterface::connectNew(std::string saddr, unsigned short port) {
@@ -168,12 +171,17 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 	WORD DLLVersion;
 	DLLVersion = MAKEWORD(2, 1);
 	answer = WSAStartup(DLLVersion, &wsaData);
+	u_long iMode = 1;//0 for blocking, 1 for non-blocking
 
 	SOCKADDR_IN addr;
 
 	int addrlen = sizeof(addr);
 
 	sConnect = socket(AF_INET, SOCK_STREAM, NULL);
+
+	int r = ioctlsocket(sConnect, FIONBIO, &iMode);
+	if (r != NO_ERROR)
+		printf("ioctlsocket failed with error: %ld\n", r);
 
 	addr.sin_addr.s_addr = inet_addr(saddr.c_str());
 
@@ -184,12 +192,12 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 	int iResult = connect(tcpinterface::sConnect, (SOCKADDR*)&addr, sizeof(addr));
 
 	if (iResult == SOCKET_ERROR) {
-		int iError = WSAGetLastError();
-		if (iError == WSAEWOULDBLOCK)
+		int iError = errno;
+		if (iError == EWOULDBLOCK)
 		{
-#ifdef _DEBUG
+		#ifdef _DEBUG
 			std::cout << "Attempting to connect.\n";
-#endif
+		#endif
 			fd_set Write, Err;
 			TIMEVAL Timeout;
 			int TimeoutSec = 5; // timeout after 5 seconds

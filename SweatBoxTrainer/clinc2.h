@@ -1,12 +1,14 @@
 #ifndef CLINC2_H
 #define CLINC2_H
 
-#include "aircraft.h"
+#include <winsock.h>
+#include <string>
+
+class Aircraft;
+
 #include "SweatBoxTrainer.h"
 #include "Stream.h"
 
-#ifndef clinc2_tcpinterface_h
-#define clinc2_tcpinterface_h
 class tcpinterface {
 public:
 	Aircraft* aircraft;
@@ -20,7 +22,7 @@ public:
 	char message[5000];
 	int packetSize;
 	unsigned char packetType;
-	Stream* out_stream;
+	Stream* in_stream;
 	bool hand_shake;
 	int current_op;
 
@@ -32,6 +34,5 @@ public:
 	int retval;
 	bool closed = false;
 };
-#endif
 
 #endif

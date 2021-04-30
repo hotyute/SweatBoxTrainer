@@ -149,6 +149,7 @@
     <ClInclude Include="clinc2.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="events.h" />
+    <ClInclude Include="filereader.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="later.h" />
     <ClInclude Include="Resource.h" />
@@ -156,6 +157,7 @@
     <ClInclude Include="SweatBoxTrainer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tools.h" />
+    <ClInclude Include="usermanager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="aircraft.cpp" />
@@ -163,15 +165,18 @@
     <ClCompile Include="clinc2.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="events.cpp" />
+    <ClCompile Include="filereader.cpp" />
     <ClCompile Include="later.cpp" />
     <ClCompile Include="Stream.cpp" />
     <ClCompile Include="SweatBoxTrainer.cpp" />
     <ClCompile Include="tools.cpp" />
+    <ClCompile Include="usermanager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SweatBoxTrainer.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="SBT.ico" />
     <Image Include="small.ico" />
     <Image Include="SweatBoxTrainer.ico" />
   </ItemGroup>

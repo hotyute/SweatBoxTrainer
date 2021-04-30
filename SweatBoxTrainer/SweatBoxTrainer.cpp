@@ -8,7 +8,9 @@
 
 #include <thread>
 
+#include "usermanager.h"
 #include "events.h"
+#include "tools.h"
 
 #define MAX_LOADSTRING 100
 
@@ -150,6 +152,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
 			CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
+
+			userStorage1.resize(MAX_AIRCRAFT_SIZE);
+
+			Aircraft* cur = new Aircraft();
+			cur->lock();
+			cur->setHeavy(true);
+			cur->setCallsign("AAL2");
+			cur->setLatitude(25.800704);
+			cur->setLongitude(-80.300770);
+			cur->setSpeed(0.0);
+			cur->setHeading(85.0);
+			cur->setCollision(true);
+			cur->setMode(1);
+			cur->unlock();
+
+			cur->setSquawkCode(std::to_string(random(1000, 9999)));
+
+			FlightPlan& fp = *cur->getFlightPlan();
+			fp.departure = "KMIA";
+			fp.route = "HEDLY1.HEDLY LAL";
+			fp.remarks = "/v/";
+			++fp.cycle;
+
+			cur->getConnection()->init_set();
+
+			AcfMap[cur->getCallsign()] = cur;
+
+			userStorage1[0] = cur;
 		}
 		break;
 		case WM_COMMAND:
@@ -158,6 +188,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			// Parse the menu selections:
 			switch (wmId)
 			{
+				case ID_FILE_CONNECT:
+				{
+					connect();
+				}
+				break;
 				case IDM_ABOUT:
 					DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 					break;
@@ -238,7 +273,13 @@ DWORD WINAPI EventThread1(LPVOID lpParameter) {
 DWORD WINAPI SocketThread1(LPVOID lpParameter) {
 	while (!done)
 	{
-
+		for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)
+		{
+			Aircraft& aircraft = *(it->second);
+			if (aircraft.connected) {
+				aircraft.getConnection()->run();
+			}
+		}
 	}
 	return 0;
 }

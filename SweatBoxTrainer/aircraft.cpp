@@ -1,6 +1,6 @@
 #include "aircraft.h"
 
-#include <iostream>
+std::unordered_map<std::string, Aircraft*>AcfMap;
 
 Aircraft::Aircraft() {
 	Aircraft::aMutex = CreateMutex(NULL, FALSE, L"Aircraft Mutex");
@@ -20,8 +20,6 @@ Aircraft::~Aircraft()
 {
 	delete flight_plan;
 }
-
-std::unordered_map<std::string, Aircraft*>AcfMap;
 
 int Aircraft::getIndex() {
 	return Aircraft::index;
