@@ -3,6 +3,7 @@
 #include "clinc.h"
 #include "tools.h"
 #include "config.h"
+#include "Ws2tcpip.h"
 
 tcpinterface1::tcpinterface1() {
 
@@ -112,7 +113,8 @@ int tcpinterface1::connectNew(HWND hWnd, std::string saddr, unsigned short port)
 
 	sConnect = socket(AF_INET, SOCK_STREAM, NULL);
 
-	addr.sin_addr.s_addr = inet_addr(saddr.c_str());
+	//addr.sin_addr.s_addr = inet_addr(saddr.c_str());
+	InetPton(AF_INET, (PCWSTR) (saddr.c_str()), &addr.sin_addr.s_addr);
 
 	addr.sin_port = htons(port);
 

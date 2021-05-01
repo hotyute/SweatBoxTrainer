@@ -18,15 +18,24 @@
 
 #define PROTO_VERSION 32698
 
+void addUserToLB(Aircraft& user);
+std::vector<Aircraft*> lb_pos;
+
+/*#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")*/
+
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 HWND hWnd = NULL;		// Holds Our Window Handle
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 bool done = false;
+HWND aircraftList = NULL;
 
-HFONT hFont = CreateFont(14, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+HFONT hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
 	CLIP_DEFAULT_PRECIS, FALSE, VARIABLE_PITCH, TEXT("Segoe UI"));
+
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -96,7 +105,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SWEATBOXTRAINER));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 2);
 	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_SWEATBOXTRAINER);
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
@@ -119,7 +128,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	hInst = hInstance; // Store instance handle in our global variable
 
 	hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+		CW_USEDEFAULT, 0, 900, 400, nullptr, nullptr, hInstance, nullptr);
 
 	if (!hWnd)
 	{
@@ -148,37 +157,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_CREATE:
 		{
-			HMENU hMenuBar = CreateMenu();
-			HMENU hFile = CreateMenu();
-			HMENU hSettings = CreateMenu();
-			HMENU hHelp = CreateMenu();
-
-			AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFile, L"&File");
-			AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hSettings, L"&Settings");
-			AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hHelp, L"&Help");
-
-			AppendMenu(hFile, MF_STRING, ID_FILE_CONNECT, L"&Connect to Sever...");
-
-			SetMenu(hWnd, hMenuBar);
-
-			HWND callsign_text = CreateWindowEx(WS_EX_CLIENTEDGE, L"Edit", L"",
-				WS_VISIBLE | WS_TABSTOP | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL,
-				150, 400, 700, 30,
-				hWnd, (HMENU)COMMAND_TEXT, NULL, NULL
-			);
-
-			SendMessage(callsign_text, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
-			SendMessage(callsign_text, EM_LIMITTEXT, 0, 0L);
+			create_controls(hWnd);		
 
 			CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
 			CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
 			CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
 
 			userStorage1.resize(MAX_AIRCRAFT_SIZE);
+			lb_pos.resize(MAX_AIRCRAFT_SIZE, NULL);
 
 			Aircraft* cur = new Aircraft();
 			cur->lock();
-			cur->getIdentity()->type = AV_CLIENT::PILOT;
+			cur->setType(AV_CLIENT::PILOT);
 			cur->setHeavy(false);
 			cur->getIdentity()->callsign = "DAL220";
 			cur->getIdentity()->login_name = "Samuel Mason";
@@ -203,6 +193,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			cur->getConnection()->init_set();
 
 			AcfMap[cur->getIdentity()->callsign] = cur;
+
+			addUserToLB(*cur);
 
 			userStorage1[0] = cur;
 		}
@@ -280,7 +272,7 @@ void connect()
 				aircraft.connected = true;
 				Identity& id = *aircraft.getIdentity();
 				Stream stream = Stream(200);
-				int type = aircraft.getIdentity()->type;
+				int type = aircraft.getType();
 				tcpinterface& intter = *aircraft.getConnection();
 				intter.hand_shake = true;
 				intter.current_op = 45;
@@ -389,4 +381,54 @@ DWORD WINAPI CalcThread1(LPVOID)
 
 	}
 	return 0;
+}
+
+void create_controls(HWND hwnd) {
+	HMENU hMenuBar = CreateMenu();
+	HMENU hFile = CreateMenu();
+	HMENU hSettings = CreateMenu();
+	HMENU hHelp = CreateMenu();
+
+	AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFile, L"&File");
+	AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hSettings, L"&Settings");
+	AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hHelp, L"&Help");
+
+	AppendMenu(hFile, MF_STRING, ID_FILE_CONNECT, L"&Connect to Sever...");
+
+	SetMenu(hwnd, hMenuBar);
+
+	HWND callsign_text = CreateWindowEx(WS_EX_STATICEDGE, L"Edit", L"",
+		WS_VISIBLE | WS_TABSTOP | WS_CHILD | WS_BORDER | WS_DLGFRAME | ES_AUTOHSCROLL,
+		180, 300, 690, 30,
+		hwnd, (HMENU)COMMAND_TEXT, NULL, NULL
+	);
+
+	SendMessage(callsign_text, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(callsign_text, EM_LIMITTEXT, 0, 0L);
+
+
+	aircraftList = CreateWindowEx(WS_EX_STATICEDGE, L"LISTBOX", NULL,
+		WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_NOTIFY | LBS_HASSTRINGS | LBS_SORT | WS_BORDER ,
+		10, 15,
+		170, 300,
+		hwnd, (HMENU)ACF_LISTBOX,
+		(HINSTANCE)GetWindowLong(hwnd, GWLP_HINSTANCE),
+		NULL);
+
+	SendMessage(aircraftList, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+}
+
+void addUserToLB(Aircraft& user) {
+	std::string callsign = user.getIdentity()->callsign;
+	/*int max_chars = 32;
+	int max_white_space = (max_chars - callsign.length()) / 2;
+	std::string white_space = "";
+	for (int i = 0; i < max_white_space; ++i)
+		white_space += " ";*/
+	std::wstring fcl = s2ws(callsign);
+	LPCWSTR str = fcl.c_str();
+	int index = lb_pos.begin() - std::find(lb_pos.begin(), lb_pos.end(), (Aircraft*)NULL);
+	int pos = (int)SendMessage(aircraftList, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str));
+	SendMessage(aircraftList, LB_SETITEMDATA, pos, (LPARAM)index);
+	lb_pos[index] = &user;
 }

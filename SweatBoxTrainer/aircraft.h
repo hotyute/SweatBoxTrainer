@@ -23,7 +23,6 @@ struct Identity {
 	int id;
 	int controller_rating;
 	int pilot_rating;
-	AV_CLIENT type;
 };
 
 class FlightPlan {
@@ -59,6 +58,7 @@ private:
 	long long update_time;
 	unsigned short visibility = 300;
 	long long last_move = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	AV_CLIENT type;
 public:
 	bool connected = false;
 	Aircraft();
@@ -107,6 +107,8 @@ public:
 	int getMode();
 	void setMode(int mode);
 	void updateMovement();
+	AV_CLIENT getType() { return type; }
+	void setType(AV_CLIENT t) { type = t; }
 };
 
 

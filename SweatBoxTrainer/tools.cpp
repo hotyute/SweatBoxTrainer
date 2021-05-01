@@ -1,7 +1,13 @@
 #include "tools.h"
 
+#include <windows.h>
+#include <algorithm> 
 #include <bitset>
+#include <functional>
+#include <cctype>
+#include <locale>
 #include <iostream>
+#include <sstream>
 
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
 	// Skip delimiters at beginning.
@@ -116,4 +122,15 @@ double dist(double lat1, double lon1, double lat2, double lon2) {
 double round_up(double value, int decimal_places) {
 	const double multiplier = std::pow(10.0, decimal_places);
 	return std::ceil(value * multiplier) / multiplier;
+}
+
+std::wstring s2ws(const std::string& s) {
+	int len;
+	int slength = (int)s.length() + 1;
+	len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+	wchar_t* buf = new wchar_t[len];
+	MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+	std::wstring r(buf);
+	delete[] buf;
+	return r;
 }

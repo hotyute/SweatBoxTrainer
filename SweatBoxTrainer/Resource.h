@@ -16,6 +16,7 @@
 #define IDI_SMALL				108
 #define IDC_SWEATBOXTRAINER			109
 #define IDC_MYICON				2
+#define ACF_LISTBOX 40006
 #define ID_FILE_CONNECT 40002
 #define COMMAND_TEXT 123
 #ifndef IDC_STATIC

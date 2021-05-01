@@ -31,4 +31,6 @@ double dist(double lat1, double lon1, double lat2, double lon2);
 
 double round_up(double value, int decimal_places);
 
+std::wstring s2ws(const std::string& s);
+
 #endif

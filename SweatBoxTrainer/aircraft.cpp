@@ -167,7 +167,7 @@ void Aircraft::updateMovement()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_move;
-	double dist = get_distance(speed, interval);
+	double dist = get_distance(speed, (double)interval);
 	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
 	if (p.x_ != longitude || p.y_ != latitude)
 	{

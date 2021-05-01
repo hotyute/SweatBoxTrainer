@@ -17,4 +17,6 @@ DWORD __stdcall SocketThread1(LPVOID lpParameter);
 
 DWORD WINAPI CalcThread1(LPVOID);
 
+void create_controls(HWND hWnd);
+
 #endif
