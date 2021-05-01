@@ -1,5 +1,7 @@
 #include "aircraft.h"
 
+#include "tools.h"
+
 std::unordered_map<std::string, Aircraft*>AcfMap;
 
 Aircraft::Aircraft() {
@@ -13,7 +15,7 @@ Aircraft::Aircraft() {
 	Aircraft::heading = 0;
 	Aircraft::roll = 0;
 	Aircraft::flight_plan = new FlightPlan();
-	Aircraft::intter = new tcpinterface();
+	Aircraft::intter = new tcpinterface(this);
 	Aircraft::identity = new Identity();
 }
 
@@ -159,6 +161,21 @@ int Aircraft::getMode() {
 
 void Aircraft::setMode(int mode) {
 	Aircraft::mode = mode;
+}
+
+void Aircraft::updateMovement()
+{
+	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long interval = now - last_move;
+	double dist = get_distance(speed, interval);
+	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
+	if (p.x_ != longitude || p.y_ != latitude)
+	{
+		//aircraft moved set flags here
+	}
+	latitude = p.y_;
+	longitude = p.x_;
+	last_move = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
 FlightPlan::FlightPlan()

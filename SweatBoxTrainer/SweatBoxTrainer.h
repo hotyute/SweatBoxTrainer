@@ -15,4 +15,6 @@ DWORD WINAPI EventThread1(LPVOID lpParameter);
 
 DWORD __stdcall SocketThread1(LPVOID lpParameter);
 
+DWORD WINAPI CalcThread1(LPVOID);
+
 #endif

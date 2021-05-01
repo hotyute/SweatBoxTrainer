@@ -1,0 +1,24 @@
+#include "calc_cycles.h"
+
+#include <stdio.h>
+#include <math.h>
+
+#include "usermanager.h"
+
+void update()
+{
+}
+
+void CalculateMovements()
+{
+	if (AcfMap.size() > 0) {
+		for (auto iter = AcfMap.begin(); iter != AcfMap.end(); ++iter) {
+			Aircraft* acf1 = iter->second;
+			if (acf1) {
+				Aircraft& aircraft = *acf1;
+
+				aircraft.updateMovement();
+			}
+		}
+	}
+}

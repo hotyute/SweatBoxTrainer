@@ -43,6 +43,7 @@ public:
 class Event {
 public:
 	EventAction eAction;
+	void* object;
 	virtual void execute() = 0;
 	virtual void stop() = 0;
 };

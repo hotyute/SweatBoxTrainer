@@ -1,6 +1,8 @@
 #ifndef AIRCRAFT_H 
 #define AIRCFAFT_H
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <Windows.h>
 #include <vector>
 #include <unordered_map>
@@ -56,6 +58,7 @@ private:
 	std::string transponder = "0000";
 	long long update_time;
 	unsigned short visibility = 300;
+	long long last_move = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 public:
 	bool connected = false;
 	Aircraft();
@@ -103,6 +106,7 @@ public:
 	void setSquawkCode(std::string value);
 	int getMode();
 	void setMode(int mode);
+	void updateMovement();
 };
 
 

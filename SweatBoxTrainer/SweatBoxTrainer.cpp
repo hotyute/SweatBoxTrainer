@@ -12,6 +12,7 @@
 #include "events.h"
 #include "tools.h"
 #include "guicon.h"
+#include "calc_cycles.h"
 
 #define MAX_LOADSTRING 100
 
@@ -23,6 +24,9 @@ HWND hWnd = NULL;		// Holds Our Window Handle
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 bool done = false;
+
+HFONT hFont = CreateFont(14, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+	CLIP_DEFAULT_PRECIS, FALSE, VARIABLE_PITCH, TEXT("Segoe UI"));
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -157,23 +161,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			SetMenu(hWnd, hMenuBar);
 
+			HWND callsign_text = CreateWindowEx(WS_EX_CLIENTEDGE, L"Edit", L"",
+				WS_VISIBLE | WS_TABSTOP | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL,
+				150, 400, 700, 30,
+				hWnd, (HMENU)COMMAND_TEXT, NULL, NULL
+			);
+
+			SendMessage(callsign_text, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+			SendMessage(callsign_text, EM_LIMITTEXT, 0, 0L);
+
 			CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
 			CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
+			CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
 
 			userStorage1.resize(MAX_AIRCRAFT_SIZE);
 
 			Aircraft* cur = new Aircraft();
 			cur->lock();
 			cur->getIdentity()->type = AV_CLIENT::PILOT;
-			cur->setHeavy(true);
-			cur->getIdentity()->callsign = "AAL2";
+			cur->setHeavy(false);
+			cur->getIdentity()->callsign = "DAL220";
 			cur->getIdentity()->login_name = "Samuel Mason";
+			cur->getIdentity()->password = "password";
 			cur->getIdentity()->pilot_rating = 1;
-			cur->setLatitude(25.800704);
-			cur->setLongitude(-80.300770);
-			cur->setSpeed(0.0);
-			cur->setHeading(85.0);
-			cur->setCollision(true);
+			cur->setLatitude(25.798429);
+			cur->setLongitude(-80.278852);
+			cur->setSpeed(5.0);
+			cur->setHeading(120.0);
+			cur->setCollision(false);
 			cur->setMode(1);
 			cur->unlock();
 
@@ -263,6 +278,7 @@ void connect()
 			if (aircraft.getConnection()->connectNew("127.0.0.1", 4403))
 			{
 				aircraft.connected = true;
+				Identity& id = *aircraft.getIdentity();
 				Stream stream = Stream(200);
 				int type = aircraft.getIdentity()->type;
 				tcpinterface& intter = *aircraft.getConnection();
@@ -270,25 +286,25 @@ void connect()
 				intter.current_op = 45;
 				stream.createFrameVarSizeWord(45);
 				stream.writeDWord(PROTO_VERSION);
-				char* callsign = s2ca1(aircraft.getIdentity()->callsign);
-				char* fullname = s2ca1(aircraft.getIdentity()->login_name);
-				char* username = s2ca1(aircraft.getIdentity()->username);
-				char* pass = s2ca1(aircraft.getIdentity()->password);
-				stream.writeString(callsign);
-				stream.writeString(fullname);
-				stream.writeString(username);
-				stream.writeString(pass);
-				stream.writeByte(aircraft.getIdentity()->controller_rating);
-				stream.writeByte(aircraft.getIdentity()->pilot_rating);
+				stream.writeString((char*)id.callsign.c_str());
+				stream.writeString((char*)id.login_name.c_str());
+				stream.writeString((char*)id.username.c_str());
+				stream.writeString((char*)id.password.c_str());
+				stream.writeByte(id.controller_rating);
+				stream.writeByte(id.pilot_rating);
 				stream.writeQWord(1000);//request time
 				stream.writeQWord(doubleToRawBits(aircraft.getLatitude()));
 				stream.writeQWord(doubleToRawBits(aircraft.getLongitude()));
-				stream.writeWord(600);
+				stream.writeWord(aircraft.getVisibility());
 				stream.writeByte(type);
 				if (type == AV_CLIENT::PILOT) {
 					stream.writeString((char*)aircraft.getAcfTitle().c_str());
 					stream.writeString((char*)aircraft.getSquawkCode().c_str());
-					stream.writeByte(0);
+					stream.writeByte(aircraft.getMode());
+					long long infoHash = ((static_cast<long long>((int)((aircraft.getPitch() * 1024.0) / -360.0))) << 22)
+						+ ((static_cast<long long>((int)((aircraft.getRoll() * 1024.0) / -360.0))) << 12)
+						+ ((static_cast<long long>((int)((aircraft.getHeading() * 1024.0) / 360.0))) << 2);
+					stream.writeQWord(infoHash);
 				}
 				stream.endFrameVarSizeWord();
 				intter.sendMessage(&stream);
@@ -320,15 +336,57 @@ DWORD WINAPI EventThread1(LPVOID lpParameter) {
 }
 
 DWORD WINAPI SocketThread1(LPVOID lpParameter) {
+	boost::posix_time::ptime start;
+	boost::posix_time::ptime end;
 	while (!done)
 	{
-		for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)
+		start = boost::posix_time::microsec_clock::local_time();
+
+		for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)//TODO possible make this thread awake when there is any data in any aircraft socket?
 		{
 			Aircraft& aircraft = *(it->second);
 			if (aircraft.connected) {
 				aircraft.getConnection()->run();
 			}
 		}
+
+		end = boost::posix_time::microsec_clock::local_time();
+
+		boost::posix_time::time_duration time2 = end - start;
+		long long time1 = 3L;
+		long long time = time1 - time2.total_milliseconds();
+		if (time < 1) {
+			time = 1;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(time));
+	}
+	return 0;
+}
+
+DWORD WINAPI CalcThread1(LPVOID)
+{
+	boost::posix_time::ptime start;
+	boost::posix_time::ptime end;
+	boost::posix_time::time_duration time;
+
+	while (true)
+	{
+		start = boost::posix_time::microsec_clock::local_time();
+
+		//code here
+		update();
+		CalculateMovements();
+
+		end = boost::posix_time::microsec_clock::local_time();
+
+		time = (end - start);
+		long long time1 = 30L;
+		long long time2 = time1 - time.total_milliseconds();
+		if (time2 < 1) {
+			time2 = 1;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(time2));
+
 	}
 	return 0;
 }

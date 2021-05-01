@@ -13,18 +13,16 @@ class tcpinterface {
 public:
 	Aircraft* aircraft;
 	SOCKET sConnect;
-	tcpinterface();
+	tcpinterface(Aircraft* aircraft);
 	DWORD run();
 	void sendMessage(Stream*);
 	void init_set();
 	int connectNew(std::string, unsigned short);
 
 	char message[5000];
-	int packetSize;
-	unsigned char packetType;
 	Stream* in_stream;
 	bool hand_shake;
-	int current_op;
+	int current_op = -1;
 
 	int nBytesReceived = 0;
 	bool fBreak = false;
@@ -36,3 +34,5 @@ public:
 };
 
 #endif
+
+bool SetSocketBlocking(SOCKET sock, bool blocking);

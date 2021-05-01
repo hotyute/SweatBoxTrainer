@@ -1,5 +1,8 @@
 #include "tools.h"
 
+#include <bitset>
+#include <iostream>
+
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
 	// Skip delimiters at beginning.
 	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
@@ -65,4 +68,52 @@ long long doubleToRawBits(double x) {
 	return bits;
 }
 
+Point2 getLocFromBearing(double latitude, double longitude, double distance, double bearing) {
+	double R = 6378.14;
 
+	// Degree to Radian
+	double latitude1 = radians(latitude);
+	double longitude1 = radians(longitude);
+	double brng = radians(bearing);
+
+	double latitude2 = asin(sin(latitude1) * cos(distance / R) + cos(latitude1) * sin(distance / R) * cos(brng));
+	double longitude2 = longitude1 + atan2(sin(brng) * sin(distance / R) * cos(latitude1), cos(distance / R) - sin(latitude1) * sin(latitude2));
+
+	// back to degrees
+	latitude2 = degrees(latitude2);
+	longitude2 = degrees(longitude2);
+
+	// 8 decimal for Leafletand other system compatibility
+	double lat2 = round_up(latitude2, 8);
+	double long2 = round_up(longitude2, 8);
+
+	return Point2(long2, lat2);
+}
+
+double get_distance(double speed_knots, double interval_ms) {
+	return speed_knots * ((interval_ms / 1000) / 3600);
+}
+
+double radians(double degrees) {
+	return (degrees * M_PI) / 180;
+}
+
+double degrees(double radians) {
+	return (radians * 180) / M_PI;
+}
+
+double dist(double lat1, double lon1, double lat2, double lon2) {
+	double dist, dlon = lon2 - lon1;
+	lat1 *= M_PI / 180.0;
+	lat2 *= M_PI / 180.0;
+	dlon *= M_PI / 180.0;
+	dist = (sin(lat1) * sin(lat2)) + (cos(lat1) * cos(lat2) * cos(dlon));
+	if (dist > 1.0) dist = 1.0;
+	dist = acos(dist) * 60 * 180 / M_PI;
+	return dist;
+}
+
+double round_up(double value, int decimal_places) {
+	const double multiplier = std::pow(10.0, decimal_places);
+	return std::ceil(value * multiplier) / multiplier;
+}

@@ -57,6 +57,7 @@ public:
 	unsigned char readUnsignedByteC();
 	unsigned char readUnsignedByteS();
 	int readUnsignedWord();
+	int read3Byte();
 	int readUnsignedWordA();
 	int readUnsignedWordBigEndian();
 	int readUnsignedWordBigEndianA();
