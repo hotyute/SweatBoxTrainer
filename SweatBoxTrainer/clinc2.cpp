@@ -184,11 +184,18 @@ void tcpinterface::init_set()
 }
 
 int tcpinterface::connectNew(std::string saddr, unsigned short port) {
-	long answer;
+	int err;
 	WSADATA wsaData;
 	WORD DLLVersion;
 	DLLVersion = MAKEWORD(2, 1);
-	answer = WSAStartup(DLLVersion, &wsaData);
+	err = WSAStartup(DLLVersion, &wsaData);
+
+	if (err != 0) {
+		/* Tell the user that we could not find a usable */
+		/* Winsock DLL.                                  */
+		printf("WSAStartup failed with error: %d\n", err);
+		return 0;
+	}
 
 	SOCKADDR_IN addr;
 
