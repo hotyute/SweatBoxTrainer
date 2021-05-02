@@ -6,6 +6,7 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include <commdlg.h>
 #include <thread>
 
 #include "usermanager.h"
@@ -13,6 +14,7 @@
 #include "tools.h"
 #include "guicon.h"
 #include "calc_cycles.h"
+#include "filereader.h"
 
 #define MAX_LOADSTRING 100
 
@@ -202,6 +204,31 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	// Parse the menu selections:
 	switch (wmId)
 	{
+		case ID_FILE_OPEN_SCT:
+		{
+			OPENFILENAME ofn;
+			TCHAR szFileName[MAX_PATH] = L"";
+
+			ZeroMemory(&ofn, sizeof(ofn));
+
+			ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
+			ofn.hwndOwner = hWnd;
+			ofn.lpstrFilter = L"Sector2 Files (*.sct2)\0*.sct2\0Sector Files (*.sct)\0*.sct\0All Files (*.*)\0*.*\0";
+			ofn.lpstrFile = szFileName;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+			ofn.lpstrDefExt = L"sct2";
+
+			if (GetOpenFileName(&ofn))
+			{
+				std::wstring wide(szFileName);
+				std::string final1(wide.begin(), wide.end());
+				if (LoadSCT(final1)) {
+
+				}
+			}
+		}
+		break;
 		case ACF_LISTBOX:
 		{
 			int notification = HIWORD(wParam);
@@ -396,6 +423,8 @@ void create_controls(HWND hwnd) {
 	AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hHelp, L"&Help");
 
 	AppendMenu(hFile, MF_STRING, ID_FILE_CONNECT, L"&Connect to Sever...");
+	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_SCT, L"&Open SCT File...");
+	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_APT, L"&Open APT File...");
 
 	SetMenu(hwnd, hMenuBar);
 

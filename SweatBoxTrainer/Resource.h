@@ -18,6 +18,8 @@
 #define IDC_MYICON				2
 #define ACF_LISTBOX 40006
 #define ID_FILE_CONNECT 40002
+#define ID_FILE_OPEN_SCT 40003
+#define ID_FILE_OPEN_APT 40004
 #define COMMAND_TEXT 123
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

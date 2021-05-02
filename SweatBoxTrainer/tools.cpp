@@ -134,3 +134,13 @@ std::wstring s2ws(const std::string& s) {
 	delete[] buf;
 	return r;
 }
+
+double atodd(std::string in) {
+	double d;
+	size_t read = 0;
+	d = std::stod(in, &read);
+	if (in.size() != read || isnan(d))
+		throw (0);
+
+	return d;
+}

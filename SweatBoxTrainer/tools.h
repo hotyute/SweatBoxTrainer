@@ -33,4 +33,6 @@ double round_up(double value, int decimal_places);
 
 std::wstring s2ws(const std::string& s);
 
+double atodd(std::string in);
+
 #endif
