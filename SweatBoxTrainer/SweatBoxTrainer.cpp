@@ -18,8 +18,9 @@
 
 #define PROTO_VERSION 32698
 
-void addUserToLB(Aircraft& user);
-std::vector<Aircraft*> lb_pos;
+void addUserToLB(Aircraft* user);
+void HandleSelectedLB(DWORD iSelected);
+void LoadTestAircraft();
 
 /*#pragma comment(linker,"\"/manifestdependency:type='win32' \
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
@@ -41,6 +42,7 @@ HFONT hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -157,68 +159,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		case WM_CREATE:
 		{
-			create_controls(hWnd);		
+			create_controls(hWnd);
 
 			CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
 			CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
 			CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
 
 			userStorage1.resize(MAX_AIRCRAFT_SIZE);
-			lb_pos.resize(MAX_AIRCRAFT_SIZE, NULL);
 
-			Aircraft* cur = new Aircraft();
-			cur->lock();
-			cur->setType(AV_CLIENT::PILOT);
-			cur->setHeavy(false);
-			cur->getIdentity()->callsign = "DAL220";
-			cur->getIdentity()->login_name = "Samuel Mason";
-			cur->getIdentity()->password = "password";
-			cur->getIdentity()->pilot_rating = 1;
-			cur->setLatitude(25.798429);
-			cur->setLongitude(-80.278852);
-			cur->setSpeed(5.0);
-			cur->setHeading(120.0);
-			cur->setCollision(false);
-			cur->setMode(1);
-			cur->unlock();
-
-			cur->setSquawkCode(std::to_string(random(1000, 9999)));
-
-			FlightPlan& fp = *cur->getFlightPlan();
-			fp.departure = "KMIA";
-			fp.route = "HEDLY1.HEDLY LAL";
-			fp.remarks = "/v/";
-			++fp.cycle;
-
-			cur->getConnection()->init_set();
-
-			AcfMap[cur->getIdentity()->callsign] = cur;
-
-			addUserToLB(*cur);
-
-			userStorage1[0] = cur;
+			LoadTestAircraft();
+			
 		}
 		break;
 		case WM_COMMAND:
 		{
-			int wmId = LOWORD(wParam);
-			// Parse the menu selections:
-			switch (wmId)
-			{
-				case ID_FILE_CONNECT:
-				{
-					connect();
-				}
-				break;
-				case IDM_ABOUT:
-					DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-					break;
-				case IDM_EXIT:
-					DestroyWindow(hWnd);
-					break;
-				default:
-					return DefWindowProc(hWnd, message, wParam, lParam);
-			}
+			HandleWndCommands(hWnd, message, wParam, lParam);
 		}
 		break;
 		case WM_PAINT:
@@ -239,6 +194,48 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
+}
+
+LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	int wmId = LOWORD(wParam);
+	// Parse the menu selections:
+	switch (wmId)
+	{
+		case ACF_LISTBOX:
+		{
+			int notification = HIWORD(wParam);
+			switch (notification)
+			{
+				case LBN_SELCHANGE:
+				{
+					HWND ctrl = (HWND)lParam;
+
+					//check to make sure things line up
+					if (ctrl == aircraftList)
+					{
+						DWORD dwSel = SendMessage(aircraftList, LB_GETCURSEL, 0, 0);
+						HandleSelectedLB(dwSel);
+					}
+				}
+				break;
+			}
+		}
+		break;
+		case ID_FILE_CONNECT:
+		{
+			connect();
+		}
+		break;
+		case IDM_ABOUT:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_EXIT:
+			DestroyWindow(hWnd);
+			break;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+	}
 }
 
 // Message handler for about box.
@@ -355,6 +352,9 @@ DWORD WINAPI SocketThread1(LPVOID lpParameter) {
 	return 0;
 }
 
+/*---Initializes the Thread responsible for computations---
+  ---		This can span from Aircraft Movements		---*/
+
 DWORD WINAPI CalcThread1(LPVOID)
 {
 	boost::posix_time::ptime start;
@@ -383,6 +383,8 @@ DWORD WINAPI CalcThread1(LPVOID)
 	return 0;
 }
 
+/*--- Creates GUI Controls ---*/
+
 void create_controls(HWND hwnd) {
 	HMENU hMenuBar = CreateMenu();
 	HMENU hFile = CreateMenu();
@@ -408,7 +410,7 @@ void create_controls(HWND hwnd) {
 
 
 	aircraftList = CreateWindowEx(WS_EX_STATICEDGE, L"LISTBOX", NULL,
-		WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_NOTIFY | LBS_HASSTRINGS | LBS_SORT | WS_BORDER ,
+		WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_NOTIFY | LBS_HASSTRINGS | LBS_SORT | WS_BORDER,
 		10, 15,
 		170, 300,
 		hwnd, (HMENU)ACF_LISTBOX,
@@ -418,17 +420,81 @@ void create_controls(HWND hwnd) {
 	SendMessage(aircraftList, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 }
 
-void addUserToLB(Aircraft& user) {
-	std::string callsign = user.getIdentity()->callsign;
-	/*int max_chars = 32;
-	int max_white_space = (max_chars - callsign.length()) / 2;
-	std::string white_space = "";
-	for (int i = 0; i < max_white_space; ++i)
-		white_space += " ";*/
-	std::wstring fcl = s2ws(callsign);
-	LPCWSTR str = fcl.c_str();
-	int index = lb_pos.begin() - std::find(lb_pos.begin(), lb_pos.end(), (Aircraft*)NULL);
-	int pos = (int)SendMessage(aircraftList, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(str));
-	SendMessage(aircraftList, LB_SETITEMDATA, pos, (LPARAM)index);
-	lb_pos[index] = &user;
+/*---- Adds an aircraft to the Aircraft List ---*/
+
+void addUserToLB(Aircraft* user) {
+	std::string callsign = user->getIdentity()->callsign;
+	int pos = (int)SendMessage(aircraftList, LB_ADDSTRING, 0, (LPARAM)std::wstring(callsign.begin(), callsign.end()).c_str());
+	SendMessage(aircraftList, LB_SETITEMDATA, pos, (LPARAM)user);
+}
+
+void HandleSelectedLB(DWORD iSelected)
+{
+	Aircraft* acf = (Aircraft*)SendMessage(aircraftList, LB_GETITEMDATA, iSelected, 0);
+	if (acf)
+	{
+		std::cout << acf->getIdentity()->callsign << std::endl;
+	}
+}
+
+void LoadTestAircraft() {
+	Aircraft* cur = new Aircraft();
+	cur->lock();
+	cur->setType(AV_CLIENT::PILOT);
+	cur->setHeavy(false);
+	cur->getIdentity()->callsign = "DAL220";
+	cur->getIdentity()->username = "971202";
+	cur->getIdentity()->login_name = "Samuel Mason";
+	cur->getIdentity()->password = "password";
+	cur->getIdentity()->pilot_rating = 1;
+	cur->setLatitude(25.798429);
+	cur->setLongitude(-80.278852);
+	cur->setSpeed(5.0);
+	cur->setHeading(120.0);
+	cur->setCollision(false);
+	cur->setMode(1);
+	cur->unlock();
+
+	cur->setSquawkCode(std::to_string(random(1000, 9999)));
+
+	FlightPlan& fp = *cur->getFlightPlan();
+	fp.departure = "KMIA";
+	fp.route = "HEDLY1.HEDLY LAL";
+	fp.remarks = "/v/";
+	++fp.cycle;
+
+	cur->getConnection()->init_set();
+
+	AcfMap[cur->getIdentity()->callsign] = cur;
+
+	addUserToLB(cur);
+
+	Aircraft* cur4 = new Aircraft();
+	cur4->lock();
+	cur4->setType(AV_CLIENT::PILOT);
+	cur4->setHeavy(false);
+	cur4->getIdentity()->callsign = "N108MS";
+	cur4->getIdentity()->username = "971222";
+	cur4->getIdentity()->login_name = "Samuel Mason";
+	cur4->getIdentity()->password = "password";
+	cur4->getIdentity()->pilot_rating = 1;
+	cur4->setLatitude(25.792179);
+	cur4->setLongitude(-80.305309);
+	cur4->setSpeed(0.0);
+	cur4->setHeading(220.0);
+	cur4->setMode(0);
+	cur4->setSquawkCode(std::to_string(random(1000, 9999)));
+	cur4->unlock();
+
+	fp = *cur4->getFlightPlan();
+	fp.departure = "KMIA";
+	fp.route = "SKIPS1.SKIPS MNATE";
+	fp.remarks = "/v/";
+	++fp.cycle;
+
+	cur4->getConnection()->init_set();
+
+	AcfMap[cur4->getIdentity()->callsign] = cur4;
+
+	addUserToLB(cur4);
 }

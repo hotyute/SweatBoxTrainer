@@ -62,102 +62,51 @@ DWORD tcpinterface::run() {
 		if (nBytesReceived == 0)
 			return 0;
 
+		Stream& in = *in_stream;
+		memcpy(in.buffer + in.length, message, nBytesReceived);
+		in.length += nBytesReceived;
+
 		if (tcpinterface::hand_shake)
 		{
-			Stream& in = *in_stream;
-			memcpy(in.buffer + in.length, message, nBytesReceived);
-			in.length += nBytesReceived;
 			if (tcpinterface::current_op == 45)
 			{
 				in.markReaderIndex();
 				if (nBytesReceived >= 11)
-				{					
+				{
 					int loginCode = in.readUnsignedByte();
 					int index = in.readUnsignedWord();
 					long long updateTimeInMillis = in.readQWord();
 					if (loginCode == 1)
 					{
 						aircraft->setUserIndex(index);
+						userStorage1[index] = aircraft;
 						aircraft->setUpdateTime(updateTimeInMillis);
 						Event* position_updates = new PositionUpdates(aircraft);
 						position_updates->eAction.setTicks(0);
 						event_manager1->addEvent(position_updates);
 						hand_shake = false;
 						current_op = -1;
+						in.deleteReaderBlock();
 					}
-
-					in.clearBuf();
 				}
 				else
 				{
 					in.resetReaderIndex();
 				}
 			}
-		}
-		else
-		{
-			Stream& in = *in_stream;
-			memcpy(in.buffer + in.length, message, nBytesReceived);
-			in.length += nBytesReceived;
-			while (in.remaining() > 0) {
-				in.markReaderIndex();
-				int opCode = in.readSignedByte(), length = -3;
-				if (opCode != -1)
-				{
-					for (int j = 0; j < 256; j++)
-					{
-						if (packetSizes[j][0] == opCode)
-						{
-							length = packetSizes[j][1];
-							break;
-						}
-					}
-					if (opCode == -1)
-					{
-						if (in.remaining() >= 1)
-						{
-							length = in.readUnsignedByte();
-						}
-						else
-						{
-							in.resetReaderIndex();
-							break;
-						}
-					}
-					else if (opCode == -2)
-					{
-						if (in.remaining() >= 2) 
-						{
-							length = in.readUnsignedWord();
-						}
-						else 
-						{
-							in.resetReaderIndex();
-							break;
-						}
-					}
-					else if (opCode == -3)
-					{
-						length = in.remaining();
-					}
-				#ifdef _DEBUG
-					std::cout << "Packet_Id: " << (int)opCode << ", Packet_Size: " << length << ", Bytes_Ava: " << in.remaining() << std::endl;
-				#endif
-					if (in.remaining() >= length)
-					{
-						decodePackets(aircraft, opCode, in);
-						in.clearBuf();
-					}
-					else 
-					{
-						in.resetReaderIndex();
-						break;
-					}
-				}
+			else
+			{
+				in.clearBuf();
 			}
 		}
-		FD_ZERO(&rfds);
-		FD_SET(sConnect, &rfds);
+
+		if (!hand_shake) {
+			if (in.remaining() > 0)
+			{
+				//std::cout << aircraft->getIdentity()->callsign << ", " << in.peek() << std::endl;
+				decodePackets(aircraft, in);
+			}
+		}
 
 		//retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
 	}
@@ -166,6 +115,75 @@ DWORD tcpinterface::run() {
 		//do somethin
 	}
 	return 0;
+}
+
+void decodePackets(Aircraft* aircraft, Stream& in) {
+	while (in.remaining() > 0) 
+	{
+		in.markReaderIndex();
+		int opCode = in.readSignedByte(), length = -3;
+		if (opCode != -1)
+		{
+			for (int j = 0; j < 256; j++)
+			{
+				if (packetSizes[j][0] == opCode)
+				{
+					length = packetSizes[j][1];
+					break;
+				}
+			}
+			if (length == -1)
+			{
+				if (in.remaining() >= 1)
+				{
+					length = in.readUnsignedByte();
+				}
+				else
+				{
+					in.resetReaderIndex();
+					break;
+				}
+			}
+			else if (length == -2)
+			{
+				if (in.remaining() >= 2)
+				{
+					length = in.readUnsignedWord();
+				}
+				else
+				{
+					in.resetReaderIndex();
+					break;
+				}
+			}
+			else if (length == -3)
+			{
+			#ifdef _DEBUG
+				std::cout << aircraft->getIdentity()->callsign << " Unhandled Packet_Id!! : [" << (int)opCode << ", Packet_Size: "
+					<< length << ", Bytes_Ava: " << in.remaining() << "]" << std::endl;
+			#endif
+				length = in.remaining();
+			}
+		#ifdef _DEBUG
+			std::cout << aircraft->getIdentity()->callsign << " Packet_Id: " << (int)opCode << ", Packet_Size: "
+				<< length << ", Bytes_Ava: " << in.remaining() << std::endl;
+		#endif
+			if (in.remaining() >= length)
+			{
+				processIncomingPackets(aircraft, opCode, in);
+				in.deleteReaderBlock();
+			}
+			else
+			{
+				in.resetReaderIndex();
+				break;
+			}
+		}
+		else
+		{
+			in.clearBuf();
+		}
+	}
 }
 
 void tcpinterface::sendMessage(Stream* stream) {

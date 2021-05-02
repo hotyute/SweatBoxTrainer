@@ -62,9 +62,12 @@ public:
 	int readUnsignedWordBigEndian();
 	int readUnsignedWordBigEndianA();
 
+	int peek(int position);
+
 	char* buffer;
 	int currentOffset; //offset of last position in buffer.
 	int length;
+	int size;
 
 	void initBitAccess();
 	void writeBits(int numBits, int value);
@@ -72,6 +75,7 @@ public:
 	int remaining();
 	bool markReaderIndex();
 	bool resetReaderIndex();
+	bool deleteReaderBlock();
 	bool clearBuf();
 private:
 	int bitPosition;

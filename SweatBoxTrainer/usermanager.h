@@ -25,6 +25,6 @@ PRIVATE_MESSAGE_PACKET = 12;
 extern std::vector<Aircraft*> userStorage1;
 extern std::unordered_map<std::string, Aircraft*> users_map;
 
-void decodePackets(Aircraft* aircraft, int opCode, Stream &stream);
+void processIncomingPackets(Aircraft* aircraft, int opCode, Stream &stream);
 
 #endif

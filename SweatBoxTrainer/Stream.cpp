@@ -1,13 +1,17 @@
 #include "Stream.h"
 
+#include <iostream>
+
 #define _WINSOCK2API_
 #include <windows.h> //for everything extra
 #include <stdlib.h> //for NULL (conversations s2i s2l s2ul s2d) rand srand system
 #include <stdio.h>  //for printf()
 
+
 Stream::Stream() {
 	buffer = new char[5000];
 	memset(buffer, 0, 5000);
+	size = 5000;
 
 	currentOffset = 0;
 	lastReaderIndex = 0;
@@ -20,6 +24,7 @@ Stream::Stream() {
 Stream::Stream(int newSize) {
 	buffer = new char[newSize];
 	memset(buffer, 0, newSize);
+	size = newSize;
 
 	currentOffset = 0;
 	lastReaderIndex = 0;
@@ -46,8 +51,31 @@ bool Stream::markReaderIndex()
 
 bool Stream::resetReaderIndex()
 {
-	length -= (currentOffset - lastReaderIndex);
 	currentOffset = lastReaderIndex;
+	return false;
+}
+
+bool Stream::deleteReaderBlock() {
+	int block_size = (length - lastReaderIndex);
+	if (block_size > 0)
+	{
+		int rem_block_size = (length - currentOffset);
+		if (rem_block_size > 0)
+		{
+			char* temp = new char[rem_block_size];
+			memcpy(temp, buffer + currentOffset, rem_block_size);
+			memset(buffer + lastReaderIndex, 0, block_size);
+			length -= (block_size - rem_block_size);
+			memcpy(buffer + lastReaderIndex, temp, rem_block_size);
+			delete[] temp;
+		}
+		else
+		{
+			memset(buffer + lastReaderIndex, 0, block_size);
+			length -= block_size;
+		}
+		currentOffset = lastReaderIndex;
+	}
 	return false;
 }
 
@@ -410,4 +438,9 @@ int Stream::readUnsignedWordBigEndianA() {
 	currentOffset += 2;
 	return ((buffer[currentOffset - 1] & 0xff) << 8)
 		+ (buffer[currentOffset - 2] - 128 & 0xff);
+}
+
+int Stream::peek(int position)
+{
+	return (buffer[currentOffset + position] & 0xff);
 }

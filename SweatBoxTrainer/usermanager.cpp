@@ -6,10 +6,12 @@
 std::vector<Aircraft*> userStorage1;
 std::unordered_map<std::string, Aircraft*> users_map;
 
-void decodePackets(Aircraft* aircraft, int opCode, Stream& stream) {
+void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 10) {
 		//update Cycle Change
-		aircraft->setUpdateTime(stream.readQWord());
+		long long time = stream.readQWord();
+		std::cout << "timee_change: " << aircraft->getIdentity()->callsign << ", " << time << std::endl;
+		aircraft->setUpdateTime(time);
 	}
 	if (opCode == 13) {
 		//ping packet

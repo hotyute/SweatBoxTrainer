@@ -35,4 +35,6 @@ public:
 
 #endif
 
+void decodePackets(Aircraft* aircraft, Stream& in);
+
 bool SetSocketBlocking(SOCKET sock, bool blocking);
