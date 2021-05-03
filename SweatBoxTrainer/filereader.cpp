@@ -48,8 +48,8 @@ int LoadSCT(std::string path) {
 						break;
 					}
 				}
-
-				if (!first_line && !empty(line) && (line.length() > 0) && headerId != -1)
+				bool whiteSpacesOnly = std::all_of(line.begin(), line.end(), isspace);
+				if (!whiteSpacesOnly && !first_line && !empty(line) && (line.length() > 0) && headerId != -1)
 				{
 					handleHeader(line);
 				}
@@ -129,31 +129,35 @@ int LoadAGC(std::string path) {
 			}
 
 			try {
-				if (processed_lines == 0) 
+				bool whiteSpacesOnly = std::all_of(line.begin(), line.end(), isspace);
+				if (!whiteSpacesOnly && !empty(line) && line.length() > 0) 
 				{
-					std::vector<std::string> args = split(line, ":");
-					std::string squawk_mode = args[7];
-					int mode = squawk_mode[0] == 'C' ? 1 : squawk_mode[0] == 'I' ? 2 : 0;
-					curAircraft = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
-						atodd(args[5]), atodd(args[6]), mode, args[8]);
-					processed_lines++;
-				}
-				else if (processed_lines == 1)
-				{
-					std::vector<std::string> args = split(line, ":");
-					std::string rules = args[0];
-					int mode = rules[0] == 'I' ? 1 : rules[0] == 'V' ? 0 : 2;
-
-					if (curAircraft)
+					if (processed_lines == 0)
 					{
-						FlightPlan& fp = *curAircraft->getFlightPlan();
-						fp.acType = args[1];
-						fp.departure = args[2];
-						fp.route = args[3];
-						fp.remarks = args[7];
-						++fp.cycle;
+						std::vector<std::string> args = split(line, ":");
+						std::string squawk_mode = args[7];
+						int mode = squawk_mode[0] == 'C' ? 1 : squawk_mode[0] == 'I' ? 2 : 0;
+						curAircraft = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
+							atodd(args[5]), atodd(args[6]), mode, args[8]);
+						processed_lines++;
 					}
-					processed_lines = 0;
+					else if (processed_lines == 1)
+					{
+						std::vector<std::string> args = split(line, ":");
+						std::string rules = args[0];
+						int mode = rules[0] == 'I' ? 1 : rules[0] == 'V' ? 0 : 2;
+
+						if (curAircraft)
+						{
+							FlightPlan& fp = *curAircraft->getFlightPlan();
+							fp.acType = args[1];
+							fp.departure = args[2];
+							fp.route = args[3];
+							fp.remarks = args[7];
+							++fp.cycle;
+						}
+						processed_lines = 0;
+					}
 				}
 			}
 			catch (...)
