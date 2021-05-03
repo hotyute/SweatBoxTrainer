@@ -478,7 +478,7 @@ void LoadTestAircraft() {
 	cur->getIdentity()->pilot_rating = 1;
 	cur->setLatitude(25.798429);
 	cur->setLongitude(-80.278852);
-	cur->setSpeed(5.0);
+	cur->setSpeed(19.0);
 	cur->setHeading(120.0);
 	cur->setCollision(false);
 	cur->setMode(1);

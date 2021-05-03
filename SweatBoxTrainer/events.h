@@ -5,7 +5,7 @@
 
 class PositionUpdates : public Event {
 public:
-	PositionUpdates(void*);
+	PositionUpdates(void* obj);
 	void execute();
 	void stop();
 };

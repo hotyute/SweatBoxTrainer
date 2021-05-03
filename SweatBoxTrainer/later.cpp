@@ -1,17 +1,18 @@
 #include "later.h"
 
 
-EventManager *event_manager1 = new EventManager();
+EventManager* event_manager1 = new EventManager();
 
 void EventManager::update() {
-	std::vector<Event*>::iterator it;
-	for (it = EventManager::events.begin(); it != EventManager::events.end();) {
-		Event *event1 = *it;
-		if (event1 != nullptr) {
+	for (auto it = EventManager::events.begin(); it != EventManager::events.end();) {
+		Event* event1 = *it;
+		if (event1 != NULL) {
 			if (!event1->eAction.getRunning()) {
-				it = EventManager::events.erase(it);
 				delete* it;
-			} else {
+				it = EventManager::events.erase(it);
+			}
+			else
+			{
 				boost::posix_time::ptime mst1 = boost::posix_time::microsec_clock::local_time();
 				boost::posix_time::time_duration last_duration = mst1 - event1->eAction.getLastEvent();
 				long long mills = last_duration.total_milliseconds();
@@ -21,7 +22,10 @@ void EventManager::update() {
 				}
 				it++;
 			}
-		} else {
+		}
+		else
+		{
+			delete* it;
 			it = EventManager::events.erase(it);
 		}
 	}

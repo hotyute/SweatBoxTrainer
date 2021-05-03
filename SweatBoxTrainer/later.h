@@ -59,11 +59,14 @@ public:
 	void addEvent(Event* e) {
 		events.push_back(e);
 	}
+	bool removeEvent(Event* e) {
+		return events.erase(std::find(events.begin(), events.end(), e)) != events.end();
+	}
 	void update();
 
 };
 #endif
 
-extern EventManager *event_manager1;
+extern EventManager* event_manager1;
 
 #endif
