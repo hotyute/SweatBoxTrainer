@@ -4,12 +4,13 @@
 EventManager* event_manager1 = new EventManager();
 
 void EventManager::update() {
-	for (auto it = EventManager::events.begin(); it != EventManager::events.end();) {
+	for (auto it = EventManager::events.begin(); it != EventManager::events.end(); ++it) {
 		Event* event1 = *it;
-		if (event1 != NULL) {
+		if (event1 != nullptr) {
 			if (!event1->eAction.getRunning()) {
 				delete* it;
-				it = EventManager::events.erase(it);
+				*it = nullptr;
+				--eventCount;
 			}
 			else
 			{
@@ -20,13 +21,7 @@ void EventManager::update() {
 					event1->execute();
 					event1->eAction.setLastEvent(boost::posix_time::microsec_clock::local_time());
 				}
-				it++;
 			}
-		}
-		else
-		{
-			delete* it;
-			it = EventManager::events.erase(it);
 		}
 	}
 }

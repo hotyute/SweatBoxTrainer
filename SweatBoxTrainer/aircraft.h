@@ -40,15 +40,13 @@ private:
 	int userIndex;
 	HANDLE aMutex;
 	int index;
-	bool renderCallsign;
-	bool collision;
 	bool heavy;
 	std::string acfTitle;
 	double latitude;
 	double longitude;
 	double speed;
 	double heading, pitch, roll;
-	int altitude;
+	int altitude, verticalSpeed;
 	std::vector<History*> historyCount;
 	FlightPlan* flight_plan;
 	tcpinterface* intter;
@@ -72,12 +70,11 @@ public:
 	unsigned int Ccallsign;
 	int getIndex();
 	void setIndex(int);
-	bool getRenderCallsign();
+	void setFlightPlan(FlightPlan& flightPlan);
 	FlightPlan* getFlightPlan();
 	tcpinterface* getConnection() { return intter; }
 	Identity* getIdentity() { return identity; }
 	bool created, que_delete;
-	void setRenderCallsign(bool);
 	std::string getAcfTitle();
 	void setAcfTitle(std::string);
 	double getLatitude();
@@ -98,8 +95,6 @@ public:
 	void lock();
 	void unlock();
 	//void setUser1(User*);
-	bool isCollision();
-	void setCollision(bool);
 	bool isHeavy();
 	void setHeavy(bool);
 	std::string getSquawkCode();
@@ -109,11 +104,15 @@ public:
 	void updateMovement();
 	AV_CLIENT getType() { return type; }
 	void setType(AV_CLIENT t) { type = t; }
+	int getVerticalSpeed() { return verticalSpeed; }
+	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
 };
 
 
 extern std::unordered_map<std::string, Aircraft*> AcfMap;
 
 extern Aircraft* getAircraftByIndex(int);
+
+void addUserToLB(Aircraft* user);
 
 #endif

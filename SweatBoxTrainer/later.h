@@ -3,6 +3,8 @@
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "constants.h"
+
 #ifndef EventAction_h
 #define EventAction_h
 class EventAction {
@@ -54,10 +56,14 @@ public:
 class EventManager {
 private:
 	std::vector<Event*> events;
+	int eventCount = 0;
 
 public:
+	EventManager() : events(MAX_EVENTS, nullptr) { }
 	void addEvent(Event* e) {
-		events.push_back(e);
+		auto it = std::find(events.begin(), events.end(), nullptr);
+		if (it != events.end())
+			*it = e;
 	}
 	bool removeEvent(Event* e) {
 		return events.erase(std::find(events.begin(), events.end(), e)) != events.end();

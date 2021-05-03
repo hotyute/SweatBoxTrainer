@@ -91,3 +91,32 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		}
 	}
 }
+
+Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, int altitude, 
+	int verticalSpeed, int mode, std::string squawkCode) {
+	Aircraft* cur = new Aircraft();
+	cur->lock();
+	cur->setType(AV_CLIENT::PILOT);
+	cur->setHeavy(false);
+	cur->getIdentity()->callsign = callsign;
+	cur->getIdentity()->username = "971202";
+	cur->getIdentity()->login_name = "Samuel Mason";
+	cur->getIdentity()->password = "password";
+	cur->getIdentity()->pilot_rating = 1;
+	cur->setLatitude(latitude);
+	cur->setLongitude(longitude);
+	cur->setSpeed(speed);
+	cur->setHeading(heading);
+	cur->setAltitude(altitude);
+	cur->setMode(mode);
+	cur->unlock();
+
+	cur->setSquawkCode(squawkCode);
+
+	cur->getConnection()->init_set();
+
+	AcfMap[cur->getIdentity()->callsign] = cur;
+
+	addUserToLB(cur);
+	return cur;
+}

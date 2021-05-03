@@ -1,8 +1,6 @@
 #ifndef USERMANAGER_H
 #define USERMANAGER_H
 
-#define MAX_AIRCRAFT_SIZE 1024
-
 const int PILOT_CLIENT_UPDATE_PACKET = 1,
 CLIENT_TRANSPONDER_PACKET = 2,
 CONTROLLER_CLIENT_UPDATE_PACKET = 3,
@@ -26,5 +24,8 @@ extern std::vector<Aircraft*> userStorage1;
 extern std::unordered_map<std::string, Aircraft*> users_map;
 
 void processIncomingPackets(Aircraft* aircraft, int opCode, Stream &stream);
+
+Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, int altitude,
+	int verticalSpeed, int mode, std::string squawkCode);
 
 #endif

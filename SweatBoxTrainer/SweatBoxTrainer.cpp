@@ -20,13 +20,7 @@
 
 #define PROTO_VERSION 32698
 
-void addUserToLB(Aircraft* user);
 void HandleSelectedLB(DWORD iSelected);
-void LoadTestAircraft();
-
-/*#pragma comment(linker,"\"/manifestdependency:type='win32' \
-name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
-processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")*/
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -168,8 +162,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
 
 			userStorage1.resize(MAX_AIRCRAFT_SIZE);
-
-			LoadTestAircraft();
 			
 		}
 		break;
@@ -224,6 +216,31 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				std::wstring wide(szFileName);
 				std::string final1(wide.begin(), wide.end());
 				if (LoadSCT(final1)) {
+
+				}
+			}
+		}
+		break;
+		case ID_FILE_OPEN_AGC:
+		{
+			OPENFILENAME ofn;
+			TCHAR szFileName[MAX_PATH] = L"";
+
+			ZeroMemory(&ofn, sizeof(ofn));
+
+			ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
+			ofn.hwndOwner = hWnd;
+			ofn.lpstrFilter = L"Aircraft File (*.agc)\0*.agc\0All Files (*.*)\0*.*\0";
+			ofn.lpstrFile = szFileName;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+			ofn.lpstrDefExt = L"agc";
+
+			if (GetOpenFileName(&ofn))
+			{
+				std::wstring wide(szFileName);
+				std::string final1(wide.begin(), wide.end());
+				if (LoadAGC(final1)) {
 
 				}
 			}
@@ -423,6 +440,7 @@ void create_controls(HWND hwnd) {
 	AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hHelp, L"&Help");
 
 	AppendMenu(hFile, MF_STRING, ID_FILE_CONNECT, L"&Connect to Sever...");
+	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_AGC, L"&Open Aircraft File...");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_SCT, L"&Open SCT File...");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_APT, L"&Open APT File...");
 
@@ -464,66 +482,4 @@ void HandleSelectedLB(DWORD iSelected)
 	{
 		std::cout << acf->getIdentity()->callsign << std::endl;
 	}
-}
-
-void LoadTestAircraft() {
-	Aircraft* cur = new Aircraft();
-	cur->lock();
-	cur->setType(AV_CLIENT::PILOT);
-	cur->setHeavy(false);
-	cur->getIdentity()->callsign = "DAL220";
-	cur->getIdentity()->username = "971202";
-	cur->getIdentity()->login_name = "Samuel Mason";
-	cur->getIdentity()->password = "password";
-	cur->getIdentity()->pilot_rating = 1;
-	cur->setLatitude(25.798429);
-	cur->setLongitude(-80.278852);
-	cur->setSpeed(19.0);
-	cur->setHeading(120.0);
-	cur->setCollision(false);
-	cur->setMode(1);
-	cur->unlock();
-
-	cur->setSquawkCode(std::to_string(random(1000, 9999)));
-
-	FlightPlan& fp = *cur->getFlightPlan();
-	fp.departure = "KMIA";
-	fp.route = "HEDLY1.HEDLY LAL";
-	fp.remarks = "/v/";
-	++fp.cycle;
-
-	cur->getConnection()->init_set();
-
-	AcfMap[cur->getIdentity()->callsign] = cur;
-
-	addUserToLB(cur);
-
-	Aircraft* cur4 = new Aircraft();
-	cur4->lock();
-	cur4->setType(AV_CLIENT::PILOT);
-	cur4->setHeavy(false);
-	cur4->getIdentity()->callsign = "N108MS";
-	cur4->getIdentity()->username = "971222";
-	cur4->getIdentity()->login_name = "Samuel Mason";
-	cur4->getIdentity()->password = "password";
-	cur4->getIdentity()->pilot_rating = 1;
-	cur4->setLatitude(25.792179);
-	cur4->setLongitude(-80.305309);
-	cur4->setSpeed(0.0);
-	cur4->setHeading(220.0);
-	cur4->setMode(0);
-	cur4->setSquawkCode(std::to_string(random(1000, 9999)));
-	cur4->unlock();
-
-	fp = *cur4->getFlightPlan();
-	fp.departure = "KMIA";
-	fp.route = "SKIPS1.SKIPS MNATE";
-	fp.remarks = "/v/";
-	++fp.cycle;
-
-	cur4->getConnection()->init_set();
-
-	AcfMap[cur4->getIdentity()->callsign] = cur4;
-
-	addUserToLB(cur4);
 }

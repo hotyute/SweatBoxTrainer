@@ -34,17 +34,14 @@ void Aircraft::setIndex(int value) {
 	Aircraft::index = value;
 }
 
-bool Aircraft::getRenderCallsign() {
-	return Aircraft::renderCallsign;
+void Aircraft::setFlightPlan(FlightPlan& flightPlan)
+{
+	Aircraft::flight_plan = &flightPlan;
 }
 
 FlightPlan* Aircraft::getFlightPlan()
 {
 	return Aircraft::flight_plan;
-}
-
-void Aircraft::setRenderCallsign(bool value) {
-	Aircraft::renderCallsign = value;
 }
 
 std::string Aircraft::getAcfTitle() {
@@ -130,14 +127,6 @@ Aircraft* getAircraftByIndex(int index) {
 //void Aircraft::setUser1(User *value) {
 //Aircraft::acfUser = value;
 //}
-
-bool Aircraft::isCollision() {
-	return Aircraft::collision;
-}
-
-void Aircraft::setCollision(bool value) {
-	Aircraft::collision = value;
-}
 
 bool Aircraft::isHeavy() {
 	return Aircraft::heavy;

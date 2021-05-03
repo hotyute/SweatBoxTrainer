@@ -9,6 +9,7 @@ void handleVORLine(std::string line);
 void handleNDBLine(std::string line);
 void handleAIRPORTLine(std::string line);
 void handleFIXESLine(std::string line);
+int LoadAGC(std::string path);
 int LoadAPT(std::string path);
 
 #endif
