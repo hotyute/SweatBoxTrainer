@@ -73,47 +73,6 @@ int LoadSCT(std::string path) {
 	}
 }
 
-void handleHeader(std::string& line) {
-	switch (headerId) {
-		case 0://VOR
-		{
-			handleVORLine(line);
-			break;
-		}
-		case 1://NDB
-		{
-			handleNDBLine(line);
-			break;
-		}
-		case 2://AIRPORT
-		{
-			handleAIRPORTLine(line);
-			break;
-		}
-		case 3://FIXES
-		{
-			handleFIXESLine(line);
-			break;
-		}
-	}
-}
-
-void handleVORLine(std::string line) {
-	std::vector<std::string> args = split(line, " ");
-}
-
-void handleNDBLine(std::string line) {
-	std::vector<std::string> args = split(line, " ");
-}
-
-void handleAIRPORTLine(std::string line) {
-	std::vector<std::string> args = split(line, " ");
-}
-
-void handleFIXESLine(std::string line) {
-	std::vector<std::string> args = split(line, " ");
-}
-
 int LoadAGC(std::string path) {
 	std::string line;
 	std::ifstream myfile(path);
@@ -182,4 +141,45 @@ int LoadAGC(std::string path) {
 int LoadAPT(std::string path)
 {
 	return 0;
+}
+
+void handleHeader(std::string& line) {
+	switch (headerId) {
+		case 0://VOR
+		{
+			handleVORLine(line);
+			break;
+		}
+		case 1://NDB
+		{
+			handleNDBLine(line);
+			break;
+		}
+		case 2://AIRPORT
+		{
+			handleAIRPORTLine(line);
+			break;
+		}
+		case 3://FIXES
+		{
+			handleFIXESLine(line);
+			break;
+		}
+	}
+}
+
+void handleVORLine(std::string line) {
+	std::vector<std::string> args = split(line, " ");
+}
+
+void handleNDBLine(std::string line) {
+	std::vector<std::string> args = split(line, " ");
+}
+
+void handleAIRPORTLine(std::string line) {
+	std::vector<std::string> args = split(line, " ");
+}
+
+void handleFIXESLine(std::string line) {
+	std::vector<std::string> args = split(line, " ");
 }
