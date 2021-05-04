@@ -361,6 +361,31 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			}
 		}
 		break;
+		case ID_FILE_OPEN_APRT:
+		{
+			OPENFILENAME ofn;
+			TCHAR szFileName[MAX_PATH] = L"";
+
+			ZeroMemory(&ofn, sizeof(ofn));
+
+			ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
+			ofn.hwndOwner = hWnd;
+			ofn.lpstrFilter = L"Aircraft File (*.aprt)\0*.aprt\0All Files (*.*)\0*.*\0";
+			ofn.lpstrFile = szFileName;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+			ofn.lpstrDefExt = L"aprt";
+
+			if (GetOpenFileName(&ofn))
+			{
+				std::wstring wide(szFileName);
+				std::string final1(wide.begin(), wide.end());
+				if (LoadAPT(final1)) {
+
+				}
+			}
+		}
+		break;
 		case ACF_LISTBOX:
 		{
 			int notification = HIWORD(wParam);
@@ -588,7 +613,7 @@ void create_controls(HWND hwnd) {
 	AppendMenu(hFile, MF_STRING, ID_FILE_CONNECT, L"&Connect to Sever...");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_AGC, L"&Open Aircraft File...");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_SCT, L"&Open SCT File...");
-	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_APT, L"&Open APT File...");
+	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_APRT, L"&Open APT File...");
 
 	AppendMenu(hSettings, MF_STRING, ID_SETTINGS_AOT, L"&Always On Top");
 

@@ -7,10 +7,14 @@
 
 #include "tools.h"
 #include "usermanager.h"
+#include "airport.h"
 
 std::vector<std::string> HEADERS = { "[VOR]", "[NDB]", "[AIRPORT]", "[FIXES]" };
 int headerId = -1;
 Aircraft* curAircraft = nullptr;
+Airport* curAirport = nullptr;
+std::string curIcao = "";
+DataPoint* curPoint = nullptr;
 
 
 int LoadSCT(std::string path) {
@@ -89,7 +93,7 @@ int LoadAGC(std::string path) {
 
 			try {
 				bool whiteSpacesOnly = std::all_of(line.begin(), line.end(), isspace);
-				if (!whiteSpacesOnly && !empty(line) && line.length() > 0) 
+				if (!whiteSpacesOnly && !empty(line) && line.length() > 0)
 				{
 					if (processed_lines == 0)
 					{
@@ -140,6 +144,105 @@ int LoadAGC(std::string path) {
 
 int LoadAPT(std::string path)
 {
+	std::string line;
+	std::ifstream myfile(path);
+	if (myfile.is_open())
+	{
+		std::string commentStart = ";";
+		std::string icaoStart = "icao=";
+		std::string turnoffStart = "turnoff=";
+		std::string displacedStart = "displaced threshold=";
+		int line_number = 1;
+		int processed_lines = 0;
+		while (getline(myfile, line)) {
+			size_t foundComment = line.find(commentStart);
+			if (foundComment != std::string::npos) {
+				line = line.substr(0, foundComment);
+			}
+			try
+			{
+				bool whiteSpacesOnly = std::all_of(line.begin(), line.end(), isspace);
+				if (!whiteSpacesOnly && !empty(line) && line.length() > 0)
+				{
+					size_t icao_tag = line.find(icaoStart);
+
+
+					if (line[0] == '[' && line.back() == ']') {
+						if (curAirport) {
+							headerId = -1;
+							std::string type = line.substr(1, line.length() - 2);
+							std::vector<std::string> header = split(type, " ");
+							if (header.size() == 2)
+							{
+								if (header[0] == "PARKING")
+								{
+									curPoint = new Parking();
+								}
+								else if (header[0] == "RUNWAY")
+								{
+									curPoint = new Runway();
+								}
+							}
+						}
+					}
+					else if (curAirport && curPoint)
+					{
+						if (curPoint->type == PATHTYPE::PARKING)
+						{
+							std::vector<std::string> args = split(line, " ");
+							curPoint->points.push_back(new Point2(atodd(args[0].c_str()), atodd(args[1].c_str())));
+							curAirport->parking.push_back((Parking*)curPoint);
+						}
+						else if (curPoint->type == PATHTYPE::TAXIWAY)
+						{
+							std::vector<std::string> args = split(line, " ");
+							curPoint->points.push_back(new Point2(atodd(args[0].c_str()), atodd(args[1].c_str())));
+							curAirport->taxiway.push_back((Taxiway*)curPoint);
+						}
+						else if (curPoint->type == PATHTYPE::RUNWAY)
+						{
+							Runway& runway = *((Runway*)curPoint);
+							size_t turnoff_tag = line.find(turnoffStart);
+							size_t displaced_tag = line.find(displacedStart);
+							if (turnoff_tag != std::string::npos)
+							{
+								int start = (turnoff_tag + turnoffStart.length());
+								runway.turnoff = line.substr(start);
+							}
+							else if (displaced_tag != std::string::npos)
+							{
+								int start = (displaced_tag + displacedStart.length());
+								runway.displacement = line.substr(start);
+							}
+							else
+							{
+								std::vector<std::string> args = split(line, " ");
+								curPoint->points.push_back(new Point2(atodd(args[0].c_str()), atodd(args[1].c_str())));
+							}
+							curAirport->runways.push_back((Runway*)curPoint);
+						}
+						curAirport->all.push_back(curPoint);
+					}
+
+					if (icao_tag != std::string::npos)
+					{
+						int start = (icao_tag + icaoStart.length());
+						std::string icao = line.substr(start);
+						curAirport = new Airport(icao);
+						airports.emplace(icao, curAirport);
+					}
+				}
+			}
+			catch (...)
+			{
+				std::stringstream box_message;
+				box_message << "Error in aprt file at line: " << line_number;
+				//MessageBoxA(hWnd, box_message.str().c_str(), "Notice",
+				//	MB_OK | MB_ICONINFORMATION);
+			}
+			++line_number;
+		}
+	}
 	return 0;
 }
 
@@ -183,3 +286,5 @@ void handleAIRPORTLine(std::string line) {
 void handleFIXESLine(std::string line) {
 	std::vector<std::string> args = split(line, " ");
 }
+
+

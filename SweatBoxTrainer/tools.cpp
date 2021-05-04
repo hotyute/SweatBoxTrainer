@@ -96,6 +96,16 @@ Point2 getLocFromBearing(double latitude, double longitude, double distance, dou
 	return Point2(long2, lat2);
 }
 
+double get_roll(double start_roll, double end_roll, double total_ms, double interval_ms)
+{
+	return (end_roll - start_roll) * (interval_ms / total_ms);
+}
+
+double get_rot(double roll, double TAS) {
+	double G = 1092.0;
+	return G * tan(radians(roll)) / TAS;
+}
+
 double get_distance(double speed_knots, double interval_ms) {
 	return speed_knots * ((interval_ms / 1000) / 3600);
 }

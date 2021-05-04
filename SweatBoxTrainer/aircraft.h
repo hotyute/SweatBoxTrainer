@@ -13,9 +13,11 @@ class tcpinterface;
 #include "constants.h"
 
 struct AssignedValues {
-	double asgd_heading;
-	double asdg_altitude;
-	double asdg_speed;
+	double asgd_heading = 0;
+	double asdg_altitude = 0;
+	double asdg_speed = 0;
+	double asdg_roll = 25;
+	double asdg_ground_turn_rate = 5;
 };
 
 class History {
@@ -62,7 +64,7 @@ private:
 	std::string transponder = "0000";
 	long long update_time;
 	unsigned short visibility = 300;
-	long long last_move = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long last_time[4];
 	AV_CLIENT type;
 public:
 	bool connected = false;

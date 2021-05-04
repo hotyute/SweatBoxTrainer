@@ -17,6 +17,11 @@ Aircraft::Aircraft() {
 	Aircraft::flight_plan = new FlightPlan();
 	Aircraft::intter = new tcpinterface(this);
 	Aircraft::identity = new Identity();
+	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	for (int i = 0; i < 4; ++i)
+	{
+		last_time[0] = now;
+	}
 }
 
 Aircraft::~Aircraft()
@@ -155,7 +160,7 @@ void Aircraft::setMode(int mode) {
 void Aircraft::updateMovement()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
-	long long interval = now - last_move;
+	long long interval = now - last_time[0];
 	double dist = get_distance(speed, (double)interval);
 	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
 	if (p.x_ != longitude || p.y_ != latitude)
@@ -164,7 +169,7 @@ void Aircraft::updateMovement()
 	}
 	latitude = p.y_;
 	longitude = p.x_;
-	last_move = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	last_time[0] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
 FlightPlan::FlightPlan()
