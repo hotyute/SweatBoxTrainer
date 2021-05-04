@@ -13,7 +13,6 @@ std::vector<std::string> HEADERS = { "[VOR]", "[NDB]", "[AIRPORT]", "[FIXES]" };
 int headerId = -1;
 Aircraft* curAircraft = nullptr;
 Airport* curAirport = nullptr;
-std::string curIcao = "";
 DataPoint* curPoint = nullptr;
 
 
