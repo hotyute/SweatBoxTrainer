@@ -58,7 +58,7 @@ public:
 	double pattern_elevation = 0;
 	double vfr_init_altitude = 0;
 	double ifr_init_altitude = 0;
-	std::vector<DataPoint*> all;
+	std::unordered_map<std::string, DataPoint*> all;
 	std::vector<Taxiway*> taxiway;
 	std::vector<Runway*> runways;
 	std::vector<Parking*> parking;

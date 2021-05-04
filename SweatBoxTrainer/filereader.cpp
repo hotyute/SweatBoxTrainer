@@ -181,6 +181,7 @@ int LoadAPT(std::string path)
 								{
 									curPoint = new Runway();
 								}
+								curPoint->name = header[1];
 							}
 						}
 					}
@@ -220,7 +221,7 @@ int LoadAPT(std::string path)
 							}
 							curAirport->runways.push_back((Runway*)curPoint);
 						}
-						curAirport->all.push_back(curPoint);
+						curAirport->all.emplace(curPoint->name, curPoint);
 					}
 
 					if (icao_tag != std::string::npos)

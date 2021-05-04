@@ -42,11 +42,13 @@ HWND aircraftList = NULL;
 DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_EX_TOPMOST;
 
 
-HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, vs_hdl = NULL, command_text = NULL;
+HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, vs_hdl = NULL, command_text = NULL, console_text = NULL;
 
 Aircraft* displayed = nullptr;
 
 HFONT hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+	CLIP_DEFAULT_PRECIS, FALSE, VARIABLE_PITCH, TEXT("Segoe UI"));
+HFONT hFont2 = CreateFont(15, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
 	CLIP_DEFAULT_PRECIS, FALSE, VARIABLE_PITCH, TEXT("Segoe UI"));
 const COLORREF bk_ref = RGB(192, 192, 192);
 const COLORREF vbk_ref = RGB(255, 255, 255);
@@ -192,6 +194,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			display_updates->eAction.setTicks(0);
 			event_manager1->addEvent(display_updates);
 
+			SetWindowText(console_text, L"\n\n\n\n\n[00:00:00] Hello.");
+
 		}
 		break;
 		case WM_COMMAND:
@@ -230,7 +234,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (classn == "Static")
 			{
 				if (CtrlID == ALTITUDE_TEXT || CtrlID == LONGITUDE_TEXT || CtrlID == VS_TEXT
-					|| CtrlID == LATITUDE_TEXT || CtrlID == HEADING_TEXT)
+					|| CtrlID == LATITUDE_TEXT || CtrlID == HEADING_TEXT || CtrlID == CONSOLE_TEXT)
 				{
 					if (textColor != text_ref)
 						SetTextColor(hdC, text_ref);
@@ -621,7 +625,7 @@ void create_controls(HWND hwnd) {
 
 	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", L"Commands:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
-		100, 305, 80, 20,
+		100, 310, 80, 20,
 		hwnd, (HMENU)COMMANDS_LBL, NULL, NULL
 	);
 
@@ -630,7 +634,7 @@ void create_controls(HWND hwnd) {
 
 	command_text = CreateWindowEx(WS_EX_STATICEDGE, L"Edit", L"",
 		WS_VISIBLE | WS_TABSTOP | WS_CHILD | WS_BORDER | WS_DLGFRAME | ES_AUTOHSCROLL,
-		185, 300, 690, 30,
+		190, 305, 685, 30,
 		hwnd, (HMENU)COMMAND_TEXT, NULL, NULL
 	);
 
@@ -639,9 +643,18 @@ void create_controls(HWND hwnd) {
 
 	lpCommandWndProc = (WNDPROC)SetWindowLongPtr(command_text, GWL_WNDPROC, (LONG_PTR)&CommandCallBckProcedure);
 
+	console_text = CreateWindowEx(WS_EX_CLIENTEDGE, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT | ES_READONLY,
+		190, 200, 685, 100,
+		hwnd, (HMENU)CONSOLE_TEXT, NULL, NULL
+	);
+
+	SendMessage(console_text, WM_SETFONT, (WPARAM)hFont2, MAKELPARAM(TRUE, 0));
+	SendMessage(console_text, EM_LIMITTEXT, 0, 0L);
+
 	HWND lbl_altitude = CreateWindowEx(NULL, L"STATIC", L"Altitude:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
-		205, 15, 60, 20,
+		210, 15, 60, 20,
 		hwnd, (HMENU)ALTITUDE_LBL, NULL, NULL
 	);
 
@@ -650,7 +663,7 @@ void create_controls(HWND hwnd) {
 
 	altitude = CreateWindowEx(NULL, L"STATIC", L"",
 		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
-		185, 40, 100, 25,
+		190, 40, 100, 25,
 		hwnd, (HMENU)ALTITUDE_TEXT, NULL, NULL
 	);
 
@@ -659,7 +672,7 @@ void create_controls(HWND hwnd) {
 
 	HWND lbl_heading = CreateWindowEx(NULL, L"STATIC", L"Heading:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
-		205, 70, 60, 20,
+		210, 70, 60, 20,
 		hwnd, (HMENU)HEADING_LBL, NULL, NULL
 	);
 
@@ -668,7 +681,7 @@ void create_controls(HWND hwnd) {
 
 	heading = CreateWindowEx(NULL, L"STATIC", L"",
 		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
-		185, 95, 100, 25,
+		190, 95, 100, 25,
 		hwnd, (HMENU)HEADING_TEXT, NULL, NULL
 	);
 
@@ -677,7 +690,7 @@ void create_controls(HWND hwnd) {
 
 	HWND lbl_VS = CreateWindowEx(NULL, L"STATIC", L"Vertical Speed:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
-		185, 125, 100, 20,
+		190, 125, 100, 20,
 		hwnd, (HMENU)VS_LBL, NULL, NULL
 	);
 
@@ -686,7 +699,7 @@ void create_controls(HWND hwnd) {
 
 	vs_hdl = CreateWindowEx(NULL, L"STATIC", L"",
 		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
-		185, 150, 100, 25,
+		190, 150, 100, 25,
 		hwnd, (HMENU)VS_TEXT, NULL, NULL
 	);
 
@@ -695,7 +708,7 @@ void create_controls(HWND hwnd) {
 
 	HWND lbl_latitude = CreateWindowEx(NULL, L"STATIC", L"Latitude:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
-		325, 15, 60, 20,
+		330, 15, 60, 20,
 		hwnd, (HMENU)LATITUDE_LBL, NULL, NULL
 	);
 
@@ -704,7 +717,7 @@ void create_controls(HWND hwnd) {
 
 	latitude_hdl = CreateWindowEx(NULL, L"STATIC", L"",
 		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
-		305, 40, 100, 25,
+		310, 40, 100, 25,
 		hwnd, (HMENU)LATITUDE_TEXT, NULL, NULL
 	);
 
@@ -713,7 +726,7 @@ void create_controls(HWND hwnd) {
 
 	HWND lbl_longitude = CreateWindowEx(NULL, L"STATIC", L"Longitude:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
-		315, 70, 80, 20,
+		320, 70, 80, 20,
 		hwnd, (HMENU)LONGITUDE_LBL, NULL, NULL
 	);
 
@@ -722,7 +735,7 @@ void create_controls(HWND hwnd) {
 
 	longitude_hdl = CreateWindowEx(NULL, L"STATIC", L"",
 		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
-		305, 95, 100, 25,
+		310, 95, 100, 25,
 		hwnd, (HMENU)LONGITUDE_TEXT, NULL, NULL
 	);
 
@@ -732,7 +745,7 @@ void create_controls(HWND hwnd) {
 
 	aircraftList = CreateWindowEx(WS_EX_STATICEDGE, L"LISTBOX", NULL,
 		WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_NOTIFY | LBS_HASSTRINGS | LBS_SORT | WS_BORDER,
-		10, 15,
+		10, 17,
 		170, 300,
 		hwnd, (HMENU)ACF_LISTBOX,
 		(HINSTANCE)GetWindowLong(hwnd, GWLP_HINSTANCE),
