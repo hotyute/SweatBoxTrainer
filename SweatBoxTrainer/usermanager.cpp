@@ -108,6 +108,7 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 	cur->setSpeed(speed);
 	cur->setHeading(heading);
 	cur->setAltitude(altitude);
+	cur->setVerticalSpeed(verticalSpeed);
 	cur->setMode(mode);
 	cur->unlock();
 

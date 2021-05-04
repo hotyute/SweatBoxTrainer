@@ -12,6 +12,12 @@ class tcpinterface;
 #include "clinc2.h"
 #include "constants.h"
 
+struct AssignedValues {
+	double asgd_heading;
+	double asdg_altitude;
+	double asdg_speed;
+};
+
 class History {
 };
 
@@ -46,11 +52,12 @@ private:
 	double longitude;
 	double speed;
 	double heading, pitch, roll;
-	int altitude, verticalSpeed;
+	int altitude = 0, verticalSpeed = 1000;
 	std::vector<History*> historyCount;
 	FlightPlan* flight_plan;
 	tcpinterface* intter;
 	Identity* identity;
+	AssignedValues assignedValues;
 	int mode;
 	std::string transponder = "0000";
 	long long update_time;
@@ -114,5 +121,7 @@ extern std::unordered_map<std::string, Aircraft*> AcfMap;
 extern Aircraft* getAircraftByIndex(int);
 
 void addUserToLB(Aircraft* user);
+
+void DisplayAircraft();
 
 #endif

@@ -145,6 +145,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="aircraft.h" />
+    <ClInclude Include="airport.h" />
     <ClInclude Include="calc_cycles.h" />
     <ClInclude Include="clinc.h" />
     <ClInclude Include="clinc2.h" />
@@ -166,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="aircraft.cpp" />
+    <ClCompile Include="airport.cpp" />
     <ClCompile Include="calc_cycles.cpp" />
     <ClCompile Include="clinc.cpp" />
     <ClCompile Include="clinc2.cpp" />

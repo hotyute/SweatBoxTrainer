@@ -22,6 +22,16 @@
 
 void HandleSelectedLB(DWORD iSelected);
 
+int processCommands(std::string text);
+
+bool always_on_top = false;
+
+DWORD MainThreadId_G;
+
+WNDPROC lpCommandWndProc;
+
+HMENU hSettings = NULL;
+
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 HWND hWnd = NULL;		// Holds Our Window Handle
@@ -29,9 +39,20 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 bool done = false;
 HWND aircraftList = NULL;
+DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_EX_TOPMOST;
+
+
+HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, vs_hdl = NULL, command_text = NULL;
+
+Aircraft* displayed = nullptr;
 
 HFONT hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
 	CLIP_DEFAULT_PRECIS, FALSE, VARIABLE_PITCH, TEXT("Segoe UI"));
+const COLORREF bk_ref = RGB(192, 192, 192);
+const COLORREF vbk_ref = RGB(255, 255, 255);
+const COLORREF text_ref = RGB(0, 0, 0);
+const HBRUSH background_color = CreateSolidBrush(bk_ref);
+const HBRUSH variablebk_color = CreateSolidBrush(vbk_ref);
 
 
 // Forward declarations of functions included in this code module:
@@ -46,6 +67,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
+	MainThreadId_G = ::GetCurrentThreadId();
+
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -103,7 +126,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SWEATBOXTRAINER));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 2);
+	wcex.hbrBackground = background_color;
 	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_SWEATBOXTRAINER);
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
@@ -125,7 +148,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	hInst = hInstance; // Store instance handle in our global variable
 
-	hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+	hWnd = CreateWindowW(szWindowClass, szTitle, dwStyle,
 		CW_USEDEFAULT, 0, 900, 400, nullptr, nullptr, hInstance, nullptr);
 
 	if (!hWnd)
@@ -149,6 +172,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_DESTROY  - post a quit message and return
 //
 //
+
+int paint = 0;
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -162,7 +187,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
 
 			userStorage1.resize(MAX_AIRCRAFT_SIZE);
-			
+
+			Event* display_updates = new GraphicsUIUpdates();
+			display_updates->eAction.setTicks(0);
+			event_manager1->addEvent(display_updates);
+
 		}
 		break;
 		case WM_COMMAND:
@@ -184,6 +213,76 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			PostQuitMessage(0);
 		}
 		break;
+		case WM_CTLCOLORSTATIC:
+		{
+			HDC hdC = (HDC)wParam;
+			HWND ctrl = (HWND)lParam;
+			DWORD CtrlID = GetDlgCtrlID(ctrl);
+			TCHAR controlClassName[128];
+
+			GetClassName(ctrl, controlClassName, 128);
+
+			std::wstring test(&controlClassName[0]); //convert to wstring
+			std::string classn(test.begin(), test.end()); //and convert to string.
+			COLORREF textColor = GetTextColor(hdC);
+			COLORREF bkColor = GetBkColor(hdC);
+
+			if (classn == "Static")
+			{
+				if (CtrlID == ALTITUDE_TEXT || CtrlID == LONGITUDE_TEXT || CtrlID == VS_TEXT
+					|| CtrlID == LATITUDE_TEXT || CtrlID == HEADING_TEXT)
+				{
+					if (textColor != text_ref)
+						SetTextColor(hdC, text_ref);
+					if (bkColor != vbk_ref)
+						SetBkColor(hdC, vbk_ref);
+					return (INT_PTR)variablebk_color;
+				}
+				SetTextColor(hdC, text_ref);
+				SetBkColor(hdC, bk_ref);
+				return (INT_PTR)background_color;
+			}
+			else if (classn == "Edit")
+			{
+				SetTextColor(hdC, text_ref);
+				SetBkColor(hdC, vbk_ref);
+				return (INT_PTR)variablebk_color;
+			}
+		}
+		break;
+		case WM_CTLCOLOREDIT:
+		{
+			HDC hdC = (HDC)wParam;
+			HWND ctrl = (HWND)lParam;
+			DWORD CtrlID = GetDlgCtrlID(ctrl);
+			TCHAR controlClassName[128];
+
+			GetClassName(ctrl, controlClassName, 128);
+
+			std::wstring test(&controlClassName[0]); //convert to wstring
+			std::string classn(test.begin(), test.end()); //and convert to string.
+
+			if (classn == "Edit")
+			{
+				SetTextColor(hdC, RGB(0, 0, 0));
+				SetBkColor(hdC, RGB(255, 255, 255));
+				return (INT_PTR)variablebk_color;
+			}
+		}
+		break;
+		case WM_KEYDOWN:
+		{
+			switch (wParam)
+			{
+				case VK_RETURN:
+				{
+					//Do your stuff
+				}
+				break;  //or return 0; if you don't want to pass it further to def proc
+			//If not your key, skip to default:
+			}
+		}
+		break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -196,6 +295,22 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	// Parse the menu selections:
 	switch (wmId)
 	{
+		case ID_SETTINGS_AOT:
+		{
+			always_on_top = !always_on_top;
+			if (always_on_top)
+			{
+				CheckMenuItem(hSettings, ID_SETTINGS_AOT, MF_CHECKED);
+				SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			}
+			else
+			{
+				CheckMenuItem(hSettings, ID_SETTINGS_AOT, MF_UNCHECKED);
+
+				SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+			}
+		}
+		break;
 		case ID_FILE_OPEN_SCT:
 		{
 			OPENFILENAME ofn;
@@ -427,12 +542,43 @@ DWORD WINAPI CalcThread1(LPVOID)
 	return 0;
 }
 
+/*--- Handles Command Callback ---*/
+
+LRESULT CALLBACK CommandCallBckProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	if (uMsg == WM_CHAR)
+	{
+		if (wParam == VK_ESCAPE)
+		{
+			//PostQuitMessage(0);
+			SendMessage(command_text, WM_SETTEXT, 0, (LPARAM)L"");
+			return 0;
+		}
+		else if (wParam == VK_RETURN)
+		{
+			//PostQuitMessage(0);
+			TCHAR c_text[256];
+			LRESULT result = SendMessage(command_text, WM_GETTEXT, sizeof(c_text), (LPARAM)c_text);
+
+			std::wstring test(&c_text[0]); //convert to wstring
+			std::string text(test.begin(), test.end()); //and convert to string.
+
+			if (processCommands(text))
+			{
+			}
+			SendMessage(command_text, WM_SETTEXT, 0, (LPARAM)L"");
+			return 0;
+		}
+	}
+	return CallWindowProc(lpCommandWndProc, hWnd, uMsg, wParam, lParam);
+}
+
 /*--- Creates GUI Controls ---*/
 
 void create_controls(HWND hwnd) {
 	HMENU hMenuBar = CreateMenu();
 	HMENU hFile = CreateMenu();
-	HMENU hSettings = CreateMenu();
+	hSettings = CreateMenu();
 	HMENU hHelp = CreateMenu();
 
 	AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFile, L"&File");
@@ -444,16 +590,119 @@ void create_controls(HWND hwnd) {
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_SCT, L"&Open SCT File...");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_APT, L"&Open APT File...");
 
+	AppendMenu(hSettings, MF_STRING, ID_SETTINGS_AOT, L"&Always On Top");
+
 	SetMenu(hwnd, hMenuBar);
 
-	HWND callsign_text = CreateWindowEx(WS_EX_STATICEDGE, L"Edit", L"",
+	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", L"Commands:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		100, 305, 80, 20,
+		hwnd, (HMENU)COMMANDS_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_commands, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_commands, EM_LIMITTEXT, 0, 0L);
+
+	command_text = CreateWindowEx(WS_EX_STATICEDGE, L"Edit", L"",
 		WS_VISIBLE | WS_TABSTOP | WS_CHILD | WS_BORDER | WS_DLGFRAME | ES_AUTOHSCROLL,
-		180, 300, 690, 30,
+		185, 300, 690, 30,
 		hwnd, (HMENU)COMMAND_TEXT, NULL, NULL
 	);
 
-	SendMessage(callsign_text, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
-	SendMessage(callsign_text, EM_LIMITTEXT, 0, 0L);
+	SendMessage(command_text, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(command_text, EM_LIMITTEXT, 128, 0L);
+
+	lpCommandWndProc = (WNDPROC)SetWindowLongPtr(command_text, GWL_WNDPROC, (LONG_PTR)&CommandCallBckProcedure);
+
+	HWND lbl_altitude = CreateWindowEx(NULL, L"STATIC", L"Altitude:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		205, 15, 60, 20,
+		hwnd, (HMENU)ALTITUDE_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_altitude, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_altitude, EM_LIMITTEXT, 0, 0L);
+
+	altitude = CreateWindowEx(NULL, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
+		185, 40, 100, 25,
+		hwnd, (HMENU)ALTITUDE_TEXT, NULL, NULL
+	);
+
+	SendMessage(altitude, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(altitude, EM_LIMITTEXT, 25, 0L);
+
+	HWND lbl_heading = CreateWindowEx(NULL, L"STATIC", L"Heading:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		205, 70, 60, 20,
+		hwnd, (HMENU)HEADING_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_heading, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_heading, EM_LIMITTEXT, 0, 0L);
+
+	heading = CreateWindowEx(NULL, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
+		185, 95, 100, 25,
+		hwnd, (HMENU)HEADING_TEXT, NULL, NULL
+	);
+
+	SendMessage(heading, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(heading, EM_LIMITTEXT, 25, 0L);
+
+	HWND lbl_VS = CreateWindowEx(NULL, L"STATIC", L"Vertical Speed:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		185, 125, 100, 20,
+		hwnd, (HMENU)VS_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_VS, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_VS, EM_LIMITTEXT, 30, 0L);
+
+	vs_hdl = CreateWindowEx(NULL, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
+		185, 150, 100, 25,
+		hwnd, (HMENU)VS_TEXT, NULL, NULL
+	);
+
+	SendMessage(vs_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(vs_hdl, EM_LIMITTEXT, 25, 0L);
+
+	HWND lbl_latitude = CreateWindowEx(NULL, L"STATIC", L"Latitude:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		325, 15, 60, 20,
+		hwnd, (HMENU)LATITUDE_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_latitude, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_latitude, EM_LIMITTEXT, 0, 0L);
+
+	latitude_hdl = CreateWindowEx(NULL, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
+		305, 40, 100, 25,
+		hwnd, (HMENU)LATITUDE_TEXT, NULL, NULL
+	);
+
+	SendMessage(latitude_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(latitude_hdl, EM_LIMITTEXT, 25, 0L);
+
+	HWND lbl_longitude = CreateWindowEx(NULL, L"STATIC", L"Longitude:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		315, 70, 80, 20,
+		hwnd, (HMENU)LONGITUDE_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_longitude, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_longitude, EM_LIMITTEXT, 0, 0L);
+
+	longitude_hdl = CreateWindowEx(NULL, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
+		305, 95, 100, 25,
+		hwnd, (HMENU)LONGITUDE_TEXT, NULL, NULL
+	);
+
+	SendMessage(longitude_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(longitude_hdl, EM_LIMITTEXT, 25, 0L);
 
 
 	aircraftList = CreateWindowEx(WS_EX_STATICEDGE, L"LISTBOX", NULL,
@@ -478,8 +727,33 @@ void addUserToLB(Aircraft* user) {
 void HandleSelectedLB(DWORD iSelected)
 {
 	Aircraft* acf = (Aircraft*)SendMessage(aircraftList, LB_GETITEMDATA, iSelected, 0);
-	if (acf)
+	if (acf && displayed != acf)
 	{
-		std::cout << acf->getIdentity()->callsign << std::endl;
+		displayed = acf;
+		DisplayAircraft();
 	}
+}
+
+void DisplayAircraft() {
+	if (displayed)
+	{
+		std::wstring alt = std::to_wstring(displayed->getAltitude());
+		SetWindowText(altitude, alt.c_str());
+
+		std::wstring hdg = std::to_wstring((int)displayed->getHeading());
+		SetWindowText(heading, hdg.c_str());
+
+		std::wstring vs = std::to_wstring(displayed->getVerticalSpeed());
+		SetWindowText(vs_hdl, vs.c_str());
+
+		std::wstring lat = std::to_wstring(displayed->getLatitude());
+		SetWindowText(latitude_hdl, lat.c_str());
+
+		std::wstring lon = std::to_wstring(displayed->getLongitude());
+		SetWindowText(longitude_hdl, lon.c_str());
+	}
+}
+
+int processCommands(std::string text) {
+	return 0;
 }

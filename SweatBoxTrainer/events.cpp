@@ -22,12 +22,12 @@ void PositionUpdates::stop() {
 }
 
 
-void ConfigUpdates::execute() {
-	//if (ConfigUpdates::eAction.getTicks() == 0
-	//	|| USER->getUpdateTime() != ConfigUpdates::eAction.getTicks()) {
-	//	ConfigUpdates::eAction.setTicks(1000);
-	//}
+void GraphicsUIUpdates::execute() {
+	if (GraphicsUIUpdates::eAction.getTicks() == 0) {
+		GraphicsUIUpdates::eAction.setTicks(100);
+	}
+	DisplayAircraft();
 }
 
-void ConfigUpdates::stop() {
+void GraphicsUIUpdates::stop() {
 }

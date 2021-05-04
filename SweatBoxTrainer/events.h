@@ -10,7 +10,7 @@ public:
 	void stop();
 };
 
-class ConfigUpdates : public Event {
+class GraphicsUIUpdates : public Event {
 public:
 	void execute();
 	void stop();
