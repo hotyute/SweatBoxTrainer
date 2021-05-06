@@ -8,6 +8,7 @@
 
 #include <commdlg.h>
 #include <thread>
+#include <filesystem>
 
 #include "usermanager.h"
 #include "events.h"
@@ -42,7 +43,7 @@ HWND aircraftList = NULL;
 DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_EX_TOPMOST;
 
 
-HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, speed_hdl = NULL, 
+HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, speed_hdl = NULL,
 vs_hdl = NULL, command_text = NULL, console_text = NULL;
 
 Aircraft* displayed = nullptr;
@@ -196,6 +197,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			event_manager1->addEvent(display_updates);
 
 			SetWindowText(console_text, L"\n\n\n\n\n[00:00:00] Hello.");
+
+			std::string path = "../data/airports/";
+
+			if (std::filesystem::exists(path) && std::filesystem::is_directory(path))
+			{
+				for (const auto& entry : std::filesystem::directory_iterator(path)) {
+					if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".aprt")
+						LoadAPT(entry.path().string());
+				}
+			}
 
 		}
 		break;
@@ -818,7 +829,7 @@ void DisplayAircraft() {
 int processCommands(Aircraft& aircraft, std::string command) {
 	if (boost::istarts_with(command, "taxi ")) {
 
-		std::vector<std::string> array3 = split(command.substr(5, command.length()-1), " ");
+		std::vector<std::string> array3 = split(command.substr(5, command.length() - 1), " ");
 
 		Airport* airport = aircraft.getAirport();
 
@@ -826,7 +837,8 @@ int processCommands(Aircraft& aircraft, std::string command) {
 			aircraft.taxi(airport, "", array3);
 
 		return 1;
-	} else if (boost::istarts_with(command, "tl ")) {
+	}
+	else if (boost::istarts_with(command, "tl ")) {
 
 		std::vector<std::string> array3 = split(command, " ");
 
@@ -850,7 +862,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 
 		return 1;
 	}
-	else if (boost::istarts_with(command, "fh ")) 
+	else if (boost::istarts_with(command, "fh "))
 	{
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -863,7 +875,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 
 		return 1;
 	}
-	else if (boost::istarts_with(command, "spd ")) 
+	else if (boost::istarts_with(command, "spd "))
 	{
 
 		std::vector<std::string> array3 = split(command, " ");
