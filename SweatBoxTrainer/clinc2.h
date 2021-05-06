@@ -38,3 +38,5 @@ public:
 void decodePackets(Aircraft* aircraft, Stream& in);
 
 bool SetSocketBlocking(SOCKET sock, bool blocking);
+
+bool send_initial_packets(Aircraft& aircraft);

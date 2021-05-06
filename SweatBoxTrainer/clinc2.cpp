@@ -9,6 +9,7 @@
 #include "events.h"
 #include "config.h"
 #include "usermanager.h"
+#include "packets_out.h"
 
 static int packetSizes[256][2] = {
 	{10, 8},
@@ -87,6 +88,8 @@ DWORD tcpinterface::run() {
 						hand_shake = false;
 						current_op = -1;
 						in.deleteReaderBlock();
+						
+						send_initial_packets(*aircraft);
 					}
 				}
 				else
@@ -299,5 +302,11 @@ bool SetSocketBlocking(SOCKET sock, bool blocking)
 	unsigned long nonblocking_long = blocking ? 0 : 1;
 	if (ioctlsocket(sock, FIONBIO, &nonblocking_long) == SOCKET_ERROR)
 		return false;
+	return true;
+}
+
+bool send_initial_packets(Aircraft& aircraft)
+{
+	sendFlightPlan(aircraft);
 	return true;
 }
