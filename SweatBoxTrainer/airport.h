@@ -9,9 +9,9 @@
 
 enum class PATHTYPE {NONE, PARKING, TAXIWAY, RUNWAY};
 
-class DataPoint {
+class TaxiPath {
 public:
-	virtual ~DataPoint() {
+	virtual ~TaxiPath() {
 		for (auto p : points)
 		{
 			delete p;
@@ -22,7 +22,7 @@ public:
 	std::vector<Point2*> points;
 };
 
-class Parking : public DataPoint {
+class Parking : public TaxiPath {
 public:
 	Parking() {
 		type = PATHTYPE::PARKING;
@@ -30,7 +30,7 @@ public:
 	virtual ~Parking() {}
 };
 
-class Taxiway : public DataPoint {
+class Taxiway : public TaxiPath {
 public:
 	Taxiway() {
 		type = PATHTYPE::TAXIWAY;
@@ -38,7 +38,7 @@ public:
 	virtual ~Taxiway() {}
 };
 
-class Runway : public DataPoint {
+class Runway : public TaxiPath {
 public:
 	std::string turnoff;
 	std::string displacement;
@@ -50,18 +50,17 @@ public:
 
 class Airport 
 {
-private:
-	std::string ICAO;
 public:
-	Airport(std::string icao) : ICAO(icao) {}
+	Airport(std::string apt_icao) : icao(apt_icao) {}
 	double elevation = 0;
 	double pattern_elevation = 0;
 	double vfr_init_altitude = 0;
 	double ifr_init_altitude = 0;
-	std::unordered_map<std::string, DataPoint*> all;
+	std::unordered_map<std::string, TaxiPath*> all;
 	std::vector<Taxiway*> taxiway;
 	std::vector<Runway*> runways;
 	std::vector<Parking*> parking;
+	std::string icao;
 };
 
 extern std::unordered_map<std::string, Airport*> airports;

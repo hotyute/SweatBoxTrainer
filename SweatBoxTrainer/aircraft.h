@@ -11,13 +11,16 @@ class tcpinterface;
 
 #include "clinc2.h"
 #include "constants.h"
+#include "airport.h"
 
 struct AssignedValues {
 	double asgd_heading = 0;
 	double asdg_altitude = 0;
 	double asdg_speed = 0;
 	double asdg_roll = 25;
-	double asdg_ground_turn_rate = 5;
+	double asdg_gnd_turn_rate = 9; // 9 degrees per second
+	double asdg_accel = 2;//per second
+	double asdg_gnd_accel = 0.5;//per second
 };
 
 class History {
@@ -45,6 +48,7 @@ public:
 
 class Aircraft {
 private:
+	Airport* airport = nullptr;
 	int userIndex;
 	HANDLE aMutex;
 	int index;
@@ -56,9 +60,9 @@ private:
 	double heading, pitch, roll;
 	int altitude = 0, verticalSpeed = 1000;
 	std::vector<History*> historyCount;
-	FlightPlan* flight_plan;
-	tcpinterface* intter;
-	Identity* identity;
+	FlightPlan flight_plan;
+	tcpinterface intter = tcpinterface(this);
+	Identity identity;
 	AssignedValues assignedValues;
 	int mode;
 	std::string transponder = "0000";
@@ -67,7 +71,11 @@ private:
 	long long last_time[4];
 	AV_CLIENT type;
 public:
+	int turnOri = -1;
+	std::string apt_icao = "";
 	bool connected = false;
+	std::vector<Point2*> ground_route;
+	std::vector<Point2*> air_route;
 	Aircraft();
 	~Aircraft();
 	const int getUserIndex() const { return userIndex; }
@@ -79,10 +87,9 @@ public:
 	unsigned int Ccallsign;
 	int getIndex();
 	void setIndex(int);
-	void setFlightPlan(FlightPlan& flightPlan);
-	FlightPlan* getFlightPlan();
-	tcpinterface* getConnection() { return intter; }
-	Identity* getIdentity() { return identity; }
+	FlightPlan& getFlightPlan() { return flight_plan; }
+	tcpinterface& getConnection() { return intter; }
+	Identity* getIdentity() { return &identity; }
 	bool created, que_delete;
 	std::string getAcfTitle();
 	void setAcfTitle(std::string);
@@ -110,11 +117,18 @@ public:
 	void setSquawkCode(std::string value);
 	int getMode();
 	void setMode(int mode);
+	void updateSpeed();
+	void updateHeading();
 	void updateMovement();
 	AV_CLIENT getType() { return type; }
 	void setType(AV_CLIENT t) { type = t; }
 	int getVerticalSpeed() { return verticalSpeed; }
 	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
+	Airport* getAirport();
+	void taxi(Airport* airport, std::string hs, std::vector<std::string>& s);
+	bool onGround();
+	AssignedValues& getAssignedValues() { return assignedValues; }
+	double getNextHeading();
 };
 
 

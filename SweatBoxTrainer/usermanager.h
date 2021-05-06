@@ -21,7 +21,6 @@ PRIVATE_MESSAGE_PACKET = 12;
 #include "Stream.h"
 
 extern std::vector<Aircraft*> userStorage1;
-extern std::unordered_map<std::string, Aircraft*> users_map;
 
 void processIncomingPackets(Aircraft* aircraft, int opCode, Stream &stream);
 

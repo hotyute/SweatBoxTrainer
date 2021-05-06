@@ -13,7 +13,7 @@ std::vector<std::string> HEADERS = { "[VOR]", "[NDB]", "[AIRPORT]", "[FIXES]" };
 int headerId = -1;
 Aircraft* curAircraft = nullptr;
 Airport* curAirport = nullptr;
-DataPoint* curPoint = nullptr;
+TaxiPath* curPoint = nullptr;
 
 
 int LoadSCT(std::string path) {
@@ -23,7 +23,7 @@ int LoadSCT(std::string path) {
 	{
 		std::string commentStart = ";";
 		int line_number = 1;
-		int process_count = 0;
+		size_t process_count = 0;
 		while (getline(myfile, line)) {
 			size_t foundComment = line.find(commentStart);
 			if (foundComment != std::string::npos) {
@@ -40,7 +40,7 @@ int LoadSCT(std::string path) {
 
 			bool first_line = false;
 			try {
-				for (int i = 0; i < HEADERS.size(); ++i) {
+				for (size_t i = 0; i < HEADERS.size(); ++i) {
 					std::string header = HEADERS[i];
 					size_t found = line.find(header);
 					if (found != std::string::npos)
@@ -100,7 +100,8 @@ int LoadAGC(std::string path) {
 						std::string squawk_mode = args[7];
 						int mode = squawk_mode[0] == 'C' ? 1 : squawk_mode[0] == 'I' ? 2 : 0;
 						curAircraft = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
-							atodd(args[5]), atodd(args[6]), mode, args[8]);
+							(int)atodd(args[5]), (int)atodd(args[6]), mode, args[8]);
+						curAircraft->apt_icao = args[9];
 						processed_lines++;
 					}
 					else if (processed_lines == 1)
@@ -111,7 +112,7 @@ int LoadAGC(std::string path) {
 
 						if (curAircraft)
 						{
-							FlightPlan& fp = *curAircraft->getFlightPlan();
+							FlightPlan& fp = curAircraft->getFlightPlan();
 							fp.acType = args[1];
 							fp.departure = args[2];
 							fp.route = args[3];
@@ -149,6 +150,7 @@ int LoadAPT(std::string path)
 	{
 		std::string commentStart = ";";
 		std::string icaoStart = "icao=";
+		std::string fieldElevStart = "field elevation=";
 		std::string turnoffStart = "turnoff=";
 		std::string displacedStart = "displaced threshold=";
 		int line_number = 1;
@@ -164,6 +166,7 @@ int LoadAPT(std::string path)
 				if (!whiteSpacesOnly && !empty(line) && line.length() > 0)
 				{
 					size_t icao_tag = line.find(icaoStart);
+					size_t field_elev = line.find(fieldElevStart);
 
 
 					if (line[0] == '[' && line.back() == ']') {
@@ -190,13 +193,13 @@ int LoadAPT(std::string path)
 						if (curPoint->type == PATHTYPE::PARKING)
 						{
 							std::vector<std::string> args = split(line, " ");
-							curPoint->points.push_back(new Point2(atodd(args[0].c_str()), atodd(args[1].c_str())));
+							curPoint->points.push_back(new Point2(atodd(args[1].c_str()), atodd(args[0].c_str())));
 							curAirport->parking.push_back((Parking*)curPoint);
 						}
 						else if (curPoint->type == PATHTYPE::TAXIWAY)
 						{
 							std::vector<std::string> args = split(line, " ");
-							curPoint->points.push_back(new Point2(atodd(args[0].c_str()), atodd(args[1].c_str())));
+							curPoint->points.push_back(new Point2(atodd(args[1].c_str()), atodd(args[0].c_str())));
 							curAirport->taxiway.push_back((Taxiway*)curPoint);
 						}
 						else if (curPoint->type == PATHTYPE::RUNWAY)
@@ -217,7 +220,7 @@ int LoadAPT(std::string path)
 							else
 							{
 								std::vector<std::string> args = split(line, " ");
-								curPoint->points.push_back(new Point2(atodd(args[0].c_str()), atodd(args[1].c_str())));
+								curPoint->points.push_back(new Point2(atodd(args[1].c_str()), atodd(args[0].c_str())));
 							}
 							curAirport->runways.push_back((Runway*)curPoint);
 						}
@@ -230,6 +233,14 @@ int LoadAPT(std::string path)
 						std::string icao = line.substr(start);
 						curAirport = new Airport(icao);
 						airports.emplace(icao, curAirport);
+						curAirport->icao = icao;
+					}
+					else if (field_elev != std::string::npos)
+					{
+						int start = (field_elev + fieldElevStart.length());
+						std::string fieldelev = line.substr(start);
+						if (curAirport)
+							curAirport->elevation = atodd(fieldelev);
 					}
 				}
 			}
@@ -242,8 +253,15 @@ int LoadAPT(std::string path)
 			}
 			++line_number;
 		}
+		std::cout << "[Loaded Airport Data]" << std::endl;;
+		myfile.close();
+		return 1;
 	}
-	return 0;
+	else
+	{
+		std::cout << "Unable to open file";
+		return 0;
+	}
 }
 
 void handleHeader(std::string& line) {

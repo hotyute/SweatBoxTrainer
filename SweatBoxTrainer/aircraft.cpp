@@ -1,5 +1,7 @@
 #include "aircraft.h"
 
+#include <boost/algorithm/string.hpp>
+
 #include "tools.h"
 
 std::unordered_map<std::string, Aircraft*>AcfMap;
@@ -14,9 +16,6 @@ Aircraft::Aircraft() {
 	Aircraft::longitude = 0;
 	Aircraft::heading = 0;
 	Aircraft::roll = 0;
-	Aircraft::flight_plan = new FlightPlan();
-	Aircraft::intter = new tcpinterface(this);
-	Aircraft::identity = new Identity();
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	for (int i = 0; i < 4; ++i)
 	{
@@ -26,9 +25,7 @@ Aircraft::Aircraft() {
 
 Aircraft::~Aircraft()
 {
-	delete flight_plan;
-	delete identity;
-	delete intter;
+
 }
 
 int Aircraft::getIndex() {
@@ -37,16 +34,6 @@ int Aircraft::getIndex() {
 
 void Aircraft::setIndex(int value) {
 	Aircraft::index = value;
-}
-
-void Aircraft::setFlightPlan(FlightPlan& flightPlan)
-{
-	Aircraft::flight_plan = &flightPlan;
-}
-
-FlightPlan* Aircraft::getFlightPlan()
-{
-	return Aircraft::flight_plan;
 }
 
 std::string Aircraft::getAcfTitle() {
@@ -157,11 +144,89 @@ void Aircraft::setMode(int mode) {
 	Aircraft::mode = mode;
 }
 
+void Aircraft::updateSpeed()
+{
+	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long interval = now - last_time[2];
+
+	if (speed != assignedValues.asdg_speed) {
+		double acceleration = onGround() ? assignedValues.asdg_gnd_accel : assignedValues.asdg_accel;
+		double amount = get_ros(acceleration, interval);
+		double spd_delta = assignedValues.asdg_speed - speed;
+
+		if (spd_delta != 0)
+		{
+			if (spd_delta < 0) {
+				if ((speed + -amount) <= assignedValues.asdg_speed)
+					speed = assignedValues.asdg_speed;
+				else
+					speed += -amount;
+			}
+			else if (spd_delta > 0)
+			{
+				if ((speed + amount) >= assignedValues.asdg_speed)
+					speed = assignedValues.asdg_speed;
+				else
+					speed += amount;
+			}
+		}
+	}
+
+	last_time[2] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+}
+
+void Aircraft::updateHeading()
+{
+	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long interval = now - last_time[1];
+	double amount = onGround() ? (assignedValues.asdg_gnd_turn_rate * (interval / 1000.0)) : get_rot(roll, speed, interval);
+	double new_hdg = hdg(assignedValues.asgd_heading) - hdg(heading);
+	if (speed != 0) {
+		if (heading != assignedValues.asgd_heading) {
+			int turnOrientation = onGround() ? -1 : turnOri;
+			if (turnOrientation == -1)
+			{
+				if (new_hdg > 0)
+				{
+					if ((heading + amount) >= assignedValues.asgd_heading)
+						heading = assignedValues.asgd_heading;
+					else
+						heading += amount;
+				}
+				else if (new_hdg < 0)
+				{
+					if ((heading + -amount) <= assignedValues.asgd_heading)
+						heading = assignedValues.asgd_heading;
+					else
+						heading += -amount;
+				}
+			}
+			else if (turnOrientation == 0)//left turn
+			{
+				if ((heading + -amount) <= assignedValues.asgd_heading)
+					heading = assignedValues.asgd_heading;
+				else
+					heading += -amount;
+			}
+			else // right turn
+			{
+				if ((heading + amount) >= assignedValues.asgd_heading)
+					heading = assignedValues.asgd_heading;
+				else
+					heading += amount;
+			}
+		}
+	}
+	last_time[1] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+}
+
+
+
 void Aircraft::updateMovement()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[0];
-	double dist = get_distance(speed, (double)interval);
+	double dist = get_distance(speed, interval);
 	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
 	if (p.x_ != longitude || p.y_ != latitude)
 	{
@@ -170,6 +235,178 @@ void Aircraft::updateMovement()
 	latitude = p.y_;
 	longitude = p.x_;
 	last_time[0] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+}
+
+Airport* Aircraft::getAirport()
+{
+	if (!empty(apt_icao))
+	{
+		if (!airport || !boost::iequals(airport->icao, apt_icao))
+		{
+			auto it = airports.find(apt_icao);
+			if (it != airports.end()) {
+				airport = it->second;
+				return airport;
+			}
+		}
+		return airport;
+	}
+	return nullptr;
+}
+
+void Aircraft::taxi(Airport* airport, std::string hs, std::vector<std::string>& s)
+{
+	TaxiPath* last = nullptr;
+	Point2* nxt_p = nullptr;
+	int p_index = -1;
+	std::string ps = s[0];
+	auto it = airport->all.find(ps);
+	if (it != airport->all.end())
+	{
+		TaxiPath* cur = it->second;
+
+		if (cur)
+		{
+			double last_dist = -1;
+			Point2* p2add = nullptr;
+			for (int i = 0; i < cur->points.size(); ++i)
+			{
+				Point2* p = cur->points[i];
+				if (p)
+				{
+					double cur_dist = dist(latitude, longitude, p->y_, p->x_);
+					if (last_dist == -1 || cur_dist < last_dist) {
+						last_dist = cur_dist;
+						p2add = p;
+						p_index = i;
+						nxt_p = p;
+					}
+				}
+			}
+			if (p2add)
+			{
+				ground_route.push_back(p2add);
+			}
+			last = cur;
+		}
+	}
+
+	//first find the closest point to the next taxi path
+	//from there, add (or reverse add) the points between and including the start point and closest point found
+
+	for (int i = 0; i < s.size(); ++i)
+	{
+		std::string ps = s[i];
+		auto it = airport->all.find(ps);
+		if (it != airport->all.end())
+		{
+			TaxiPath* cur = it->second;
+
+			if (cur)
+			{
+				if ((i + 1) != s.size())
+				{
+					std::string ps2 = s[i + 1];
+					auto it2 = airport->all.find(ps2);
+					if (it2 != airport->all.end())
+					{
+						TaxiPath* cur2 = it->second;
+
+						if (cur2)
+						{
+							int  last_dist = -1;
+							int cur_index = -1;
+							int nx_index = p_index;
+							for (int i = 0; i < cur2->points.size(); ++i)
+							{
+								Point2* p2 = cur2->points[i];
+								if (p2)
+								{
+									for (int i2 = (nx_index + 1); i2 < cur->points.size(); ++i2)
+									{
+										Point2* p = cur->points[i2];
+										if (p)
+										{
+											double cur_dist = dist(p->y_, p->x_, p2->y_, p2->x_);
+											if (last_dist == -1 || cur_dist < last_dist)
+											{
+												last_dist = cur_dist;
+												nxt_p = p;
+												cur_index = i;
+												p_index = i2;
+											}
+										}
+									}
+
+									for (int i2 = (nx_index - 1); i2 >= 0; --i2)
+									{
+										Point2* p = cur->points[i2];
+										if (p)
+										{
+											double cur_dist = dist(p->y_, p->x_, p2->y_, p2->x_);
+											if (last_dist == -1 || cur_dist < last_dist)
+											{
+												last_dist = cur_dist;
+												nxt_p = p;
+												cur_index = i;
+												p_index = i2;
+											}
+										}
+									}
+								}
+							}
+
+							if (cur_index != -1)
+							{
+								if (cur_index > nx_index)
+								{
+									for (int i = nx_index; i < cur_index; ++i)
+									{
+										ground_route.push_back(cur->points[i]);
+									}
+								}
+								else if (cur_index < nx_index)
+								{
+									for (int i = nx_index; i > cur_index; --i)
+									{
+										ground_route.push_back(cur->points[i]);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for (Point2* p : ground_route)
+	{
+		std::cout << p->x_ << ", " << p->y_ << std::endl;
+	}
+}
+
+bool Aircraft::onGround() {
+	Airport* apt = getAirport();
+	if (altitude <= 0 || (airport && altitude <= airport->elevation + 2))
+		return true;
+	return false;
+}
+
+double Aircraft::getNextHeading()
+{
+	if (onGround()) {
+		if (ground_route.size() > 0) {
+			Point2* p = ground_route.back();
+			double brng = angleFromCoordinate(latitude, longitude, p->y_, p->x_);
+			if (assignedValues.asgd_heading != brng)
+			{
+				assignedValues.asgd_heading = brng;
+				return brng;
+			}
+		}
+	}
+	return -1;
 }
 
 FlightPlan::FlightPlan()

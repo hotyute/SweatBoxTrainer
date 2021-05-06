@@ -19,5 +19,5 @@ void sendPositionUpdates(Aircraft& user) {
 	out.writeWord((int)user.getSpeed());
 	out.writeQWord(user.getAltitude());
 	out.endFrameVarSize();
-	user.getConnection()->sendMessage(&out);
+	user.getConnection().sendMessage(&out);
 }

@@ -96,26 +96,31 @@ Point2 getLocFromBearing(double latitude, double longitude, double distance, dou
 	return Point2(long2, lat2);
 }
 
-double get_roll(double start_roll, double end_roll, double total_ms, double interval_ms)
+double get_roll(double start_roll, double end_roll, double total_ms, long long interval_ms)
 {
 	return (end_roll - start_roll) * (interval_ms / total_ms);
 }
 
-double get_rot(double roll, double TAS) {
+double get_rot(double roll, double TAS, long long interval_ms) {
 	double G = 1092.0;
-	return G * tan(radians(roll)) / TAS;
+	return (G * tan(radians(roll)) / TAS) * (interval_ms / 1000.0);
 }
 
-double get_distance(double speed_knots, double interval_ms) {
-	return speed_knots * ((interval_ms / 1000) / 3600);
+double get_ros(double acceleration, long long interval_ms) {
+	double G = 1092.0;
+	return acceleration * (interval_ms / 1000.0);
+}
+
+double get_distance(double speed_knots, long long interval_ms) {
+	return speed_knots * ((interval_ms / 1000.0) / 3600.0);
 }
 
 double radians(double degrees) {
-	return (degrees * M_PI) / 180;
+	return (degrees * M_PI) / 180.0;
 }
 
 double degrees(double radians) {
-	return (radians * 180) / M_PI;
+	return (radians * 180.0) / M_PI;
 }
 
 double dist(double lat1, double lon1, double lat2, double lon2) {
@@ -125,7 +130,7 @@ double dist(double lat1, double lon1, double lat2, double lon2) {
 	dlon *= M_PI / 180.0;
 	dist = (sin(lat1) * sin(lat2)) + (cos(lat1) * cos(lat2) * cos(dlon));
 	if (dist > 1.0) dist = 1.0;
-	dist = acos(dist) * 60 * 180 / M_PI;
+	dist = acos(dist) * 60.0 * 180.0 / M_PI;
 	return dist;
 }
 
@@ -154,3 +159,65 @@ double atodd(std::string in) {
 
 	return d;
 }
+
+bool pnpoly(int nvert, int* vertx, int* verty, int testx, int testy) {
+	bool c = false;
+	int i, j;
+	for (i = 0, j = nvert - 1; i < nvert; j = i++) {
+		if (((verty[i] > testy) != (verty[j] > testy)) &&
+			(testx < (vertx[j] - vertx[i]) * (testy - verty[i]) / (verty[j] - verty[i]) + vertx[i])) {
+			c = !c;
+		}
+	}
+	return c;
+}
+
+void capitalize(std::string& str)
+{
+	for (auto& x : str)
+		x = toupper(x);
+}
+
+// trim from start
+std::string ltrim(std::string s) {
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) {return !std::isspace(c); }));
+	return s;
+}
+
+// trim from end
+std::string rtrim(std::string s) {
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](int c) {return !std::isspace(c); }).base(), s.end());
+	return s;
+}
+
+// trim from both ends
+std::string trim(std::string s) {
+	return ltrim(rtrim(s));
+}
+
+double hdg(double heading)
+{
+	if (heading < 0)
+		heading += 360.0;
+	else if (heading >= 360.0)
+		heading -= 360.0;
+	return heading;
+}
+
+double angleFromCoordinate(double lat1, double long1, double lat2, double long2) {
+
+	double dLon = (long2 - long1);
+
+	double y = sin(dLon) * cos(lat2);
+	double x = cos(lat1) * sin(lat2) - sin(lat1)
+		* cos(lat2) * cos(dLon);
+
+	double brng = atan2(y, x);
+
+	brng = degrees(brng);
+	brng = fmod((brng + 360), 360);
+	brng = 360 - brng; // count degrees counter-clockwise - remove to make clockwise
+
+	return brng;
+}
+

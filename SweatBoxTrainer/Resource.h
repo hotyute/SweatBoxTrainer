@@ -35,6 +35,8 @@
 #define LONGITUDE_TEXT 132
 #define VS_LBL 134
 #define VS_TEXT 135
+#define SPEED_LBL 136
+#define SPEED_TEXT 137
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #endif

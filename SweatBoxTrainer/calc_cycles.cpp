@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "usermanager.h"
+#include "tools.h"
 
 void update()
 {
@@ -17,6 +18,12 @@ void CalculateMovements()
 			if (acf1) {
 				Aircraft& aircraft = *acf1;
 
+				aircraft.getNextHeading();
+
+				AssignedValues& av = aircraft.getAssignedValues();
+
+				aircraft.updateSpeed();
+				aircraft.updateHeading();
 				aircraft.updateMovement();
 			}
 		}

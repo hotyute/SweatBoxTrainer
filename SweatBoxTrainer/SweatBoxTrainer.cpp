@@ -22,7 +22,7 @@
 
 void HandleSelectedLB(DWORD iSelected);
 
-int processCommands(std::string text);
+int processCommands(Aircraft& aircraft, std::string text);
 
 bool always_on_top = false;
 
@@ -42,7 +42,8 @@ HWND aircraftList = NULL;
 DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_EX_TOPMOST;
 
 
-HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, vs_hdl = NULL, command_text = NULL, console_text = NULL;
+HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, speed_hdl = NULL, 
+vs_hdl = NULL, command_text = NULL, console_text = NULL;
 
 Aircraft* displayed = nullptr;
 
@@ -234,7 +235,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (classn == "Static")
 			{
 				if (CtrlID == ALTITUDE_TEXT || CtrlID == LONGITUDE_TEXT || CtrlID == VS_TEXT
-					|| CtrlID == LATITUDE_TEXT || CtrlID == HEADING_TEXT || CtrlID == CONSOLE_TEXT)
+					|| CtrlID == LATITUDE_TEXT || CtrlID == HEADING_TEXT || CtrlID == CONSOLE_TEXT
+					|| CtrlID == SPEED_TEXT)
 				{
 					if (textColor != text_ref)
 						SetTextColor(hdC, text_ref);
@@ -451,14 +453,14 @@ void connect()
 	for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)
 	{
 		Aircraft& aircraft = *(it->second);
+		tcpinterface& intter = aircraft.getConnection();
 		if (!aircraft.connected) {
-			if (aircraft.getConnection()->connectNew("127.0.0.1", 4403))
+			if (intter.connectNew("127.0.0.1", 4403))
 			{
 				aircraft.connected = true;
 				Identity& id = *aircraft.getIdentity();
 				Stream stream = Stream(200);
 				int type = aircraft.getType();
-				tcpinterface& intter = *aircraft.getConnection();
 				intter.hand_shake = true;
 				intter.current_op = 45;
 				stream.createFrameVarSizeWord(45);
@@ -523,7 +525,7 @@ DWORD WINAPI SocketThread1(LPVOID lpParameter) {
 		{
 			Aircraft& aircraft = *(it->second);
 			if (aircraft.connected) {
-				aircraft.getConnection()->run();
+				aircraft.getConnection().run();
 			}
 		}
 
@@ -592,7 +594,7 @@ LRESULT CALLBACK CommandCallBckProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			std::wstring test(&c_text[0]); //convert to wstring
 			std::string text(test.begin(), test.end()); //and convert to string.
 
-			if (processCommands(text))
+			if (displayed && processCommands(*displayed, text))
 			{
 			}
 			SendMessage(command_text, WM_SETTEXT, 0, (LPARAM)L"");
@@ -742,6 +744,24 @@ void create_controls(HWND hwnd) {
 	SendMessage(longitude_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 	SendMessage(longitude_hdl, EM_LIMITTEXT, 25, 0L);
 
+	HWND lbl_speed = CreateWindowEx(NULL, L"STATIC", L"Ground Spd:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		315, 125, 90, 20,
+		hwnd, (HMENU)SPEED_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_speed, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_speed, EM_LIMITTEXT, 0, 0L);
+
+	speed_hdl = CreateWindowEx(NULL, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
+		310, 150, 100, 25,
+		hwnd, (HMENU)SPEED_TEXT, NULL, NULL
+	);
+
+	SendMessage(speed_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(speed_hdl, EM_LIMITTEXT, 25, 0L);
+
 
 	aircraftList = CreateWindowEx(WS_EX_STATICEDGE, L"LISTBOX", NULL,
 		WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_NOTIFY | LBS_HASSTRINGS | LBS_SORT | WS_BORDER,
@@ -789,9 +809,72 @@ void DisplayAircraft() {
 
 		std::wstring lon = std::to_wstring(displayed->getLongitude());
 		SetWindowText(longitude_hdl, lon.c_str());
+
+		std::wstring spd = std::to_wstring((int)displayed->getSpeed());
+		SetWindowText(speed_hdl, spd.c_str());
 	}
 }
 
-int processCommands(std::string text) {
+int processCommands(Aircraft& aircraft, std::string command) {
+	if (boost::istarts_with(command, "taxi ")) {
+
+		std::vector<std::string> array3 = split(command.substr(5, command.length()-1), " ");
+
+		Airport* airport = aircraft.getAirport();
+
+		if (airport && aircraft.onGround())
+			aircraft.taxi(airport, "", array3);
+
+		return 1;
+	} else if (boost::istarts_with(command, "tl ")) {
+
+		std::vector<std::string> array3 = split(command, " ");
+
+		if (array3.size() == 2)
+		{
+			aircraft.turnOri = 0;
+			aircraft.getAssignedValues().asgd_heading = atodd(array3[1]);
+		}
+
+		return 1;
+	}
+	else if (boost::istarts_with(command, "tr ")) {
+
+		std::vector<std::string> array3 = split(command, " ");
+
+		if (array3.size() == 2)
+		{
+			aircraft.turnOri = 1;
+			aircraft.getAssignedValues().asgd_heading = atodd(array3[1]);
+		}
+
+		return 1;
+	}
+	else if (boost::istarts_with(command, "fh ")) 
+	{
+
+		std::vector<std::string> array3 = split(command, " ");
+
+		if (array3.size() == 2)
+		{
+			aircraft.turnOri = -1;
+			aircraft.getAssignedValues().asgd_heading = atodd(array3[1]);
+		}
+
+		return 1;
+	}
+	else if (boost::istarts_with(command, "spd ")) 
+	{
+
+		std::vector<std::string> array3 = split(command, " ");
+
+		if (array3.size() == 2)
+		{
+			aircraft.turnOri = -1;
+			aircraft.getAssignedValues().asdg_speed = atodd(array3[1]);
+		}
+
+		return 1;
+	}
 	return 0;
 }

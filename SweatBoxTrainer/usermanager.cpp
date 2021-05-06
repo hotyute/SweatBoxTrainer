@@ -4,7 +4,6 @@
 #include "tools.h"
 
 std::vector<Aircraft*> userStorage1;
-std::unordered_map<std::string, Aircraft*> users_map;
 
 void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 10) {
@@ -95,6 +94,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, int altitude, 
 	int verticalSpeed, int mode, std::string squawkCode) {
 	Aircraft* cur = new Aircraft();
+	AssignedValues& av = cur->getAssignedValues();
 	cur->lock();
 	cur->setType(AV_CLIENT::PILOT);
 	cur->setHeavy(false);
@@ -105,16 +105,16 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 	cur->getIdentity()->pilot_rating = 1;
 	cur->setLatitude(latitude);
 	cur->setLongitude(longitude);
-	cur->setSpeed(speed);
-	cur->setHeading(heading);
-	cur->setAltitude(altitude);
+	cur->setSpeed(av.asdg_speed = speed);
+	cur->setHeading(av.asgd_heading = heading);
+	cur->setAltitude(av.asdg_altitude = altitude);
 	cur->setVerticalSpeed(verticalSpeed);
 	cur->setMode(mode);
 	cur->unlock();
 
 	cur->setSquawkCode(squawkCode);
 
-	cur->getConnection()->init_set();
+	cur->getConnection().init_set();
 
 	AcfMap[cur->getIdentity()->callsign] = cur;
 
