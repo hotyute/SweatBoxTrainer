@@ -88,7 +88,7 @@ DWORD tcpinterface::run() {
 						hand_shake = false;
 						current_op = -1;
 						in.deleteReaderBlock();
-						
+
 						send_initial_packets(*aircraft);
 					}
 				}
@@ -121,7 +121,7 @@ DWORD tcpinterface::run() {
 }
 
 void decodePackets(Aircraft* aircraft, Stream& in) {
-	while (in.remaining() > 0) 
+	while (in.remaining() > 0)
 	{
 		in.markReaderIndex();
 		int opCode = in.readSignedByte(), length = -3;
@@ -195,8 +195,12 @@ void tcpinterface::sendMessage(Stream* stream) {
 		return;
 	}
 
+	w_lock();
+
 	DWORD what = send(tcpinterface::sConnect, stream->buffer, stream->currentOffset, NULL);
-	stream->currentOffset = 0;
+	stream->clearBuf();
+
+	w_unlock();
 }
 
 void tcpinterface::init_set()
@@ -295,6 +299,16 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 	SetSocketBlocking(sConnect, false);
 	std::cout << "Connected!\n";
 	return 1;
+}
+
+void tcpinterface::w_lock()
+{
+	WaitForSingleObject(writeMutex, INFINITE);
+}
+
+void tcpinterface::w_unlock()
+{
+	ReleaseMutex(writeMutex);
 }
 
 bool SetSocketBlocking(SOCKET sock, bool blocking)

@@ -29,7 +29,6 @@ void sendFlightPlan(Aircraft& user) {
 	out.writeWord(fp.cycle);
 	out.writeByte(fp.flightRules);
 	out.writeString((char*)fp.squawkCode.c_str());
-	printf(fp.departure.c_str());
 	out.writeString((char*)fp.departure.c_str());
 	out.writeString((char*)fp.arrival.c_str());
 	out.writeString((char*)fp.alternate.c_str());

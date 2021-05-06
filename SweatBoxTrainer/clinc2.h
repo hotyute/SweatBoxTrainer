@@ -10,6 +10,8 @@ class Aircraft;
 #include "Stream.h"
 
 class tcpinterface {
+private:
+	HANDLE writeMutex;
 public:
 	Aircraft* aircraft;
 	SOCKET sConnect;
@@ -31,6 +33,9 @@ public:
 	fd_set rfds;
 	int retval;
 	bool closed = false;
+
+	void w_lock();
+	void w_unlock();
 };
 
 #endif

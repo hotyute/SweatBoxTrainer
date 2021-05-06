@@ -113,10 +113,12 @@ int LoadAGC(std::string path) {
 						if (curAircraft)
 						{
 							FlightPlan& fp = curAircraft->getFlightPlan();
-							fp.acType = args[1];
-							fp.departure = args[2];
-							fp.route = args[3];
-							fp.remarks = args[7];
+							fp.acType = args[1].length() > 9 ? args[1].substr(0, 8) : args[1];
+							fp.departure = args[2].length() > 4 ? args[2].substr(0, 3) : args[2];
+							fp.arrival = args[3].length() > 4 ? args[3].substr(0, 3) : args[3];
+							fp.route = args[4].length() > 128 ? args[4].substr(0, 127) : args[4];
+							fp.alternate = args[7].length() > 4 ? args[7].substr(0, 3) : args[7];
+							fp.remarks = args[8].length() > 128 ? args[8].substr(0, 127) : args[8];
 							++fp.cycle;
 						}
 						processed_lines = 0;
