@@ -115,6 +115,16 @@ double get_distance(double speed_knots, long long interval_ms) {
 	return speed_knots * ((interval_ms / 1000.0) / 3600.0);
 }
 
+double get_angle(double brgto, double brgfrom)
+{
+	return fmod((fmod((brgto - brgfrom), 360) + 540.0), 360) - 180.0;
+}
+
+double get_angle_unsigned(double brgto, double brgfrom)
+{
+	return fmod(((brgto - brgfrom) + 540.0), 360) - 180.0;
+}
+
 double radians(double degrees) {
 	return (degrees * M_PI) / 180.0;
 }
@@ -197,11 +207,10 @@ std::string trim(std::string s) {
 
 double hdg(double heading)
 {
-	if (heading < 0)
-		heading += 360.0;
-	else if (heading >= 360.0)
-		heading -= 360.0;
-	return heading;
+	double hdg = fmod(heading, 360);
+	if (hdg < 0)
+		hdg += 360.0;
+	return hdg;
 }
 
 double angleFromCoordinate(double lat1, double long1, double lat2, double long2) {

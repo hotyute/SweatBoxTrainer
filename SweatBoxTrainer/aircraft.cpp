@@ -180,7 +180,7 @@ void Aircraft::updateHeading()
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[1];
 	double amount = onGround() ? (assignedValues.asdg_gnd_turn_rate * (interval / 1000.0)) : get_rot(roll, speed, interval);
-	double new_hdg = hdg(assignedValues.asgd_heading) - hdg(heading);
+	double new_hdg = get_angle_unsigned(hdg(assignedValues.asgd_heading), hdg(heading));
 	if (speed != 0) {
 		if (heading != assignedValues.asgd_heading) {
 			int turnOrientation = onGround() ? -1 : turnOri;
@@ -188,32 +188,32 @@ void Aircraft::updateHeading()
 			{
 				if (new_hdg > 0)
 				{
-					if ((heading + amount) >= assignedValues.asgd_heading)
+					if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + amount))) <= 0)
 						heading = assignedValues.asgd_heading;
 					else
-						heading += amount;
+						heading = hdg(heading + amount);
 				}
 				else if (new_hdg < 0)
 				{
-					if ((heading + -amount) <= assignedValues.asgd_heading)
+					if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + -amount))) >= 0)
 						heading = assignedValues.asgd_heading;
 					else
-						heading += -amount;
+						heading = hdg(heading + -amount);
 				}
 			}
 			else if (turnOrientation == 0)//left turn
 			{
-				if ((heading + -amount) <= assignedValues.asgd_heading)
+				if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + -amount))) >= 0)
 					heading = assignedValues.asgd_heading;
 				else
-					heading += -amount;
+					heading = hdg(heading + -amount);
 			}
 			else // right turn
 			{
-				if ((heading + amount) >= assignedValues.asgd_heading)
+				if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + amount))) <= 0)
 					heading = assignedValues.asgd_heading;
 				else
-					heading += amount;
+					heading = hdg(heading + amount);
 			}
 		}
 	}

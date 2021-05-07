@@ -29,6 +29,10 @@ double get_ros(double acceleration, long long interval_ms);
 
 double get_distance(double speed, long long interval_ms);
 
+double get_angle(double brgto, double brgfrom);
+
+double get_angle_unsigned(double brgto, double brgfrom);
+
 double radians(double degrees);
 
 double degrees(double radians);
@@ -54,5 +58,7 @@ std::string trim(std::string s);
 double hdg(double heading);
 
 double angleFromCoordinate(double lat1, double long1, double lat2, double long2);
+
+double findMod(double a, double b);
 
 #endif

@@ -845,7 +845,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		if (array3.size() == 2)
 		{
 			aircraft.turnOri = 0;
-			aircraft.getAssignedValues().asgd_heading = atodd(array3[1]);
+			aircraft.getAssignedValues().asgd_heading = hdg(atodd(array3[1]));
 		}
 
 		return 1;
@@ -857,7 +857,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		if (array3.size() == 2)
 		{
 			aircraft.turnOri = 1;
-			aircraft.getAssignedValues().asgd_heading = atodd(array3[1]);
+			aircraft.getAssignedValues().asgd_heading = hdg(atodd(array3[1]));
 		}
 
 		return 1;
@@ -870,7 +870,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		if (array3.size() == 2)
 		{
 			aircraft.turnOri = -1;
-			aircraft.getAssignedValues().asgd_heading = atodd(array3[1]);
+			aircraft.getAssignedValues().asgd_heading = hdg(atodd(array3[1]));
 		}
 
 		return 1;
