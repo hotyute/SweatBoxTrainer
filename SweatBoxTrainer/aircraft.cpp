@@ -430,23 +430,23 @@ double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs
 
 double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __unnamed002)
 {
-	double num = GetHeading(latitude, __unnamed000, longitude, __unnamed001);
+	double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
 	double num2 = (latitude - __unnamed000) * 60.0;
 	double num3 = (longitude - __unnamed001) * 45.0;
-	double num4 = __unnamed002;//localizer heading
-	double num5 = sqrt(num3 * num3 + num2 * num2) * sin((num - num4) * 0.017453277777777779);// * 0.017xxx is to radians
+	double locBrg = __unnamed002;//localizer heading
+	double num5 = sqrt(num3 * num3 + num2 * num2) * sin((course - locBrg) * 0.017453277777777779);// * 0.017xxx is to radians
 	double num6 = (double)speed * 0.033333333333333333 * 0.15915507752443828;
-	double num7 = num6 - cos((heading - num4) * 0.017453277777777779) * num6;
+	double num7 = num6 - cos((heading - locBrg) * 0.017453277777777779) * num6;
 	double num8 = abs(num5);
 	if (num8 < (double)speed * 0.0013888888888888889)
 	{
-		return (int)(num5 * 8.0 + num4 + 720.0) % 360;
+		return (int)(num5 * 8.0 + locBrg + 720.0) % 360;
 	}
 	if (num7 < num8)
 	{
 		//return *(double*)((byte*)P_0 + 40);//destination heading
 	}
-	return num4;
+	return locBrg;
 }
 
 FlightPlan::FlightPlan()
