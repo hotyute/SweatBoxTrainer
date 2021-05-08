@@ -444,7 +444,7 @@ double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __un
 	}
 	if (num7 < num8)
 	{
-		return *(double*)((byte*)P_0 + 40);//destination heading
+		//return *(double*)((byte*)P_0 + 40);//destination heading
 	}
 	return num4;
 }
