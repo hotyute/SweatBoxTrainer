@@ -233,6 +233,12 @@ int LoadAPT(std::string path)
 					{
 						int start = (icao_tag + icaoStart.length());
 						std::string icao = line.substr(start);
+						auto it = airports.find(icao);
+						if (it != airports.end())
+						{
+							delete it->second;
+							it = airports.erase(it);
+						}
 						curAirport = new Airport(icao);
 						airports.emplace(icao, curAirport);
 						curAirport->icao = icao;

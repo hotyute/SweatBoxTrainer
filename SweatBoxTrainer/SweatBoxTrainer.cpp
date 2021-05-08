@@ -505,6 +505,7 @@ void connect()
 
 void disconnect()
 {
+
 }
 
 DWORD WINAPI EventThread1(LPVOID lpParameter) {
@@ -636,9 +637,9 @@ void create_controls(HWND hwnd) {
 
 	SetMenu(hwnd, hMenuBar);
 
-	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", L"Commands:",
+	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", L"Commands [199.998]:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
-		100, 310, 80, 20,
+		35, 310, 150, 20,
 		hwnd, (HMENU)COMMANDS_LBL, NULL, NULL
 	);
 

@@ -9,6 +9,8 @@
 #include <iostream>
 #include <sstream>
 
+const double R_EARTH = 6378.14;
+
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
 	// Skip delimiters at beginning.
 	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
@@ -94,6 +96,64 @@ Point2 getLocFromBearing(double latitude, double longitude, double distance, dou
 	double long2 = round_up(longitude2, 8);
 
 	return Point2(long2, lat2);
+}
+
+double GetDistance(double lat1, double lat2, double lon1, double lon2)
+{
+	double d;
+	d = acos((sin(lat1) * sin(lat2)) + (cos(lat1) * cos(lat2) * cos(lon2 - lon1))) * R_EARTH;
+	return d;
+}
+
+double GetHeading(double lat1, double lat2, double lon1, double lon2)
+{
+	double lat11 = radians(lat1), lat22 = radians(lat2), lon11 = radians(lon1), lon22 = radians(lon2);
+	double angle;
+	angle = atan2(sin(lon22 - lon11) * cos(lat22), cos(lat11) * sin(lat22) - sin(lat11) * cos(lat22) * cos(lon22 - lon11));
+	return (angle);
+}
+
+//cross track error
+double GetCTE(double current_lat, double current_lon, double dest_lat, double dest_lon, double track_angle)
+{
+	double cte, dist1, bearing;
+
+	dist1 = GetDistance(radians(current_lat), radians(dest_lat), radians(current_lon), radians(dest_lon));
+	bearing = GetHeading(current_lat, dest_lat, current_lon, dest_lon);
+	cte = asin(sin(dist1 / R_EARTH) * sin(bearing - track_angle)) * R_EARTH;
+	return cte;
+}
+
+double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, double speed)
+{
+	double _lead_angle_limit = 90;//maximum intercept degrees
+	double _lead_angle_gain = 100;//how quick it recovers from intercept angle
+	double _proportion = 0.1;// where it will start on the course?
+
+	double _wp_range = GetDistance(radians(acf_lat), radians(p_to.y_), radians(acf_lon), radians(p_to.x_));//wp_range
+	double course = GetHeading(p_from.y_, p_to.y_, p_from.x_, p_to.x_);
+	double brg = GetHeading(acf_lat, p_from.y_, acf_lon, p_from.x_);
+
+	double xtrack_error_nm = sin(course - brg) * _wp_range;
+
+	double factor = -0.0045 * speed + 1;
+
+	double limit = _lead_angle_limit * factor;
+
+	double _lead_angle = 0;
+	if (_wp_range > 0) {
+		_lead_angle = degrees(atan2(xtrack_error_nm, (_wp_range * _proportion)));
+	}
+	else
+		_lead_angle = 0;
+
+	_lead_angle *= _lead_angle_gain * factor;
+
+	double _xtrack_error = xtrack_error_nm * 6076.1155;//changing to km??
+
+	_lead_angle = fmod(_lead_angle, limit);
+
+	return _lead_angle;
 }
 
 double get_roll(double start_roll, double end_roll, double total_ms, long long interval_ms)
@@ -213,20 +273,15 @@ double hdg(double heading)
 	return hdg;
 }
 
-double angleFromCoordinate(double lat1, double long1, double lat2, double long2) {
-
+double get_bearing(double lat1, double long1, double lat2, double long2)
+{
 	double dLon = (long2 - long1);
-
-	double y = sin(dLon) * cos(lat2);
-	double x = cos(lat1) * sin(lat2) - sin(lat1)
-		* cos(lat2) * cos(dLon);
-
-	double brng = atan2(y, x);
-
+	double x = cos(radians(lat2)) * sin(radians(dLon));
+	double y = cos(radians(lat1)) * sin(radians(lat2)) - sin(radians(lat1))
+		* cos(radians(lat2)) * cos(radians(dLon));
+	double brng = atan2(x, y);
 	brng = degrees(brng);
-	brng = fmod((brng + 360), 360);
-	brng = 360 - brng; // count degrees counter-clockwise - remove to make clockwise
 
-	return brng;
+	return hdg(brng);
 }
 

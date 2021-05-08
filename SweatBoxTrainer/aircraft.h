@@ -129,6 +129,8 @@ public:
 	bool onGround();
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	double getNextHeading();
+	double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
+	double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __unnamed002);
 };
 
 

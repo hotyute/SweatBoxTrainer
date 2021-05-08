@@ -21,6 +21,12 @@ long long doubleToRawBits(double x);
 
 Point2 getLocFromBearing(double latitude, double longitude, double distance, double bearing);
 
+double GetHeading(double lat1, double lat2, double lon1, double lon2);
+
+double GetCTE(double current_lat, double current_lon, double dest_lat, double dest_lon, double track_angle);
+
+double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, double speed);
+
 double get_roll(double start_roll, double end_roll, double total_ms, long long interval_ms);
 
 double get_rot(double roll, double TAS, long long interval_ms);
@@ -57,8 +63,6 @@ std::string trim(std::string s);
 
 double hdg(double heading);
 
-double angleFromCoordinate(double lat1, double long1, double lat2, double long2);
-
-double findMod(double a, double b);
+double get_bearing(double lat1, double long1, double lat2, double long2);
 
 #endif

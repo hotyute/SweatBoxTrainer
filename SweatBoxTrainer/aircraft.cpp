@@ -398,7 +398,7 @@ double Aircraft::getNextHeading()
 	if (onGround()) {
 		if (ground_route.size() > 0) {
 			Point2* p = ground_route.back();
-			double brng = angleFromCoordinate(latitude, longitude, p->y_, p->x_);
+			double brng = get_bearing(latitude, longitude, p->y_, p->x_);
 			if (assignedValues.asgd_heading != brng)
 			{
 				assignedValues.asgd_heading = brng;
@@ -407,6 +407,46 @@ double Aircraft::getNextHeading()
 		}
 	}
 	return -1;
+}
+
+double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude
+{
+	double num = (latitude - __unnamed000) * 60.0;
+	double num2 = (longitude - __unnamed001) * 45.0;
+	double num3 = sqrt(num2 * num2 + num * num) * 6076.1 * tan(0.052356020942408377) + (double)gs_angle;//GS ANGLE
+	double num4 = dest_altitude;//Destination altitude
+	double num5 = ((!(num3 < num4)) ? num4 : num3);
+	if (num5 < (double)altitude)
+	{
+		num4 = dest_altitude;//Destination Altitude
+		if (num3 < num4)
+		{
+			return num3;
+		}
+		return num4;
+	}
+	return altitude;
+}
+
+double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __unnamed002)
+{
+	double num = GetHeading(latitude, __unnamed000, longitude, __unnamed001);
+	double num2 = (latitude - __unnamed000) * 60.0;
+	double num3 = (longitude - __unnamed001) * 45.0;
+	double num4 = __unnamed002;//localizer heading
+	double num5 = sqrt(num3 * num3 + num2 * num2) * sin((num - num4) * 0.017453277777777779);// * 0.017xxx is to radians
+	double num6 = (double)speed * 0.033333333333333333 * 0.15915507752443828;
+	double num7 = num6 - cos((heading - num4) * 0.017453277777777779) * num6;
+	double num8 = abs(num5);
+	if (num8 < (double)speed * 0.0013888888888888889)
+	{
+		return (int)(num5 * 8.0 + num4 + 720.0) % 360;
+	}
+	if (num7 < num8)
+	{
+		return *(double*)((byte*)P_0 + 40);//destination heading
+	}
+	return num4;
 }
 
 FlightPlan::FlightPlan()
