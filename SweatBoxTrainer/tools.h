@@ -49,6 +49,8 @@ double round_up(double value, int decimal_places);
 
 std::wstring s2ws(const std::string& s);
 
+std::string ws2s(const std::wstring& wstr);
+
 double atodd(std::string in);
 
 bool pnpoly(int nvert, int* vertx, int* verty, int testx, int testy);
@@ -64,5 +66,13 @@ std::string trim(std::string s);
 double hdg(double heading);
 
 double get_bearing(double lat1, double long1, double lat2, double long2);
+
+template<typename T>
+int pushBack(std::vector<T>& v, T val)
+{
+	int retval = numbers.size();
+	v.push_back(val);
+	return retval;
+}
 
 #endif

@@ -14,6 +14,7 @@ int headerId = -1;
 Aircraft* curAircraft = nullptr;
 Airport* curAirport = nullptr;
 TaxiPath* curPoint = nullptr;
+ApproachPath* curApproach = nullptr;
 
 
 int LoadSCT(std::string path) {
@@ -155,6 +156,8 @@ int LoadAPT(std::string path)
 		std::string fieldElevStart = "field elevation=";
 		std::string turnoffStart = "turnoff=";
 		std::string displacedStart = "displaced threshold=";
+		std::string apprhdgStart = "heading=";
+		std::string gsStart = "glideslope=";
 		int line_number = 1;
 		int processed_lines = 0;
 		while (getline(myfile, line)) {
@@ -178,15 +181,28 @@ int LoadAPT(std::string path)
 							std::vector<std::string> header = split(type, " ");
 							if (header.size() == 2)
 							{
+								curApproach = nullptr;
+								curPoint = nullptr;
 								if (header[0] == "PARKING")
 								{
 									curPoint = new Parking();
+									curPoint->name = header[1];
 								}
 								else if (header[0] == "RUNWAY")
 								{
 									curPoint = new Runway();
+									curPoint->name = header[1];
 								}
-								curPoint->name = header[1];
+								else if (header[0] == "ILS")
+								{
+									curApproach = new ILS();
+									curApproach->name = header[1];
+								}
+								else if (header[0] == "LOC")
+								{
+									curApproach = new LOC();
+									curApproach->name = header[1];
+								}
 							}
 						}
 					}
@@ -227,6 +243,36 @@ int LoadAPT(std::string path)
 							curAirport->runways.push_back((Runway*)curPoint);
 						}
 						curAirport->all.emplace(curPoint->name, curPoint);
+					}
+					else if (curAirport && curApproach)
+					{
+						size_t apprhdg_tag = line.find(apprhdgStart);
+						if (apprhdg_tag != std::string::npos)
+						{
+							int start = (apprhdg_tag + apprhdgStart.length());
+							curApproach->h_degrees = atodd(line.substr(start));
+						} 
+						else if (curApproach->type == APPRTYPE::ILS)
+						{
+							size_t gs_tag = line.find(gsStart);
+							if (gs_tag != std::string::npos)
+							{
+								int start = (gs_tag + turnoffStart.length());
+								curApproach->v_degrees = atodd(line.substr(start));
+							}
+							else
+							{
+								std::vector<std::string> args = split(line, " ");
+								curApproach->point.x_ = atodd(args[1].c_str());
+								curApproach->point.y_ = atodd(args[0].c_str());
+							}
+						}
+						else if (curApproach->type == APPRTYPE::LOC)
+						{
+							std::vector<std::string> args = split(line, " ");
+							curApproach->point.x_ = atodd(args[1].c_str());
+							curApproach->point.y_ = atodd(args[0].c_str());
+						}
 					}
 
 					if (icao_tag != std::string::npos)
@@ -312,5 +358,3 @@ void handleAIRPORTLine(std::string line) {
 void handleFIXESLine(std::string line) {
 	std::vector<std::string> args = split(line, " ");
 }
-
-

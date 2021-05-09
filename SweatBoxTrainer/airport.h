@@ -9,6 +9,8 @@
 
 enum class PATHTYPE {NONE, PARKING, TAXIWAY, RUNWAY};
 
+enum class APPRTYPE { NONE, ILS, LOC };
+
 class TaxiPath {
 public:
 	virtual ~TaxiPath() {
@@ -20,6 +22,17 @@ public:
 	PATHTYPE type = PATHTYPE::NONE;
 	std::string name;
 	std::vector<Point2*> points;
+	Point2* getNextPoint(Point2* last);
+	Point2* getClosestPoint(double latitude, double longitude);
+};
+
+class ApproachPath {
+public:
+	APPRTYPE type = APPRTYPE::NONE;
+	std::string name;
+	Point2 point;
+	double h_degrees = -1;
+	double v_degrees = -1;
 };
 
 class Parking : public TaxiPath {
@@ -48,6 +61,16 @@ public:
 	virtual ~Runway() {}
 };
 
+class ILS : public ApproachPath {
+public:
+	ILS() { type = APPRTYPE::ILS; }
+};
+
+class LOC : public ApproachPath {
+public:
+	LOC() { type = APPRTYPE::LOC; }
+};
+
 class Airport 
 {
 public:
@@ -57,6 +80,7 @@ public:
 	double vfr_init_altitude = 0;
 	double ifr_init_altitude = 0;
 	std::unordered_map<std::string, TaxiPath*> all;
+	std::vector<ApproachPath*> approaches;
 	std::vector<Taxiway*> taxiway;
 	std::vector<Runway*> runways;
 	std::vector<Parking*> parking;

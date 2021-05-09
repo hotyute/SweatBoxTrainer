@@ -126,9 +126,9 @@ double GetCTE(double current_lat, double current_lon, double dest_lat, double de
 
 double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, double speed)
 {
-	double _lead_angle_limit = 90;//maximum intercept degrees
-	double _lead_angle_gain = 100;//how quick it recovers from intercept angle
-	double _proportion = 0.1;// where it will start on the course?
+	double _lead_angle_limit = 30;//maximum intercept degrees
+	double _lead_angle_gain = 1.5;//how quick it recovers from intercept angle
+	double _proportion = 0.75;// where it will start on the course?
 
 	double _wp_range = GetDistance(radians(acf_lat), radians(p_to.y_), radians(acf_lon), radians(p_to.x_));//wp_range
 	double course = GetHeading(p_from.y_, p_to.y_, p_from.x_, p_to.x_);
@@ -218,6 +218,14 @@ std::wstring s2ws(const std::string& s) {
 	std::wstring r(buf);
 	delete[] buf;
 	return r;
+}
+
+std::string ws2s(const std::wstring& wstr)
+{
+	int size_needed = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), int(wstr.length() + 1), 0, 0, 0, 0);
+	std::string strTo(size_needed, 0);
+	WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), int(wstr.length() + 1), &strTo[0], size_needed, 0, 0);
+	return strTo;
 }
 
 double atodd(std::string in) {

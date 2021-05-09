@@ -18,7 +18,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 9) {
 		//create new user packet
 		int index = stream.readUnsignedWord();
-		int type = stream.readUnsignedByte();
+		AV_CLIENT type = static_cast<AV_CLIENT>(stream.readUnsignedByte());
 		char callSign1[1024], full_name[1024], username[1024];
 		stream.readString(callSign1);
 		stream.readString(username);
@@ -73,7 +73,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 17) {//update flight plan packet
 		int index = stream.readUnsignedWord();
 		int cur_cycle = stream.readUnsignedWord();
-		int type = stream.readUnsignedByte();
+		AV_CLIENT type = static_cast<AV_CLIENT>(stream.readUnsignedByte());
 
 		if (type == AV_CLIENT::PILOT) {
 			int flightRules = stream.readUnsignedByte();

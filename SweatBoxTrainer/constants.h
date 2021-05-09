@@ -4,6 +4,6 @@
 #define MAX_EVENTS 1536
 #define MAX_AIRCRAFT_SIZE 1024
 
-enum AV_CLIENT { CONTROLLER, PILOT };
+enum class AV_CLIENT { CONTROLLER = 0, PILOT = 1 };
 
 #endif

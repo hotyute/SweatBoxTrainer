@@ -28,8 +28,8 @@ void CalculateMovements()
 					Point2 p = Point2(-080.30143039, 25.80070055);
 					Point2 p2 = Point2(-080.26953539, 25.80201755);
 					double h = degrees(GetHeading(aircraft.getLatitude(), p2.y_, aircraft.getLongitude(), p2.x_));
-					av.asgd_heading = h - GetCTE2(p, p2, aircraft.getLatitude(), aircraft.getLongitude(), aircraft.getSpeed());
-					aircraft.calculateLoc(p2.y_, p2.x_, 87);
+					av.asgd_heading = hdg(h - GetCTE2(p, p2, aircraft.getLatitude(), aircraft.getLongitude(), aircraft.getSpeed()));
+					std::cout << av.asgd_heading << std::endl;
 				}
 
 				aircraft.updateSpeed();

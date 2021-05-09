@@ -239,7 +239,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			GetClassName(ctrl, controlClassName, 128);
 
 			std::wstring test(&controlClassName[0]); //convert to wstring
-			std::string classn(test.begin(), test.end()); //and convert to string.
+			std::string classn = ws2s(test); //and convert to string.
 			COLORREF textColor = GetTextColor(hdC);
 			COLORREF bkColor = GetBkColor(hdC);
 
@@ -277,7 +277,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			GetClassName(ctrl, controlClassName, 128);
 
 			std::wstring test(&controlClassName[0]); //convert to wstring
-			std::string classn(test.begin(), test.end()); //and convert to string.
+			std::string classn = ws2s(test); //and convert to string.
 
 			if (classn == "Edit")
 			{
@@ -346,7 +346,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			if (GetOpenFileName(&ofn))
 			{
 				std::wstring wide(szFileName);
-				std::string final1(wide.begin(), wide.end());
+				std::string final1 = ws2s(wide);
 				if (LoadSCT(final1)) {
 
 				}
@@ -371,7 +371,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			if (GetOpenFileName(&ofn))
 			{
 				std::wstring wide(szFileName);
-				std::string final1(wide.begin(), wide.end());
+				std::string final1 = ws2s(wide);
 				if (LoadAGC(final1)) {
 
 				}
@@ -396,7 +396,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			if (GetOpenFileName(&ofn))
 			{
 				std::wstring wide(szFileName);
-				std::string final1(wide.begin(), wide.end());
+				std::string final1 = ws2s(wide);
 				if (LoadAPT(final1)) {
 
 				}
@@ -471,7 +471,7 @@ void connect()
 				aircraft.connected = true;
 				Identity& id = *aircraft.getIdentity();
 				Stream stream = Stream(200);
-				int type = aircraft.getType();
+				AV_CLIENT type = aircraft.getType();
 				intter.hand_shake = true;
 				intter.current_op = 45;
 				stream.createFrameVarSizeWord(45);
@@ -486,7 +486,7 @@ void connect()
 				stream.writeQWord(doubleToRawBits(aircraft.getLatitude()));
 				stream.writeQWord(doubleToRawBits(aircraft.getLongitude()));
 				stream.writeWord(aircraft.getVisibility());
-				stream.writeByte(type);
+				stream.writeByte(static_cast<int>(type));
 				if (type == AV_CLIENT::PILOT) {
 					stream.writeString((char*)aircraft.getAcfTitle().c_str());
 					stream.writeString((char*)aircraft.getSquawkCode().c_str());
@@ -604,7 +604,7 @@ LRESULT CALLBACK CommandCallBckProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			LRESULT result = SendMessage(command_text, WM_GETTEXT, sizeof(c_text), (LPARAM)c_text);
 
 			std::wstring test(&c_text[0]); //convert to wstring
-			std::string text(test.begin(), test.end()); //and convert to string.
+			std::string text = ws2s(test); //and convert to string.
 
 			if (displayed && processCommands(*displayed, text))
 			{
@@ -833,9 +833,6 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		std::vector<std::string> array3 = split(command.substr(5, command.length() - 1), " ");
 
 		Airport* airport = aircraft.getAirport();
-
-		if (airport && aircraft.onGround())
-			aircraft.taxi(airport, "", array3);
 
 		return 1;
 	}

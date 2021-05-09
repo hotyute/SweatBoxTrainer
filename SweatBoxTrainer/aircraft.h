@@ -15,7 +15,7 @@ class tcpinterface;
 
 struct AssignedValues {
 	double asgd_heading = 0;
-	double asdg_altitude = 0;
+	int asdg_altitude = 0;
 	double asdg_speed = 0;
 	double asdg_roll = 25;
 	double asdg_gnd_turn_rate = 9; // 9 degrees per second
@@ -125,7 +125,6 @@ public:
 	int getVerticalSpeed() { return verticalSpeed; }
 	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
 	Airport* getAirport();
-	void taxi(Airport* airport, std::string hs, std::vector<std::string>& s);
 	bool onGround();
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	double getNextHeading();
