@@ -19,7 +19,11 @@ int random(int start, int end);
 
 long long doubleToRawBits(double x);
 
+double NauticalMilesPerDegreeLon(double lat);
+
 Point2 getLocFromBearing(double latitude, double longitude, double distance, double bearing);
+
+double GetDistance(double lat1, double lat2, double lon1, double lon2);
 
 double GetHeading(double lat1, double lat2, double lon1, double lon2);
 
@@ -67,12 +71,14 @@ double hdg(double heading);
 
 double get_bearing(double lat1, double long1, double lat2, double long2);
 
+bool inCircle(Point2& p1, Point2& p2, Point2& c, double radius_meters);
+
 template<typename T>
 int pushBack(std::vector<T>& v, T val)
 {
-	int retval = numbers.size();
+	int r = v.size();
 	v.push_back(val);
-	return retval;
+	return r;
 }
 
 #endif

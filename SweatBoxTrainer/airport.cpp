@@ -4,23 +4,23 @@
 
 std::unordered_map<std::string, Airport*> airports;
 
-Point2* TaxiPath::getNextPoint(Point2* last)
+Point2* TaxiPath::getNextPoint(Point2* p)
 {
-	int p_index = -1;
-
 	double last_dist = -1;
 	Point2* p2add = nullptr;
 	for (size_t i = 0; i < points.size(); ++i)
 	{
-		Point2* p = points[i];
+		Point2* p2 = points[i];
 		if (p)
 		{
-			double cur_dist = dist(last->y_, last->x_, p->y_, p->x_);
-			if (last_dist == -1 || cur_dist < last_dist) 
+			if (*p != *p2)//compares x and y
 			{
-				last_dist = cur_dist;
-				p2add = p;
-				p_index = i;
+				double cur_dist = dist(p->y_, p->x_, p2->y_, p2->x_);
+				if (last_dist == -1 || cur_dist < last_dist)
+				{
+					last_dist = cur_dist;
+					p2add = p2;
+				}
 			}
 		}
 	}
@@ -29,5 +29,5 @@ Point2* TaxiPath::getNextPoint(Point2* last)
 
 Point2* TaxiPath::getClosestPoint(double latitude, double longitude)
 {
-	return new Point2();
+	return getNextPoint(&Point2(longitude, latitude));
 }

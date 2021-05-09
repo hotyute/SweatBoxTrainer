@@ -574,7 +574,7 @@ DWORD WINAPI CalcThread1(LPVOID)
 		end = boost::posix_time::microsec_clock::local_time();
 
 		time = (end - start);
-		long long time1 = 30L;
+		long long time1 = CALC_TIME;
 		long long time2 = time1 - time.total_milliseconds();
 		if (time2 < 1) {
 			time2 = 1;
@@ -830,9 +830,10 @@ void DisplayAircraft() {
 int processCommands(Aircraft& aircraft, std::string command) {
 	if (boost::istarts_with(command, "taxi ")) {
 
-		std::vector<std::string> array3 = split(command.substr(5, command.length() - 1), " ");
-
-		Airport* airport = aircraft.getAirport();
+		for (std::string s : split(command.substr(5, command.length() - 1), " ")) {
+			capitalize(s);
+			aircraft.ground_route.push_back(trim(s));
+		}
 
 		return 1;
 	}

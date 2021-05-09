@@ -74,8 +74,9 @@ public:
 	int turnOri = -1;
 	std::string apt_icao = "";
 	bool connected = false;
-	std::vector<Point2*> ground_route;
-	std::vector<Point2*> air_route;
+	std::vector<std::string> ground_route;
+	Point2* ground_prev = nullptr, * ground_cur = nullptr;
+	Point2* air_prev = nullptr, * air_cur = nullptr;
 	Aircraft();
 	~Aircraft();
 	const int getUserIndex() const { return userIndex; }
@@ -126,8 +127,10 @@ public:
 	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
 	Airport* getAirport();
 	bool onGround();
-	AssignedValues& getAssignedValues() { return assignedValues; }
 	double getNextHeading();
+	void Aircraft::processRoute();
+	bool arrived(Point2* p, int radius_m);
+	AssignedValues& getAssignedValues() { return assignedValues; }
 	double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
 	double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __unnamed002);
 };

@@ -227,7 +227,7 @@ void Aircraft::updateMovement()
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[0];
 	double dist = get_distance(speed, interval);
-	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
+	Point2 p = getLocFromBearing(latitude, longitude, (dist * KNOTS_KM), heading);
 	if (p.x_ != longitude || p.y_ != latitude)
 	{
 		//aircraft moved set flags here
@@ -264,17 +264,113 @@ bool Aircraft::onGround() {
 double Aircraft::getNextHeading()
 {
 	if (onGround()) {
-		if (ground_route.size() > 0) {
-			Point2* p = ground_route.back();
-			double brng = get_bearing(latitude, longitude, p->y_, p->x_);
-			if (assignedValues.asgd_heading != brng)
+		if (ground_cur)
+		{
+			if (arrived(ground_cur, 15.24))
 			{
-				assignedValues.asgd_heading = brng;
-				return brng;
+				std::cout << "hi" << std::endl;
+				ground_prev = ground_cur;
+				ground_cur = nullptr;
+			}
+			else
+			{
+				if (!ground_prev)
+				{
+					double brng = get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_);
+					if (assignedValues.asgd_heading != brng)
+					{
+						assignedValues.asgd_heading = brng;
+						return brng;
+					}
+				}
+				else
+				{
+					double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
+					assignedValues.asgd_heading = hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
+				}
+			}
+		}
+	}
+	else
+	{
+		if (air_cur)
+		{
+			if (arrived(ground_cur, 50))
+			{
+				air_prev = air_cur;
+				air_cur = nullptr;
+			}
+			else
+			{
+				if (!air_prev)
+				{
+					double brng = get_bearing(latitude, longitude, air_cur->y_, air_cur->x_);
+					if (assignedValues.asgd_heading != brng)
+					{
+						assignedValues.asgd_heading = brng;
+						return brng;
+					}
+				}
 			}
 		}
 	}
 	return -1;
+}
+
+void Aircraft::processRoute()
+{
+	Airport* airport_ptr = getAirport();
+
+	if (airport_ptr)
+	{
+		if (onGround())
+		{
+			if (ground_route.size() > 0)
+			{
+				Airport& airport = *airport_ptr;
+
+				if (!ground_cur && !ground_prev)// initial point
+				{
+					auto it = airport.all.find(ground_route.front());
+					if (it != airport.all.end())
+					{
+						TaxiPath& tp = *it->second;
+						ground_cur = tp.getClosestPoint(latitude, longitude);
+					}
+					ground_route.erase(ground_route.begin());
+				}
+				else if (!ground_cur && ground_prev)// its arrived at the point and needs new point
+				{
+					auto it = airport.all.find(ground_route[0]);
+					if (it != airport.all.end())
+					{
+						TaxiPath& tp = *it->second;
+						ground_cur = tp.getNextPoint(ground_prev);
+					}
+					ground_route.erase(ground_route.begin());
+				}
+			}
+		}
+	}
+}
+
+bool Aircraft::arrived(Point2* p, int radius_m)
+{
+	double interval_dist = get_distance(speed, CALC_TIME);
+	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
+
+	Point2 v = getLocFromBearing(p->y_, p->x_, (radius_m / 1000.0), 0);
+
+	double num2 = (v.y_ - p->y_) / 60.0;
+	double num3 = (v.x_ - p->x_) / NauticalMilesPerDegreeLon(p->y_);// prev 45.0 for boston
+
+	double radius = sqrt(num3 * num3 + num2 * num2);
+
+	if (inCircle(Point2(longitude, latitude), n, *p, radius))
+	{
+		return true;
+	}
+	return false;
 }
 
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude

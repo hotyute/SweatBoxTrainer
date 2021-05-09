@@ -9,7 +9,8 @@
 #include <iostream>
 #include <sstream>
 
-const double R_EARTH = 6378.14;
+const double R_EARTH = 6378.14; //KM
+const double EARTH_RADIUS_NM = 3437.670013352;
 
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
 	// Skip delimiters at beginning.
@@ -76,7 +77,12 @@ long long doubleToRawBits(double x) {
 	return bits;
 }
 
-Point2 getLocFromBearing(double latitude, double longitude, double distance, double bearing) {
+double NauticalMilesPerDegreeLon(double lat)
+{
+	return (M_PI / 180.0) * EARTH_RADIUS_NM * cos(radians(lat));
+}
+
+Point2 getLocFromBearing(double latitude, double longitude, double distancekm, double bearing) {
 	double R = 6378.14;
 
 	// Degree to Radian
@@ -84,8 +90,8 @@ Point2 getLocFromBearing(double latitude, double longitude, double distance, dou
 	double longitude1 = radians(longitude);
 	double brng = radians(bearing);
 
-	double latitude2 = asin(sin(latitude1) * cos(distance / R) + cos(latitude1) * sin(distance / R) * cos(brng));
-	double longitude2 = longitude1 + atan2(sin(brng) * sin(distance / R) * cos(latitude1), cos(distance / R) - sin(latitude1) * sin(latitude2));
+	double latitude2 = asin(sin(latitude1) * cos(distancekm / R) + cos(latitude1) * sin(distancekm / R) * cos(brng));
+	double longitude2 = longitude1 + atan2(sin(brng) * sin(distancekm / R) * cos(latitude1), cos(distancekm / R) - sin(latitude1) * sin(latitude2));
 
 	// back to degrees
 	latitude2 = degrees(latitude2);
@@ -100,8 +106,9 @@ Point2 getLocFromBearing(double latitude, double longitude, double distance, dou
 
 double GetDistance(double lat1, double lat2, double lon1, double lon2)
 {
+	double lat11 = radians(lat1), lat22 = radians(lat2), lon11 = radians(lon1), lon22 = radians(lon2);
 	double d;
-	d = acos((sin(lat1) * sin(lat2)) + (cos(lat1) * cos(lat2) * cos(lon2 - lon1))) * R_EARTH;
+	d = acos((sin(lat11) * sin(lat22)) + (cos(lat11) * cos(lat22) * cos(lon22 - lon11))) * R_EARTH;
 	return d;
 }
 
@@ -292,5 +299,18 @@ double get_bearing(double lat1, double long1, double lat2, double long2)
 	brng = degrees(brng);
 
 	return hdg(brng);
+}
+
+bool inCircle(Point2& p1, Point2& p2, Point2& c, double r) {
+	double dy = p2.y_ - p1.y_;
+	double dx = p2.x_ = p2.x_;
+	double a = dx * dx + dy * dy;
+	double b = 2 * (dx * (p1.x_ - c.x_) + dy * (p1.y_ - c.y_));
+	double c1 = c.x_ * c.x_ + c.y_ * c.y_;
+	c1 += p1.x_ * p1.x_ + p1.y_ * p1.y_;
+	c1 -= 2 * (c.x_ * p1.x_ + c.y_ * p1.y_);
+	c1 -= r * r;
+	double bb4ac = b * b - 4 * a * c1;
+	return bb4ac >= 0;
 }
 

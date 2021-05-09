@@ -183,25 +183,32 @@ int LoadAPT(std::string path)
 							{
 								curApproach = nullptr;
 								curPoint = nullptr;
+								std::string name = header[1];
+								capitalize(name);
 								if (header[0] == "PARKING")
 								{
 									curPoint = new Parking();
-									curPoint->name = header[1];
+									curPoint->name = name;
 								}
 								else if (header[0] == "RUNWAY")
 								{
 									curPoint = new Runway();
-									curPoint->name = header[1];
+									curPoint->name = name;
+								}
+								else if (header[0] == "TAXIWAY")
+								{
+									curPoint = new Taxiway();
+									curPoint->name = name;
 								}
 								else if (header[0] == "ILS")
 								{
 									curApproach = new ILS();
-									curApproach->name = header[1];
+									curApproach->name = name;
 								}
 								else if (header[0] == "LOC")
 								{
 									curApproach = new LOC();
-									curApproach->name = header[1];
+									curApproach->name = name;
 								}
 							}
 						}
@@ -211,13 +218,19 @@ int LoadAPT(std::string path)
 						if (curPoint->type == PATHTYPE::PARKING)
 						{
 							std::vector<std::string> args = split(line, " ");
-							curPoint->points.push_back(new Point2(atodd(args[1].c_str()), atodd(args[0].c_str())));
+
+							Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
+							p->index = pushBack(curPoint->points, p);
+
 							curAirport->parking.push_back((Parking*)curPoint);
 						}
 						else if (curPoint->type == PATHTYPE::TAXIWAY)
 						{
 							std::vector<std::string> args = split(line, " ");
-							curPoint->points.push_back(new Point2(atodd(args[1].c_str()), atodd(args[0].c_str())));
+
+							Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
+							p->index = pushBack(curPoint->points, p);
+
 							curAirport->taxiway.push_back((Taxiway*)curPoint);
 						}
 						else if (curPoint->type == PATHTYPE::RUNWAY)
@@ -238,10 +251,13 @@ int LoadAPT(std::string path)
 							else
 							{
 								std::vector<std::string> args = split(line, " ");
-								curPoint->points.push_back(new Point2(atodd(args[1].c_str()), atodd(args[0].c_str())));
+
+								Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
+								p->index = pushBack(curPoint->points, p);
 							}
 							curAirport->runways.push_back((Runway*)curPoint);
 						}
+
 						curAirport->all.emplace(curPoint->name, curPoint);
 					}
 					else if (curAirport && curApproach)
