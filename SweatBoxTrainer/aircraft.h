@@ -135,6 +135,7 @@ public:
 	double calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
 	double calculateLoc(double __unnamed000, double __unnamed001, int __unnamed002);
 	bool calculateTurnDistance(Point2* p, Point2* p2);
+	bool defaultTurnDistance();
 	Point2* getFuturePoint();
 };
 

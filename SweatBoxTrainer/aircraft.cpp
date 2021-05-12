@@ -409,24 +409,7 @@ bool Aircraft::arrived()
 	{
 		return calculateTurnDistance(ground_cur, p2);
 	}
-
-	int radius_m = 16;
-
-	double interval_dist = get_distance(speed, CALC_TIME);
-	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
-
-	Point2 v = getLocFromBearing(ground_cur->y_, ground_cur->x_, (radius_m / 1000.0), 0);
-
-	double num2 = (v.y_ - ground_cur->y_) / 60.0;
-	double num3 = (v.x_ - ground_cur->x_) / NauticalMilesPerDegreeLon(ground_cur->y_);// prev 45.0 for boston
-
-	double radius = sqrt(num3 * num3 + num2 * num2);
-
-	if (inCircle(Point2(longitude, latitude), n, *ground_cur, radius))
-	{
-		return true;
-	}
-	return false;
+	return defaultTurnDistance();
 }
 
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude
@@ -489,6 +472,27 @@ bool Aircraft::calculateTurnDistance(Point2* p, Point2* p2)
 	if (GetDistance(latitude, ground_cur->y_, longitude, ground_cur->x_) <= distance)
 		return true;
 
+	return false;
+}
+
+bool Aircraft::defaultTurnDistance()
+{
+	int radius_m = onGround() ? 16 : 50;
+
+	double interval_dist = get_distance(speed, CALC_TIME);
+	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
+
+	Point2 v = getLocFromBearing(ground_cur->y_, ground_cur->x_, (radius_m / 1000.0), 0);
+
+	double num2 = (v.y_ - ground_cur->y_) / 60.0;
+	double num3 = (v.x_ - ground_cur->x_) / NauticalMilesPerDegreeLon(ground_cur->y_);// prev 45.0 for boston
+
+	double radius = sqrt(num3 * num3 + num2 * num2);
+
+	if (inCircle(Point2(longitude, latitude), n, *ground_cur, radius))
+	{
+		return true;
+	}
 	return false;
 }
 
