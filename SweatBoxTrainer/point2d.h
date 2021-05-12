@@ -24,7 +24,7 @@ struct Point2 {
 
 	double x_, y_;
 	double p[3];
-	double index = -1;
+	int index = -1;
 };
 
 struct Vector2 {

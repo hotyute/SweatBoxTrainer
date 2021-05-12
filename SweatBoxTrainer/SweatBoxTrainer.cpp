@@ -835,7 +835,8 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		aircraft.ground_prev = nullptr;
 		aircraft.ground_route.clear();
 
-		for (std::string s : split(command.substr(5, command.length() - 1), " ")) {
+		for (std::string s : split(command.substr(5, command.length() - 1), " ")) 
+		{
 			capitalize(s);
 			aircraft.ground_route.push_back(trim(s));
 		}

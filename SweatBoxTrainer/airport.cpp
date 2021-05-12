@@ -10,7 +10,7 @@ Point2* TaxiPath::getNextPoint(Point2* p, Point2* p2)
 	if (p && p2 && p->index != -1 && p2->index != -1)
 	{
 		if (p->index < p2->index) {
-			for (size_t i = p->index; i < p2->index;  ++i)
+			for (int i = p->index; i < p2->index;  ++i)
 			{
 				Point2* p3 = points[i];
 				if (p3 && p3 != p)
@@ -22,7 +22,7 @@ Point2* TaxiPath::getNextPoint(Point2* p, Point2* p2)
 		else if (p->index > p2->index)
 		{
 			//std::cout << name << std::endl;
-			for (size_t i = p->index; i > p2->index; --i)
+			for (int i = p->index; i > p2->index; --i)
 			{
 				Point2* p3 = points[i];
 				if (p3 && p3 != p)

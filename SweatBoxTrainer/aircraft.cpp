@@ -431,7 +431,7 @@ double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs
 	return altitude;
 }
 
-double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __unnamed002)
+double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002)
 {
 	double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
 	double d_lat = (latitude - __unnamed000) * 60.0;
