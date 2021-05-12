@@ -22,8 +22,9 @@ public:
 	PATHTYPE type = PATHTYPE::NONE;
 	std::string name;
 	std::vector<Point2*> points;
-	Point2* getNextPoint(Point2* last);
+	Point2* getNextPoint(Point2* last, Point2* p2);
 	Point2* getClosestPoint(double latitude, double longitude);
+	Point2* getClosest(TaxiPath* next);
 };
 
 class ApproachPath {

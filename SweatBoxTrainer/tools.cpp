@@ -182,9 +182,9 @@ double get_distance(double speed_knots, long long interval_ms) {
 	return speed_knots * ((interval_ms / 1000.0) / 3600.0);
 }
 
-double get_angle(double brgto, double brgfrom)
+double get_angle(double a1, double a2)
 {
-	return fmod((fmod((brgto - brgfrom), 360) + 540.0), 360) - 180.0;
+	return min(fmod((a1 - a2 + 360) , 360), fmod((a2 - a1 + 360) , 360));
 }
 
 double get_angle_unsigned(double brgto, double brgfrom)

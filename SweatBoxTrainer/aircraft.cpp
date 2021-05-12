@@ -266,11 +266,21 @@ double Aircraft::getNextHeading()
 	if (onGround()) {
 		if (ground_cur)
 		{
-			if (arrived(ground_cur, 15.24))
+			if (arrived())
 			{
 				std::cout << "hi" << std::endl;
 				ground_prev = ground_cur;
+				if (ground_cur == taxiway_end)
+				{
+					std::cout << "reached" << std::endl;
+					cur_path = nullptr;
+					taxiway_end = nullptr;
+					ground_prev = nullptr;
+					ground_route.erase(ground_route.begin());
+				}
 				ground_cur = nullptr;
+
+				processRoute();
 			}
 			else
 			{
@@ -286,7 +296,8 @@ double Aircraft::getNextHeading()
 				else
 				{
 					double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
-					assignedValues.asgd_heading = hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
+					double heading = calculateLoc(ground_cur->y_, ground_cur->x_, h);
+					assignedValues.asgd_heading = hdg(heading);//hdg(heading - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 				}
 			}
 		}
@@ -295,7 +306,7 @@ double Aircraft::getNextHeading()
 	{
 		if (air_cur)
 		{
-			if (arrived(ground_cur, 50))
+			if (arrived())
 			{
 				air_prev = air_cur;
 				air_cur = nullptr;
@@ -335,38 +346,83 @@ void Aircraft::processRoute()
 					if (it != airport.all.end())
 					{
 						TaxiPath& tp = *it->second;
+						cur_path = it->second;
+
+						auto it2 = ++it;
+						if (it2 != airport.all.end())
+							next_path = it2->second;
+						else next_path = nullptr;
+
 						ground_cur = tp.getClosestPoint(latitude, longitude);
+
+						future_point = getFuturePoint();
 					}
-					ground_route.erase(ground_route.begin());
 				}
 				else if (!ground_cur && ground_prev)// its arrived at the point and needs new point
 				{
-					auto it = airport.all.find(ground_route[0]);
-					if (it != airport.all.end())
+					TaxiPath* tp_ptr = cur_path;
+					if (!tp_ptr)
 					{
-						TaxiPath& tp = *it->second;
-						ground_cur = tp.getNextPoint(ground_prev);
+						auto it = airport.all.find(ground_route.front());
+						if (it != airport.all.end())
+						{
+							tp_ptr = it->second;
+						}
 					}
-					ground_route.erase(ground_route.begin());
+
+					if (tp_ptr)
+					{
+						TaxiPath& tp = *tp_ptr;
+						auto next = ground_route.begin() + 1;
+						if (next != ground_route.end())
+						{
+							if (!taxiway_end)
+							{
+								auto it = airport.all.find(*next);
+								if (it != airport.all.end())
+								{
+									taxiway_end = tp.getClosest(it->second);
+								}
+							}
+
+							if (taxiway_end) 
+							{
+								ground_cur = tp.getNextPoint(ground_prev, taxiway_end);
+
+								future_point = getFuturePoint();
+							}
+						}
+					}
 				}
 			}
 		}
 	}
 }
 
-bool Aircraft::arrived(Point2* p, int radius_m)
+bool Aircraft::arrived()
 {
+	if (!ground_cur)
+		return false;
+
+	Point2* p2 = future_point;
+	if (ground_cur && p2)
+	{
+		return calculateTurnDistance(ground_cur, p2);
+	}
+
+	int radius_m = 16;
+
 	double interval_dist = get_distance(speed, CALC_TIME);
 	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
 
-	Point2 v = getLocFromBearing(p->y_, p->x_, (radius_m / 1000.0), 0);
+	Point2 v = getLocFromBearing(ground_cur->y_, ground_cur->x_, (radius_m / 1000.0), 0);
 
-	double num2 = (v.y_ - p->y_) / 60.0;
-	double num3 = (v.x_ - p->x_) / NauticalMilesPerDegreeLon(p->y_);// prev 45.0 for boston
+	double num2 = (v.y_ - ground_cur->y_) / 60.0;
+	double num3 = (v.x_ - ground_cur->x_) / NauticalMilesPerDegreeLon(ground_cur->y_);// prev 45.0 for boston
 
 	double radius = sqrt(num3 * num3 + num2 * num2);
 
-	if (inCircle(Point2(longitude, latitude), n, *p, radius))
+	if (inCircle(Point2(longitude, latitude), n, *ground_cur, radius))
 	{
 		return true;
 	}
@@ -376,7 +432,7 @@ bool Aircraft::arrived(Point2* p, int radius_m)
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude
 {
 	double num = (latitude - __unnamed000) * 60.0;
-	double num2 = (longitude - __unnamed001) * 45.0;
+	double num2 = (longitude - __unnamed001) * NauticalMilesPerDegreeLon(latitude); // previously 45.0
 	double num3 = sqrt(num2 * num2 + num * num) * 6076.1 * tan(0.052356020942408377) + (double)gs_angle;//GS ANGLE
 	double num4 = dest_altitude;//Destination altitude
 	double num5 = ((!(num3 < num4)) ? num4 : num3);
@@ -395,10 +451,10 @@ double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs
 double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __unnamed002)
 {
 	double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
-	double num2 = (latitude - __unnamed000) * 60.0;
-	double num3 = (longitude - __unnamed001) * 45.0;
+	double d_lat = (latitude - __unnamed000) * 60.0;
+	double d_lon = (longitude - __unnamed001) * NauticalMilesPerDegreeLon(latitude);
 	double locBrg = __unnamed002;//localizer heading
-	double num5 = sqrt(num3 * num3 + num2 * num2) * sin((course - locBrg) * 0.017453277777777779);// * 0.017xxx is to radians
+	double num5 = sqrt(d_lon * d_lon + d_lat * d_lat) * sin((course - locBrg) * 0.017453277777777779);// * 0.017xxx is to radians
 	double num6 = (double)speed * 0.033333333333333333 * 0.15915507752443828;
 	double num7 = num6 - cos((heading - locBrg) * 0.017453277777777779) * num6;
 	double num8 = abs(num5);
@@ -406,11 +462,34 @@ double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, int __un
 	{
 		return (int)(num5 * 8.0 + locBrg + 720.0) % 360;
 	}
-	if (num7 < num8)
+	if (num7 < num8)// this is for checking how close we are to the bearing
 	{
 		//return *(double*)((byte*)P_0 + 40);//destination heading
 	}
 	return locBrg;
+}
+
+bool Aircraft::calculateTurnDistance(Point2* p, Point2* p2)
+{
+
+	//TODO POssibly use "future" / next frame speed rather than current speed?
+	double amount = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
+
+	double course = hdg(degrees(GetHeading(latitude, ground_cur->y_, longitude, ground_cur->x_)));
+	double locBrg = hdg(degrees(GetHeading(ground_cur->y_, p2->y_, ground_cur->x_, p2->x_)));
+
+	double angle = get_angle(locBrg, course);
+
+	double time_sec = angle / amount;
+
+	double distance = speed * (time_sec / 3600.0);
+
+	double cur_dist = GetDistance(latitude, ground_cur->y_, longitude, ground_cur->x_);
+
+	if (GetDistance(latitude, ground_cur->y_, longitude, ground_cur->x_) <= distance)
+		return true;
+
+	return false;
 }
 
 FlightPlan::FlightPlan()
@@ -433,4 +512,25 @@ void FlightPlan::updateFlightPlan(char* depart, char* arrive)
 	FlightPlan::departure = depart;
 	FlightPlan::arrival = arrive;
 	FlightPlan::cycle++;
+}
+
+Point2* Aircraft::getFuturePoint()
+{
+	Point2* p2 = nullptr;
+	if (cur_path)
+	{
+		if (taxiway_end)
+		{
+			Point2* n = cur_path->getNextPoint(ground_cur, taxiway_end);
+			if (n != taxiway_end)
+				p2 = n;
+		}
+	}
+
+	if (!p2 && next_path)
+	{
+		p2 = next_path->getClosestPoint(latitude, longitude);
+	}
+
+	return p2;
 }
