@@ -73,10 +73,10 @@ private:
 public:
 	int turnOri = -1;
 	std::string apt_icao = "";
-	bool connected = false;
+	bool connected = false, flying_course = false;
 	std::vector<std::string> ground_route;
 	Point2* ground_prev = nullptr, * ground_cur = nullptr, * taxiway_end = nullptr, * future_point = nullptr;
-	TaxiPath* cur_path = nullptr, * next_path = nullptr;
+	TaxiPath* cur_path = nullptr, * next_path = nullptr, * next_next_path = nullptr;
 	Point2* air_prev = nullptr, * air_cur = nullptr;
 	Aircraft();
 	~Aircraft();
@@ -128,15 +128,23 @@ public:
 	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
 	Airport* getAirport();
 	bool onGround();
-	double getNextHeading();
+	double getNextSpeed(double interval_ms);
+	double getNextHeading(double interval_ms);
+	double getNextPoint();
 	void processRoute();
-	bool arrived();
+	bool arrived(Point2* p2);
+	bool arrived(Point2* p1, Point2* p2);
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	double calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
-	double calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002);
-	bool calculateTurnDistance(Point2* p, Point2* p2);
+	double calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double destHdg);
+	double calculateCourse(double __unnamed000, double __unnamed001, double __unnamed002);
+	double calculateTurnDistance(Point2* p, Point2* p2);
+	bool isTurnReady(Point2* p, Point2* p2);
+	bool isTurnReady(Point2* p, Point2* p2, double distance);
 	bool defaultTurnDistance();
+	bool defaultTurnDistance(Point2* p1);
 	Point2* getFuturePoint();
+	Point2** checkEarlyTurn(bool is_early);
 };
 
 

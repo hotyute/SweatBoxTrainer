@@ -41,7 +41,6 @@ Point2* TaxiPath::getNextPoint(Point2* p, Point2* p2)
 
 Point2* TaxiPath::getClosestPoint(double latitude, double longitude)
 {
-	//TODO include angle no greater than 90
 	Point2 p = Point2(longitude, latitude);
 	double last_dist = -1;
 	Point2* p2add = nullptr;

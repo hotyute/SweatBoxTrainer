@@ -9,6 +9,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "constants.h"
+
 const double R_EARTH = 6378.14; //KM
 const double EARTH_RADIUS_NM = 3437.670013352;
 
@@ -104,12 +106,22 @@ Point2 getLocFromBearing(double latitude, double longitude, double distancekm, d
 	return Point2(long2, lat2);
 }
 
+double GetDistance(Point2* p1, Point2* p2)
+{
+	return GetDistance(p1->y_, p2->y_, p1->x_, p2->x_);
+}
+
 double GetDistance(double lat1, double lat2, double lon1, double lon2)
 {
 	double lat11 = radians(lat1), lat22 = radians(lat2), lon11 = radians(lon1), lon22 = radians(lon2);
 	double d;
 	d = acos((sin(lat11) * sin(lat22)) + (cos(lat11) * cos(lat22) * cos(lon22 - lon11))) * R_EARTH;
 	return d;
+}
+
+double GetHeading(Point2* p1, Point2* p2)
+{
+	return GetHeading(p1->y_, p2->y_, p1->x_, p2->x_);
 }
 
 double GetHeading(double lat1, double lat2, double lon1, double lon2)
@@ -156,7 +168,7 @@ double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, dou
 
 	_lead_angle *= _lead_angle_gain * factor;
 
-	double _xtrack_error = xtrack_error_nm * 6076.1155;//changing to km??
+	double _xtrack_error = xtrack_error_nm * 6076.1155;//changing to feet
 
 	_lead_angle = fmod(_lead_angle, limit);
 
@@ -184,7 +196,7 @@ double get_distance(double speed_knots, long long interval_ms) {
 
 double get_angle(double a1, double a2)
 {
-	return min(fmod((a1 - a2 + 360) , 360), fmod((a2 - a1 + 360) , 360));
+	return min(fmod((a1 - a2 + 360), 360), fmod((a2 - a1 + 360), 360));
 }
 
 double get_angle_unsigned(double brgto, double brgfrom)
@@ -209,6 +221,11 @@ double dist(double lat1, double lon1, double lat2, double lon2) {
 	if (dist > 1.0) dist = 1.0;
 	dist = acos(dist) * 60.0 * 180.0 / M_PI;
 	return dist;
+}
+
+double dist2(double x1, double y1, double x2, double y2) {
+	double dx = x2 - x1, dy = y2 - y1;
+	return sqrt((dx * dx) + (dy * dy));
 }
 
 double round_up(double value, int decimal_places) {
@@ -302,8 +319,8 @@ double get_bearing(double lat1, double long1, double lat2, double long2)
 }
 
 bool inCircle(Point2& p1, Point2& p2, Point2& c, double r) {
-	double dy = p2.y_ - p1.y_;
 	double dx = p2.x_ = p2.x_;
+	double dy = p2.y_ - p1.y_;
 	double a = dx * dx + dy * dy;
 	double b = 2 * (dx * (p1.x_ - c.x_) + dy * (p1.y_ - c.y_));
 	double c1 = c.x_ * c.x_ + c.y_ * c.y_;
@@ -312,5 +329,160 @@ bool inCircle(Point2& p1, Point2& p2, Point2& c, double r) {
 	c1 -= r * r;
 	double bb4ac = b * b - 4 * a * c1;
 	return bb4ac >= 0;
+}
+
+bool inCircle2(Point2& p1, Point2& p2, Point2& c, double r) {
+	double dx = p2.x_ = p2.x_;
+	double dy = p2.y_ - p1.y_;
+	double len = sqrt((dx * dx) + (dy * dy));
+
+	double dot = (((c.x_ - p1.x_) * (p2.x_ - p1.x_)) + ((c.y_ - p1.y_) * (p2.y_ - p1.y_))) / pow(len, 2);
+
+	double closestX = p1.x_ + (dot * (p2.x_ - p1.x_));
+	double closestY = p1.y_ + (dot * (p2.y_ - p1.y_));
+
+	boolean onSegment = linePoint(p1.x_, p1.y_, p2.x_, p2.y_, closestX, closestY);
+	if (!onSegment) return false;
+
+	// get distance to closest point
+	dx = closestX - c.x_;
+	dy = closestY - c.y_;
+	double distance = sqrt((dx * dx) + (dy * dy));
+
+	if (distance <= r) {
+		return true;
+	}
+
+	return false;
+}
+
+// POINT/CIRCLE
+bool pointCircle(double px, double py, double cx, double cy, double r) {
+
+	// get distance between the point and circle's center
+	// using the Pythagorean Theorem
+	double distX = px - cx;
+	double distY = py - cy;
+	double distance = sqrt((distX * distX) + (distY * distY));
+
+	// if the distance is less than the circle's
+	// radius the point is inside!
+	if (distance <= r) {
+		return true;
+	}
+	return false;
+}
+
+// LINE/POINT
+bool linePoint(double x1, double y1, double x2, double y2, double px, double py) {
+
+	// get distance from the point to the two ends of the line
+	double d1 = dist2(px, py, x1, y1);
+	double d2 = dist2(px, py, x2, y2);
+
+	// get the length of the line
+	double lineLen = dist2(x1, y1, x2, y2);
+
+	// since doubles are so minutely accurate, add
+	// a little buffer zone that will give collision
+	double buffer = 0.1;    // higher # = less accurate
+
+	// if the two distances are equal to the line's
+	// length, the point is on the line!
+	// note we use the buffer here to give a range,
+	// rather than one #
+	if (d1 + d2 >= lineLen - buffer && d1 + d2 <= lineLen + buffer) {
+		return true;
+	}
+	return false;
+}
+
+bool intersects(Point2& p1, Point2& p2, Point2& c, double r)
+{
+	double width = p2.x_ - p1.x_;
+	double height = p2.x_ - p1.x_;
+	double x = c.x_ - p1.x_;
+	double y = c.y_ - p1.y_;
+
+	if (x > (width / 2 + r)) { return false; }
+	if (y > (height / 2 + r)) { return false; }
+
+	if (x <= (width / 2)) { return true; }
+	if (y <= (height / 2)) { return true; }
+
+	double cornerDistance_sq = ((x - width / 2) * (x - width / 2)) +
+		((y - height / 2) * (y - height / 2));
+
+	return (cornerDistance_sq <= (r * r));
+}
+
+double line_dist(Point2& l1, Point2& l2, Point2& p)
+{
+	double lat1 = l1.y_;
+	double lon1 = l1.x_;
+	double lat2 = l2.y_;
+	double lon2 = l2.x_;
+	double lat3 = p.y_;
+	double lon3 = p.x_;
+
+	double y = sin(lon3 - lon1) * cos(lat3);
+	double x = cos(lat1) * sin(lat3) - sin(lat1) * cos(lat3) * cos(lat3 - lat1);
+	double bearing1 = degrees(atan2(y, x));
+	bearing1 = 360 - fmod((bearing1 + 360), 360);
+
+	double y2 = sin(lon2 - lon1) * cos(lat2);
+	double x2 = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(lat2 - lat1);
+	double bearing2 = degrees(atan2(y2, x2));
+	bearing2 = 360 - fmod((bearing2 + 360), 360);
+
+	double lat1Rads = radians(lat1);
+	double lat3Rads = radians(lat3);
+	double dLon = radians(lon3 - lon1);
+
+	double distanceAC = acos(sin(lat1Rads) * sin(lat3Rads) + cos(lat1Rads) * cos(lat3Rads) * cos(dLon)) * 6371;
+	double min_distance = fabs(asin(sin(distanceAC / 6371) * sin(radians(bearing1) - radians(bearing2))) * 6371);
+
+	return (min_distance / KNOTS_KM);
+}
+
+double dis(double latA, double lonA, double latB, double lonB) {
+	double R = 6371000;
+	return acos(sin(latA) * sin(latB) + cos(latA) * cos(latB) * cos(lonB - lonA)) * R;
+}
+
+double bear(double latA, double lonA, double latB, double lonB) {
+	// BEAR Finds the bearing from one lat / lon point to another.
+	return atan2(sin(lonB - lonA) * cos(latB), cos(latA) * sin(latB) - sin(latA) * cos(latB) * cos(lonB - lonA));
+}
+
+double pointToLineDistance(Point2& l1, Point2& l2, Point2& p) {
+	double lat1 = radians(l1.y_);
+	double lat2 = radians(l2.y_);
+	double lat3 = radians(p.y_);
+	double lon1 = radians(l1.x_);
+	double lon2 = radians(l2.x_);
+	double lon3 = radians(p.x_);
+
+	// Earth's radius in meters
+	double R = 6371000;
+
+	// Prerequisites for the formulas
+	double bear12 = bear(lat1, lon1, lat2, lon2);
+	double bear13 = bear(lat1, lon1, lat3, lon3);
+	double dis13 = dis(lat1, lon1, lat3, lon3);
+
+	// Is relative bearing obtuse?
+	if (abs(bear13 - bear12) > (M_PI / 2))
+		return dis13;
+
+	// Find the cross-track distance.
+	double dxt = asin(sin(dis13 / R) * sin(bear13 - bear12)) * R;
+
+	// Is p4 beyond the arc?
+	double dis12 = dis(lat1, lon1, lat2, lon2);
+	double dis14 = acos(cos(dis13 / R) / cos(dxt / R)) * R;
+	if (dis14 > dis12)
+		return dis(lat2, lon2, lat3, lon3);
+	return abs(dxt);
 }
 

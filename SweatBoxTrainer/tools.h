@@ -23,7 +23,11 @@ double NauticalMilesPerDegreeLon(double lat);
 
 Point2 getLocFromBearing(double latitude, double longitude, double distance, double bearing);
 
+double GetDistance(Point2* p1, Point2* p2);
+
 double GetDistance(double lat1, double lat2, double lon1, double lon2);
+
+double GetHeading(Point2* p1, Point2* p2);
 
 double GetHeading(double lat1, double lat2, double lon1, double lon2);
 
@@ -49,6 +53,8 @@ double degrees(double radians);
 
 double dist(double lat1, double lon1, double lat2, double lon2);
 
+double dist2(double x1, double y1, double x2, double y2);
+
 double round_up(double value, int decimal_places);
 
 std::wstring s2ws(const std::string& s);
@@ -72,6 +78,16 @@ double hdg(double heading);
 double get_bearing(double lat1, double long1, double lat2, double long2);
 
 bool inCircle(Point2& p1, Point2& p2, Point2& c, double radius_meters);
+
+bool inCircle2(Point2& p1, Point2& p2, Point2& c, double r);
+
+bool linePoint(double x1, double y1, double x2, double y2, double px, double py);
+
+bool intersects(Point2& p1, Point2& p2, Point2& c, double r);
+
+double line_dist(Point2& l1, Point2& l2, Point2& p);
+
+double pointToLineDistance(Point2& l1, Point2& l2, Point2& p);
 
 template<typename T>
 int pushBack(std::vector<T>& v, T val)
