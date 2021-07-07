@@ -32,8 +32,8 @@ struct Identity {
 	std::string password;
 	std::string username;
 	int id;
-	int controller_rating;
-	int pilot_rating;
+	int controller_rating = 0, controller_position = 0;
+	int pilot_rating = 0;
 };
 
 class FlightPlan {
@@ -137,7 +137,7 @@ public:
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	double calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
 	double calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double destHdg);
-	double calculateCourse(double __unnamed000, double __unnamed001, double __unnamed002);
+	double calculateGain(double __unnamed000, double __unnamed001, double __unnamed002);
 	double calculateTurnDistance(Point2* p, Point2* p2);
 	bool isTurnReady(Point2* p, Point2* p2);
 	bool isTurnReady(Point2* p, Point2* p2, double distance);

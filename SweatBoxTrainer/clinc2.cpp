@@ -17,6 +17,7 @@ static int packetSizes[256][2] = {
 	{9, -1},
 	{14, 36},
 	{12, 2},
+	{15, -2},
 	{16, 3},
 	{11, -2},
 	{17, -2}
@@ -168,8 +169,8 @@ void decodePackets(Aircraft* aircraft, Stream& in) {
 				length = in.remaining();
 			}
 		#ifdef _DEBUG
-			//std::cout << aircraft->getIdentity()->callsign << " Packet_Id: " << (int)opCode << ", Packet_Size: "
-			//	<< length << ", Bytes_Ava: " << in.remaining() << std::endl;
+			std::cout << aircraft->getIdentity()->callsign << " Packet_Id: " << (int)opCode << ", Packet_Size: "
+				<< length << ", Bytes_Ava: " << in.remaining() << std::endl;
 		#endif
 			if (in.remaining() >= length)
 			{
@@ -190,6 +191,9 @@ void decodePackets(Aircraft* aircraft, Stream& in) {
 }
 
 void tcpinterface::sendMessage(Stream* stream) {
+	if (!this->aircraft->connected)
+		return;
+
 	if (stream->currentOffset == 0) {
 		printf("Can't flush empty stream o.O\n");
 		return;

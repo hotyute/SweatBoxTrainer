@@ -243,7 +243,7 @@ double Aircraft::getNextPoint()
 				else
 				{
 					double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
-					double f_heading = calculateCourse(ground_cur->y_, ground_cur->x_, h);
+					double f_heading = calculateGain(ground_cur->y_, ground_cur->x_, h);
 					assignedValues.asgd_heading = hdg(f_heading); //hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 					flying_course = true;
 				}
@@ -432,7 +432,15 @@ double Aircraft::getNextHeading(double interval_ms)
 	double new_hdg = get_angle_unsigned(hdg(assignedValues.asgd_heading), hdg(heading));
 	if (speed != 0)
 	{
-		if (heading != assignedValues.asgd_heading) {
+		if (ground_cur && ground_prev)
+		{
+			//double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
+			//next_hdg = hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
+			double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
+			next_hdg = calculateGain(ground_cur->y_, ground_cur->x_, h);
+		}
+		else if (heading != assignedValues.asgd_heading) 
+		{
 			int turnOrientation = onGround() ? -1 : turnOri;
 			if (turnOrientation == -1)
 			{
@@ -470,7 +478,7 @@ double Aircraft::getNextHeading(double interval_ms)
 	return next_hdg;
 }
 
-double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double dest_hdg)
+double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double default_hdg)
 {
 	double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
 	double d_lat = (latitude - __unnamed000) * 60.0;
@@ -486,23 +494,25 @@ double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, double _
 	}
 	if (num7 < num8)// this is for checking how close we are to the bearing
 	{
-		return (double)dest_hdg;//destination heading
+		return (double)default_hdg;//should be destination heading
 	}
 	return locBrg;
 }
 
-double Aircraft::calculateCourse(double __unnamed000, double __unnamed001, double __unnamed002)
+double Aircraft::calculateGain(double __unnamed000, double __unnamed001, double __unnamed002)
 {
 	double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
 	double locBrg = __unnamed002;//localizer heading
-	double delta = get_angle_unsigned(locBrg, course);
-	if (fabs(delta) > 30) {
+	double delta = get_angle_unsigned(locBrg, course);	
+
+	if (fabs(delta) > 30) 
+	{
 		if (delta < 0)
 			delta = -30;
 		else if (delta > 0)
 			delta = 30;
 	}
-	//TODO Fly Gain Angle until we meet the turn rate (get_rot to LocBrg)
+
 	return hdg(course + -delta);
 }
 

@@ -61,6 +61,13 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		long long alt = stream.readQWord();
 		double altitude = *(double*)&alt;
 	}
+	if (opCode == 15) {
+		int index = stream.readUnsignedWord();
+		int frequency = stream.readDWord();
+		char msg[2048];
+		stream.readString(msg);
+		//handle frequency commands
+	}
 	if (opCode == 16) {
 		int index = stream.readUnsignedWord();
 		int mode = stream.readUnsignedByte();

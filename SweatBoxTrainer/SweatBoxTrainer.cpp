@@ -3,6 +3,7 @@
 
 #include "framework.h"
 #include "SweatBoxTrainer.h"
+#include "packets_out.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -44,7 +45,7 @@ DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MA
 
 
 HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, speed_hdl = NULL,
-vs_hdl = NULL, command_text = NULL, console_text = NULL;
+vs_hdl = NULL, command_text = NULL, console_text = NULL, mode_button = NULL;
 
 Aircraft* displayed = nullptr;
 
@@ -312,6 +313,26 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	// Parse the menu selections:
 	switch (wmId)
 	{
+		case MODE_BUTTON:
+		{
+			if (displayed)
+			{
+				Aircraft& aircraft = *displayed;
+				if (aircraft.getMode())
+				{
+					aircraft.setMode(0);
+					SetWindowText(mode_button, L"SQUAWK: S");
+					updateMode(aircraft);
+				}
+				else
+				{
+					aircraft.setMode(1);
+					SetWindowText(mode_button, L"SQUAWK: C");
+					updateMode(aircraft);
+				}
+			}
+		}
+		break;
 		case ID_SETTINGS_AOT:
 		{
 			always_on_top = !always_on_top;
@@ -480,14 +501,19 @@ void connect()
 				stream.writeString((char*)id.login_name.c_str());
 				stream.writeString((char*)id.username.c_str());
 				stream.writeString((char*)id.password.c_str());
-				stream.writeByte(id.controller_rating);
-				stream.writeByte(id.pilot_rating);
 				stream.writeQWord(1000);//request time
 				stream.writeQWord(doubleToRawBits(aircraft.getLatitude()));
 				stream.writeQWord(doubleToRawBits(aircraft.getLongitude()));
 				stream.writeWord(aircraft.getVisibility());
 				stream.writeByte(static_cast<int>(type));
-				if (type == AV_CLIENT::PILOT) {
+				if (type == AV_CLIENT::CONTROLLER)
+				{
+					stream.writeByte(id.controller_rating);
+					stream.writeByte(id.controller_position);
+				}
+				else if (type == AV_CLIENT::PILOT) 
+				{
+					stream.writeByte(id.pilot_rating);
 					stream.writeString((char*)aircraft.getAcfTitle().c_str());
 					stream.writeString((char*)aircraft.getSquawkCode().c_str());
 					stream.writeByte(aircraft.getMode());
@@ -774,6 +800,14 @@ void create_controls(HWND hwnd) {
 	SendMessage(speed_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 	SendMessage(speed_hdl, EM_LIMITTEXT, 25, 0L);
 
+	mode_button = CreateWindowEx(NULL, L"BUTTON", L"SQUAWK: C",
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
+		785, 150, 90, 30,
+		hwnd, (HMENU)MODE_BUTTON, NULL, NULL
+	);
+
+	SendMessage(mode_button, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(mode_button, EM_LIMITTEXT, 25, 0L);
 
 	aircraftList = CreateWindowEx(WS_EX_STATICEDGE, L"LISTBOX", NULL,
 		WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_NOTIFY | LBS_HASSTRINGS | LBS_SORT | WS_BORDER,
@@ -824,6 +858,8 @@ void DisplayAircraft() {
 
 		std::wstring spd = std::to_wstring((int)displayed->getSpeed());
 		SetWindowText(speed_hdl, spd.c_str());
+
+		displayed->getMode() == 0 ? SetWindowText(mode_button, L"SQUAWK: S") :SetWindowText(mode_button, L"SQUAWK: C");
 	}
 }
 
@@ -835,7 +871,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		aircraft.ground_prev = nullptr;
 		aircraft.ground_route.clear();
 
-		for (std::string s : split(command.substr(5, command.length() - 1), " ")) 
+		for (std::string s : split(command.substr(5, command.length() - 1), " "))
 		{
 			capitalize(s);
 			aircraft.ground_route.push_back(trim(s));

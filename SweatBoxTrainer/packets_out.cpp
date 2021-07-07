@@ -40,3 +40,10 @@ void sendFlightPlan(Aircraft& user) {
 	out.endFrameVarSizeWord();
 	user.getConnection().sendMessage(&out);
 }
+
+void updateMode(Aircraft& user) {
+	Stream& out = Stream(2);
+	out.createFrame(_UPDATE_MODE);
+	out.writeByte(user.getMode());
+	user.getConnection().sendMessage(&out);
+}
