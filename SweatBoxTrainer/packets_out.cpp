@@ -47,3 +47,10 @@ void updateMode(Aircraft& user) {
 	out.writeByte(user.getMode());
 	user.getConnection().sendMessage(&out);
 }
+
+void sendDisconnect(Aircraft& user) {
+	Stream& out = Stream(2);
+	out.createFrame(_DISCONNECT_PACKET);
+	out.writeByte(0);
+	user.getConnection().sendMessage(&out);
+}

@@ -137,7 +137,7 @@ public:
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	double calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
 	double calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double destHdg);
-	double calculateGain(double __unnamed000, double __unnamed001, double __unnamed002);
+	double calculateGain(Point2 cur, Point2 prev, double __unnamed002);
 	double calculateTurnDistance(Point2* p, Point2* p2);
 	bool isTurnReady(Point2* p, Point2* p2);
 	bool isTurnReady(Point2* p, Point2* p2, double distance);

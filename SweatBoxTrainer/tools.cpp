@@ -111,6 +111,11 @@ double GetDistance(Point2* p1, Point2* p2)
 	return GetDistance(p1->y_, p2->y_, p1->x_, p2->x_);
 }
 
+double GetDistance(double lat, double lon, Point2* p)
+{
+	return GetDistance(lat, p->y_, lon, p->x_);
+}
+
 double GetDistance(double lat1, double lat2, double lon1, double lon2)
 {
 	double lat11 = radians(lat1), lat22 = radians(lat2), lon11 = radians(lon1), lon22 = radians(lon2);
@@ -484,5 +489,60 @@ double pointToLineDistance(Point2& l1, Point2& l2, Point2& p) {
 	if (dis14 > dis12)
 		return dis(lat2, lon2, lat3, lon3);
 	return abs(dxt);
+}
+
+Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat, double $p2_lon, double $brng2) {
+	double lat1 = radians($p1_lat), lon1 = radians($p1_lon);
+	double lat2 = radians($p2_lat), lon2 = radians($p2_lon);
+	double brng13 = radians($brng1);
+	double brng23 = radians($brng2);
+	double dLat = lat2 - lat1;
+	double dLon = lon2 - lon1;
+
+	double dist12 = 2 * asin(sqrt(sin(dLat / 2) * sin(dLat / 2) +
+		cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)));
+	if (dist12 == 0) {
+		return nullptr;
+	}
+
+	// initial/final bearings between points
+	double brngA = acos((sin(lat2) - sin(lat1) * cos(dist12)) /
+		(sin(dist12) * cos(lat1)));
+	if (isnan(brngA)) {
+		brngA = 0;  // protect against rounding
+	}
+	double brngB = acos((sin(lat1) - sin(lat2) * cos(dist12)) /
+		(sin(dist12) * cos(lat2)));
+
+	double brng12, brng21;
+
+	if (sin(lon2 - lon1) > 0)
+	{
+		brng12 = brngA;
+		brng21 = 2 * M_PI - brngB;
+	}
+	else
+	{
+		brng12 = 2 * M_PI - brngA;
+		brng21 = brngB;
+	}
+
+	double alpha1 = fmod((brng13 - brng12 + M_PI), (2 * M_PI)) - M_PI;  // angle 2-1-3
+	double alpha2 = fmod((brng21 - brng23 + M_PI), (2 * M_PI)) - M_PI;  // angle 1-2-3
+
+	if (sin(alpha1) == 0 && sin(alpha2) == 0) return nullptr;  // infinite intersections
+	if (sin(alpha1) * sin(alpha2) < 0) return nullptr;       // ambiguous intersection
+
+	double alpha3 = acos(-cos(alpha1) * cos(alpha2) +
+		sin(alpha1) * sin(alpha2) * cos(dist12));
+	double dist13 = atan2(sin(dist12) * sin(alpha1) * sin(alpha2), cos(alpha2) + cos(alpha1) * cos(alpha3));
+	double lat3 = asin(sin(lat1) * cos(dist13) +
+		cos(lat1) * sin(dist13) * cos(brng13));
+	double dLon13 = atan2(sin(brng13) * sin(dist13) * cos(lat1), cos(dist13) - sin(lat1) * sin(lat3));
+	double lon3 = lon1 + dLon13;
+
+	lon3 = fmod((lon3 + 3 * M_PI), (2 * M_PI)) - M_PI;  // normalise to -180..+180º
+
+	return new Point2(degrees(lon3), degrees(lat3));
 }
 

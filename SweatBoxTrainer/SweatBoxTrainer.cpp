@@ -487,7 +487,7 @@ void connect()
 		Aircraft& aircraft = *(it->second);
 		tcpinterface& intter = aircraft.getConnection();
 		if (!aircraft.connected) {
-			if (intter.connectNew("127.0.0.1", 4403))
+			if (intter.connectNew("34.142.27.168", 4403))
 			{
 				aircraft.connected = true;
 				Identity& id = *aircraft.getIdentity();

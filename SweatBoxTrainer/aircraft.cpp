@@ -207,12 +207,7 @@ double Aircraft::getNextPoint()
 	{
 		if (ground_cur)
 		{
-			Point2** et = checkEarlyTurn(true);
-			if (et[0] && et[1])
-			{
-				std::cout << "arrived early" << std::endl;
-			}
-			else if (arrived(future_point))
+			if (arrived(future_point))
 			{
 				std::cout << "arrived" << std::endl;
 				ground_prev = ground_cur;
@@ -243,7 +238,7 @@ double Aircraft::getNextPoint()
 				else
 				{
 					double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
-					double f_heading = calculateGain(ground_cur->y_, ground_cur->x_, h);
+					double f_heading = calculateGain(*ground_cur, *ground_prev, h);
 					assignedValues.asgd_heading = hdg(f_heading); //hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 					flying_course = true;
 				}
@@ -432,14 +427,14 @@ double Aircraft::getNextHeading(double interval_ms)
 	double new_hdg = get_angle_unsigned(hdg(assignedValues.asgd_heading), hdg(heading));
 	if (speed != 0)
 	{
-		if (ground_cur && ground_prev)
+		/*if (ground_cur && ground_prev)
 		{
 			//double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
 			//next_hdg = hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 			double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
-			next_hdg = calculateGain(ground_cur->y_, ground_cur->x_, h);
+			next_hdg = calculateGain(*ground_cur, *ground_prev, h);
 		}
-		else if (heading != assignedValues.asgd_heading) 
+		else*/ if (heading != assignedValues.asgd_heading)
 		{
 			int turnOrientation = onGround() ? -1 : turnOri;
 			if (turnOrientation == -1)
@@ -499,26 +494,35 @@ double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, double _
 	return locBrg;
 }
 
-double Aircraft::calculateGain(double __unnamed000, double __unnamed001, double __unnamed002)
+double Aircraft::calculateGain(Point2 cur, Point2 prev, double __unnamed002)
 {
+	double __unnamed000 = cur.y_, __unnamed001 = cur.x_;
 	double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
 	double locBrg = __unnamed002;//localizer heading
-	double delta = get_angle_unsigned(locBrg, course);	
+	double delta = get_angle_unsigned(locBrg, course);
+	double gain = 0;
 
-	if (fabs(delta) > 30) 
+	if (delta < 0)
+		gain = 45;
+	else if (delta > 0)
+		gain = -45;
+
+	Point2* intersection = intersect(latitude, longitude, locBrg + gain, prev.y_, prev.x_, locBrg);
+
+	if (intersection)
 	{
-		if (delta < 0)
-			delta = -30;
-		else if (delta > 0)
-			delta = 30;
+		if (isTurnReady(intersection, &cur))
+		{
+			std::cout << "on course: " << delta << std::endl;
+			return hdg(locBrg + -delta);
+		}
 	}
 
-	return hdg(course + -delta);
+	return hdg(locBrg + gain);
 }
 
 double Aircraft::calculateTurnDistance(Point2* p, Point2* p2)
 {
-	//TODO Possibly use "future" / next frame speed rather than current speed?
 	double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
 	double next_speed = getNextSpeed(CALC_TIME);
 	double interval_dist = get_distance(next_speed, CALC_TIME);
@@ -581,7 +585,7 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2, double distance)
 
 	double min_dist_from = (pointToLineDistance(*p, *p2, n) / 1000.0) / KNOTS_KM;
 
-	std::cout << min_dist_from << std::endl;
+	//std::cout << min_dist_from << std::endl;
 
 	if (min_dist_from <= distance)
 		return true;
