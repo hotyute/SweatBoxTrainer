@@ -49,9 +49,9 @@ double get_angle(double brgto, double brgfrom);
 
 double get_angle_unsigned(double brgto, double brgfrom);
 
-double radians(double degrees);
+double radians(double degs);
 
-double degrees(double radians);
+double degrees(double rads);
 
 double dist(double lat1, double lon1, double lat2, double lon2);
 
@@ -92,6 +92,8 @@ double line_dist(Point2& l1, Point2& l2, Point2& p);
 double pointToLineDistance(Point2& l1, Point2& l2, Point2& p);
 
 Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat, double $p2_lon, double $brng2);
+
+bool isHeavyAngle(Point2* o, Point2* p, Point2* p2);
 
 template<typename T>
 int pushBack(std::vector<T>& v, T val)

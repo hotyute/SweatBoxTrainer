@@ -23,6 +23,7 @@ public:
 	std::string name;
 	std::vector<Point2*> points;
 	Point2* getNextPoint(Point2* last, Point2* p2);
+	Point2* angleTest(Point2* orig, Point2* p, Point2* p2);
 	Point2* getClosestPoint(double latitude, double longitude);
 	Point2* getClosest(TaxiPath* next);
 };

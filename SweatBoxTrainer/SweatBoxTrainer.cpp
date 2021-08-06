@@ -44,7 +44,7 @@ HWND aircraftList = NULL;
 DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_EX_TOPMOST;
 
 
-HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, speed_hdl = NULL,
+HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, speed_hdl = NULL, track_hdl = NULL,
 vs_hdl = NULL, command_text = NULL, console_text = NULL, mode_button = NULL;
 
 Aircraft* displayed = nullptr;
@@ -800,6 +800,24 @@ void create_controls(HWND hwnd) {
 	SendMessage(speed_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 	SendMessage(speed_hdl, EM_LIMITTEXT, 25, 0L);
 
+	HWND lbl_track = CreateWindowEx(NULL, L"STATIC", L"Track:",
+		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
+		445, 15, 70, 20,
+		hwnd, (HMENU)SPEED_LBL, NULL, NULL
+	);
+
+	SendMessage(lbl_track, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(lbl_track, EM_LIMITTEXT, 0, 0L);
+
+	track_hdl = CreateWindowEx(NULL, L"STATIC", L"",
+		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER | ES_READONLY,
+		430, 40, 100, 25,
+		hwnd, (HMENU)SPEED_TEXT, NULL, NULL
+	);
+
+	SendMessage(track_hdl, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+	SendMessage(track_hdl, EM_LIMITTEXT, 25, 0L);
+
 	mode_button = CreateWindowEx(NULL, L"BUTTON", L"SQUAWK: C",
 		WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
 		785, 150, 90, 30,
@@ -859,6 +877,12 @@ void DisplayAircraft() {
 		std::wstring spd = std::to_wstring((int)displayed->getSpeed());
 		SetWindowText(speed_hdl, spd.c_str());
 
+		displayed->onGround() ? 
+			displayed->cur_path ? SetWindowText(track_hdl, std::wstring(displayed->cur_path->name.begin(), displayed->cur_path->name.end()).c_str()) 
+					: SetWindowText(track_hdl, L"None") :
+			SetWindowText(track_hdl, L"None");
+
+
 		displayed->getMode() == 0 ? SetWindowText(mode_button, L"SQUAWK: S") :SetWindowText(mode_button, L"SQUAWK: C");
 	}
 }
@@ -866,10 +890,7 @@ void DisplayAircraft() {
 int processCommands(Aircraft& aircraft, std::string command) {
 	if (boost::istarts_with(command, "taxi ")) {
 
-		aircraft.cur_path = nullptr;
-		aircraft.taxiway_end = nullptr;
-		aircraft.ground_prev = nullptr;
-		aircraft.ground_route.clear();
+		aircraft.reset_path();
 
 		for (std::string s : split(command.substr(5, command.length() - 1), " "))
 		{
@@ -880,6 +901,8 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		return 1;
 	}
 	else if (boost::istarts_with(command, "tl ")) {
+
+		aircraft.reset_path();
 
 		std::vector<std::string> array3 = split(command, " ");
 
@@ -893,6 +916,8 @@ int processCommands(Aircraft& aircraft, std::string command) {
 	}
 	else if (boost::istarts_with(command, "tr ")) {
 
+		aircraft.reset_path();
+
 		std::vector<std::string> array3 = split(command, " ");
 
 		if (array3.size() == 2)
@@ -905,6 +930,8 @@ int processCommands(Aircraft& aircraft, std::string command) {
 	}
 	else if (boost::istarts_with(command, "fh "))
 	{
+
+		aircraft.reset_path();
 
 		std::vector<std::string> array3 = split(command, " ");
 

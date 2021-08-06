@@ -311,6 +311,13 @@ void Aircraft::processRoute()
 
 						ground_cur = tp.getClosestPoint(latitude, longitude);
 
+						if (next_path)
+						{
+							Point2* np = cur_path->getNextPoint(ground_cur, cur_path->getClosest(next_path));
+
+							ground_cur = cur_path->angleTest(&Point2(longitude, latitude), ground_cur, np);
+						}
+
 						future_point = getFuturePoint();
 					}
 				}
@@ -343,7 +350,12 @@ void Aircraft::processRoute()
 
 							if (taxiway_end)
 							{
-								ground_cur = tp.getNextPoint(ground_prev, taxiway_end);
+								//TODO can we make ground_cur futurue_point instead?
+
+								if (future_point)
+									ground_cur = future_point;
+								else
+									ground_cur = tp.getNextPoint(ground_prev, taxiway_end);
 
 								future_point = getFuturePoint();
 							}
@@ -370,6 +382,16 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 		return isTurnReady(p1, p2);
 	}
 	return defaultTurnDistance(p1);
+}
+
+void Aircraft::reset_path()
+{
+	cur_path = nullptr;
+	taxiway_end = nullptr;
+	ground_prev = nullptr;
+	ground_cur = nullptr;
+	flying_course = false;
+	ground_route.clear();
 }
 
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude
@@ -513,9 +535,12 @@ double Aircraft::calculateGain(Point2 cur, Point2 prev, double __unnamed002)
 	{
 		if (isTurnReady(intersection, &cur))
 		{
-			std::cout << "on course: " << delta << std::endl;
+			//#ifdef _DEBUG
+			//	std::cout << "on course: " << delta << std::endl;
+			//#endif
 			return hdg(locBrg + -delta);
 		}
+		delete intersection;
 	}
 
 	return hdg(locBrg + gain);
@@ -535,6 +560,7 @@ double Aircraft::calculateTurnDistance(Point2* p, Point2* p2)
 
 	return distance;
 }
+
 
 bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 {
@@ -662,7 +688,7 @@ Point2* Aircraft::getFuturePoint()
 		if (taxiway_end)
 		{
 			Point2* n = checkEarlyTurn(false)[1];
-			if (!p2 || n != nullptr)
+			if (!p2 && n != nullptr)
 			{
 				p2 = n;
 				std::cout << "Next Path: " << GetDistance(ground_cur->y_, p2->y_, ground_cur->x_, p2->x_) << std::endl;
@@ -685,10 +711,12 @@ Point2** Aircraft::checkEarlyTurn(bool is_early)
 			{
 				Point2* e = next_path->getClosest(next_next_path);
 				Point2* t = next_path->getNextPoint(n, e);
+			#ifdef _DEBUG
 				if (ground_cur == taxiway_end)
 				{
 					std::cout << hdg(degrees(GetHeading(taxiway_end, t))) << std::endl;
 				}
+			#endif
 				double d1 = calculateTurnDistance(n, t);
 				if (isTurnReady(n, t, d1))
 				{
@@ -696,7 +724,7 @@ Point2** Aircraft::checkEarlyTurn(bool is_early)
 					p2[0] = n;
 					p2[1] = t;
 
-					if (is_early)
+					/*if (is_early)
 					{
 						ground_prev = n;
 						ground_cur = t;
@@ -717,7 +745,7 @@ Point2** Aircraft::checkEarlyTurn(bool is_early)
 						}
 						else next_next_path = nullptr;
 						ground_route.erase(ground_route.begin());
-					}
+					}*/
 				}
 			}
 		}

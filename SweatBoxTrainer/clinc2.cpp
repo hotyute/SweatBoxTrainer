@@ -14,7 +14,7 @@
 static int packetSizes[256][2] = {
 	{10, 8},
 	{13, 0},
-	{9, -1},
+	{9, -2},
 	{14, 36},
 	{12, 2},
 	{15, -2},
@@ -171,8 +171,8 @@ void decodePackets(Aircraft* aircraft, Stream& in) {
 				length = in.remaining();
 			}
 		#ifdef _DEBUG
-			std::cout << aircraft->getIdentity()->callsign << " Packet_Id: " << (int)opCode << ", Packet_Size: "
-				<< length << ", Bytes_Ava: " << in.remaining() << std::endl;
+			//std::cout << aircraft->getIdentity()->callsign << " Packet_Id: " << (int)opCode << ", Packet_Size: "
+			//	<< length << ", Bytes_Ava: " << in.remaining() << std::endl;
 		#endif
 			if (in.remaining() >= length)
 			{

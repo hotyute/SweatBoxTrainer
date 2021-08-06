@@ -209,12 +209,12 @@ double get_angle_unsigned(double brgto, double brgfrom)
 	return fmod(((brgto - brgfrom) + 540.0), 360) - 180.0;
 }
 
-double radians(double degrees) {
-	return (degrees * M_PI) / 180.0;
+double radians(double degs) {
+	return (degs * M_PI) / 180.0;
 }
 
-double degrees(double radians) {
-	return (radians * 180.0) / M_PI;
+double degrees(double rads) {
+	return (rads * 180.0) / M_PI;
 }
 
 double dist(double lat1, double lon1, double lat2, double lon2) {
@@ -501,7 +501,8 @@ Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat,
 
 	double dist12 = 2 * asin(sqrt(sin(dLat / 2) * sin(dLat / 2) +
 		cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)));
-	if (dist12 == 0) {
+	if (dist12 == 0) 
+	{
 		return nullptr;
 	}
 
@@ -545,4 +546,12 @@ Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat,
 
 	return new Point2(degrees(lon3), degrees(lat3));
 }
+
+bool isHeavyAngle(Point2* o, Point2* p, Point2* p2)
+{
+	double course = degrees(GetHeading(o->y_, p->y_, o->x_, p->x_));
+	double locBrg = hdg(degrees(GetHeading(p->y_, p2->y_, p->x_, p2->x_)));
+	return get_angle(locBrg, course) > 90;
+}
+
 

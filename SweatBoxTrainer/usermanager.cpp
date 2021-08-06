@@ -15,6 +15,8 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		stream.readString(username);
 		stream.readString(full_name);
 		int vis_range = stream.readUnsignedWord();
+		long long lat = stream.readQWord();
+		long long lon = stream.readQWord();
 		if (type == AV_CLIENT::CONTROLLER) 
 		{
 			//do nothing but read the stream
@@ -29,6 +31,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 			char trans_code[1024];
 			stream.readString(trans_code);
 			int squawkMode = stream.readUnsignedByte();
+			int hash = stream.readQWord();
 
 
 			//user1->setUserIndex(index);

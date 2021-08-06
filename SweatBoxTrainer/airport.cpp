@@ -39,6 +39,18 @@ Point2* TaxiPath::getNextPoint(Point2* p, Point2* p2)
 	return p2;
 }
 
+Point2* TaxiPath::angleTest(Point2* orig, Point2* p, Point2* p2)
+{
+	Point2* f = p;
+	while (isHeavyAngle(orig, f, p2))
+	{
+		if (f == p2)
+			break;
+		f = getNextPoint(f, p2);
+	}
+	return f;
+}
+
 Point2* TaxiPath::getClosestPoint(double latitude, double longitude)
 {
 	Point2 p = Point2(longitude, latitude);

@@ -134,6 +134,7 @@ public:
 	void processRoute();
 	bool arrived(Point2* p2);
 	bool arrived(Point2* p1, Point2* p2);
+	void reset_path();
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	double calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
 	double calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double destHdg);
