@@ -203,7 +203,7 @@ void tcpinterface::sendMessage(Stream* stream) {
 
 	w_lock();
 
-	DWORD what = send(tcpinterface::sConnect, stream->buffer, stream->currentOffset, NULL);
+	DWORD response = send(tcpinterface::sConnect, stream->buffer, stream->currentOffset, NULL);
 	stream->clearBuf();
 
 	w_unlock();

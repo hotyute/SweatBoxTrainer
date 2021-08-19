@@ -9,7 +9,8 @@ Point2* TaxiPath::getNextPoint(Point2* p, Point2* p2)
 	//std::cout << p->index << ", " << p2->index << std::endl;
 	if (p && p2 && p->index != -1 && p2->index != -1)
 	{
-		if (p->index < p2->index) {
+		if (p->index < p2->index) 
+		{
 			for (int i = p->index; i < p2->index;  ++i)
 			{
 				Point2* p3 = points[i];
@@ -37,6 +38,37 @@ Point2* TaxiPath::getNextPoint(Point2* p, Point2* p2)
 		}
 	}
 	return p2;
+}
+
+void TaxiPath::getPoints(Point2* p, Point2* p2, std::vector<Point2*> &point_store)
+{
+	//std::cout << p->index << ", " << p2->index << std::endl;
+	if (p && p2 && p->index != -1 && p2->index != -1)
+	{
+		if (p->index < p2->index)
+		{
+			for (int i = p->index; i < p2->index; ++i)
+			{
+				Point2* p3 = points[i];
+				if (p3 && p3 != p)
+				{
+					point_store.push_back(p3);
+				}
+			}
+		}
+		else if (p->index > p2->index)
+		{
+			//std::cout << name << std::endl;
+			for (int i = p->index; i > p2->index; --i)
+			{
+				Point2* p3 = points[i];
+				if (p3 && p3 != p)
+				{
+					point_store.push_back(p3);
+				}
+			}
+		}
+	}
 }
 
 Point2* TaxiPath::angleTest(Point2* orig, Point2* p, Point2* p2)

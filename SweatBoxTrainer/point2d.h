@@ -3,6 +3,7 @@
 
 struct	Point2;
 struct	Vector2;
+class TaxiPath;
 
 struct Point2 {
 	Point2() : x_(0.0), y_(0.0), p{ 0.0, 0.0, 0.0 } { }
@@ -25,6 +26,7 @@ struct Point2 {
 	double x_, y_;
 	double p[3];
 	int index = -1;
+	TaxiPath* parent = nullptr;
 };
 
 struct Vector2 {

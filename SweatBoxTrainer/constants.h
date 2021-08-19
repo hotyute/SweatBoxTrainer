@@ -10,4 +10,6 @@ const long long CALC_TIME = 30L;
 
 const double KNOTS_KM = 1.852;
 
+const double KNOTS_FT = 6076.1200001180986874;
+
 #endif

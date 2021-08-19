@@ -73,10 +73,10 @@ private:
 public:
 	int turnOri = -1;
 	std::string apt_icao = "";
-	bool connected = false, flying_course = false;
+	bool connected = false, flying_test = false;
 	std::vector<std::string> ground_route;
-	Point2* ground_prev = nullptr, * ground_cur = nullptr, * taxiway_end = nullptr, * future_point = nullptr;
-	TaxiPath* cur_path = nullptr, * next_path = nullptr, * next_next_path = nullptr;
+	std::vector<Point2*> ground_points;
+	Point2* ground_prev = nullptr, * ground_cur = nullptr, * ground_next = nullptr;
 	Point2* air_prev = nullptr, * air_cur = nullptr;
 	Aircraft();
 	~Aircraft();
@@ -131,7 +131,8 @@ public:
 	double getNextSpeed(double interval_ms);
 	double getNextHeading(double interval_ms);
 	double getNextPoint();
-	void processRoute();
+	void pollRoute();
+	void prepareRoute();
 	bool arrived(Point2* p2);
 	bool arrived(Point2* p1, Point2* p2);
 	void reset_path();
@@ -144,8 +145,8 @@ public:
 	bool isTurnReady(Point2* p, Point2* p2, double distance);
 	bool defaultTurnDistance();
 	bool defaultTurnDistance(Point2* p1);
-	Point2* getFuturePoint();
-	Point2** checkEarlyTurn(bool is_early);
+	Point2* getFuturePoint(TaxiPath* cur_path, TaxiPath* next_path, Point2* taxiway_end);
+	/*Point2** checkEarlyTurn();*/
 };
 
 

@@ -36,7 +36,7 @@ void CalculateMovements()
 				aircraft.updateHeading();
 				aircraft.updateMovement();
 
-				aircraft.processRoute();
+
 				aircraft.getNextPoint();
 
 			}

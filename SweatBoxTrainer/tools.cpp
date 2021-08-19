@@ -150,11 +150,11 @@ double GetCTE(double current_lat, double current_lon, double dest_lat, double de
 
 double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, double speed)
 {
-	double _lead_angle_limit = 30;//maximum intercept degrees
+	double _lead_angle_limit = 45;//maximum intercept degrees
 	double _lead_angle_gain = 1.5;//how quick it recovers from intercept angle
 	double _proportion = 0.75;// where it will start on the course?
 
-	double _wp_range = GetDistance(radians(acf_lat), radians(p_to.y_), radians(acf_lon), radians(p_to.x_));//wp_range
+	double _wp_range = GetDistance(acf_lat, p_to.y_, acf_lon, p_to.x_);//wp_range
 	double course = GetHeading(p_from.y_, p_to.y_, p_from.x_, p_to.x_);
 	double brg = GetHeading(acf_lat, p_from.y_, acf_lon, p_from.x_);
 
@@ -164,12 +164,7 @@ double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, dou
 
 	double limit = _lead_angle_limit * factor;
 
-	double _lead_angle = 0;
-	if (_wp_range > 0) {
-		_lead_angle = degrees(atan2(xtrack_error_nm, (_wp_range * _proportion)));
-	}
-	else
-		_lead_angle = 0;
+	double _lead_angle = _wp_range > 0 ? degrees(atan2(xtrack_error_nm, (_wp_range * _proportion))) : 0;
 
 	_lead_angle *= _lead_angle_gain * factor;
 

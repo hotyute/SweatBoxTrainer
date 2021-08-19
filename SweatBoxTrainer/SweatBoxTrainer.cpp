@@ -487,7 +487,8 @@ void connect()
 		Aircraft& aircraft = *(it->second);
 		tcpinterface& intter = aircraft.getConnection();
 		if (!aircraft.connected) {
-			if (intter.connectNew("34.142.27.168", 4403))
+			//34.142.27.168
+			if (intter.connectNew("127.0.0.1", 4403))
 			{
 				aircraft.connected = true;
 				Identity& id = *aircraft.getIdentity();
@@ -878,7 +879,8 @@ void DisplayAircraft() {
 		SetWindowText(speed_hdl, spd.c_str());
 
 		displayed->onGround() ? 
-			displayed->cur_path ? SetWindowText(track_hdl, std::wstring(displayed->cur_path->name.begin(), displayed->cur_path->name.end()).c_str()) 
+			displayed->ground_cur ? SetWindowText(track_hdl, std::wstring(displayed->ground_cur->parent->name.begin(),
+				displayed->ground_cur->parent->name.end()).c_str())
 					: SetWindowText(track_hdl, L"None") :
 			SetWindowText(track_hdl, L"None");
 
@@ -897,6 +899,9 @@ int processCommands(Aircraft& aircraft, std::string command) {
 			capitalize(s);
 			aircraft.ground_route.push_back(trim(s));
 		}
+
+		aircraft.prepareRoute();
+		aircraft.pollRoute();
 
 		return 1;
 	}
@@ -948,7 +953,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 
 		std::vector<std::string> array3 = split(command, " ");
 
-		if (array3.size() == 2)
+		if (array3.size() >= 2)
 		{
 			aircraft.turnOri = -1;
 			aircraft.getAssignedValues().asdg_speed = atodd(array3[1]);
