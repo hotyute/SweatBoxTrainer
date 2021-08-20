@@ -586,10 +586,10 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 	//double remainder = fmod(GetDistance(n.y_, ground_cur->y_, n.x_, ground_cur->x_), distance);
 	double dist_pt = GetDistance(n.y_, p->y_, n.x_, p->x_);
 
-	if (dist_pt <= (distance * 1.3))
+	if (dist_pt <= (distance * 1.2))
 	{
 	#ifdef _DEBUG
-		printf("Turning at distance: %f\n", (distance * 1.3));
+		printf("Turning at distance: %f\n", (distance * 1.2));
 	#endif
 		return true;
 	}
