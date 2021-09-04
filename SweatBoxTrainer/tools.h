@@ -29,6 +29,8 @@ double GetDistance(double lat, double lon, Point2* p);
 
 double GetDistance(double lat1, double lat2, double lon1, double lon2);
 
+long double distanceTo(long double lat1, long double long1, long double lat2, long double long2);
+
 double GetHeading(Point2* p1, Point2* p2);
 
 double GetHeading(double lat1, double lat2, double lon1, double lon2);

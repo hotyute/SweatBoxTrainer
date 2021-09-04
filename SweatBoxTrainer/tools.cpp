@@ -124,6 +124,38 @@ double GetDistance(double lat1, double lat2, double lon1, double lon2)
 	return d;
 }
 
+long double distanceTo(long double lat1, long double long1,
+	long double lat2, long double long2)
+{
+	// Convert the latitudes
+	// and longitudes
+	// from degree to radians.
+	lat1 = radians(lat1);
+	long1 = radians(long1);
+	lat2 = radians(lat2);
+	long2 = radians(long2);
+
+	// Haversine Formula
+	long double dlong = long2 - long1;
+	long double dlat = lat2 - lat1;
+
+	long double ans = pow(sin(dlat / 2), 2) +
+		cos(lat1) * cos(lat2) *
+		pow(sin(dlong / 2), 2);
+
+	ans = 2 * asin(sqrt(ans));
+
+	// Radius of Earth in
+	// Kilometers, R = 6371
+	// Use R = 3956 for miles
+	long double R = 6371;
+
+	// Calculate the result
+	ans = ans * R;
+
+	return ans;
+}
+
 double GetHeading(Point2* p1, Point2* p2)
 {
 	return GetHeading(p1->y_, p2->y_, p1->x_, p2->x_);
@@ -442,7 +474,7 @@ double line_dist(Point2& l1, Point2& l2, Point2& p)
 	double distanceAC = acos(sin(lat1Rads) * sin(lat3Rads) + cos(lat1Rads) * cos(lat3Rads) * cos(dLon)) * 6371;
 	double min_distance = fabs(asin(sin(distanceAC / 6371) * sin(radians(bearing1) - radians(bearing2))) * 6371);
 
-	return (min_distance / KNOTS_KM);
+	return min_distance;
 }
 
 double dis(double latA, double lonA, double latB, double lonB) {

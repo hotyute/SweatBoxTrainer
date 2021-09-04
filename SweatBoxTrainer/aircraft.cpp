@@ -19,7 +19,7 @@ Aircraft::Aircraft() {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	for (int i = 0; i < 4; ++i)
 	{
-		last_time[0] = now;
+		last_time[i] = now;
 	}
 }
 
@@ -265,13 +265,22 @@ void Aircraft::pollRoute()
 		{
 			if (ground_points.size() > 1)
 			{
-				ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
+				if (point_skip)
+				{
+					ground_prev = false;
+					point_skip = false;
+				}
+				else
+					ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
 
 				ground_cur = ground_points.front();
 
 				auto next = ground_points.erase(ground_points.begin());
 
 				next != ground_points.end() ? ground_next = *next : ground_next = nullptr;
+
+				(next != ground_points.end() && ((next + 1) != ground_points.end()))
+					? ground_next_next = *(next + 1) : ground_next_next = nullptr;
 			}
 			else
 			{
@@ -364,6 +373,37 @@ void Aircraft::prepareRoute()
 	}
 }
 
+bool Aircraft::checkTooShort()
+{
+	if (ground_cur && ground_next && ground_next_next)
+	{
+		double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
+		double next_speed = getNextSpeed(CALC_TIME);
+
+		double brg1 = hdg(degrees(GetHeading(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_)));
+		double brg2 = hdg(degrees(GetHeading(ground_next->y_, ground_next_next->y_, ground_next->x_, ground_next_next->x_)));
+
+		double angle0 = get_angle(heading, brg1);
+		double angle1 = get_angle(brg1, brg2);
+
+
+		double time_sec0 = angle0 / turn_rate;
+		double time_sec1 = angle1 / turn_rate;
+
+		double distance0 = next_speed * (time_sec0 / 3600.0);
+		double distance1 = next_speed * (time_sec1 / 3600.0);
+
+		double dist_pt = GetDistance(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_);
+
+		if (dist_pt < (distance0 + distance1))
+		{
+			printf("Next path is too short!\n");
+			return true;
+		}
+		return false;
+	}
+}
+
 bool Aircraft::arrived(Point2* p2)
 {
 	return arrived(ground_cur, p2);
@@ -374,7 +414,16 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 	if (!p1 || !p2)
 		return false;
 
-	return isTurnReady(p1, p2);
+	if (checkTooShort())
+	{
+		if (doPointSkip())
+		{
+			point_skip = true;
+			return true;
+		}
+	}
+
+	return isTurnReady(p1, p2) || defaultTurnDistance();
 }
 
 void Aircraft::reset_path()
@@ -572,24 +621,24 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 	double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
 	double next_speed = getNextSpeed(CALC_TIME);
 	double interval_dist = get_distance(next_speed, CALC_TIME);
-	double next_heading = getNextHeading(CALC_TIME);
 
-	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), next_heading);
+	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
 
 	double locBrg = hdg(degrees(GetHeading(p->y_, p2->y_, p->x_, p2->x_)));
-	double angle = get_angle(locBrg, next_heading);
+	double angle = get_angle(locBrg, heading);
 	double time_sec = angle / turn_rate;
 	double distance = next_speed * (time_sec / 3600.0);
 
-	//Point2 v = getLocFromBearing(p->y_, p->x_, (distance * KNOTS_KM), next_heading);
+	double d = line_dist(*p, *p2, Point2(longitude, latitude));
 
-	//double remainder = fmod(GetDistance(n.y_, ground_cur->y_, n.x_, ground_cur->x_), distance);
+	Point2 v = getLocFromBearing(p->y_, p->x_, (distance * KNOTS_KM), 0);
+
 	double dist_pt = GetDistance(n.y_, p->y_, n.x_, p->x_);
 
-	if (dist_pt <= (distance * 1.2))
+	if (dist_pt <= (distance * KNOTS_KM))
 	{
 	#ifdef _DEBUG
-		printf("Turning at distance: %f\n", (distance * 1.2));
+		printf("Turning at distance: %f, %f\n", d, dist_pt);
 	#endif
 		return true;
 	}
@@ -616,7 +665,7 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2, double distance)
 	double interval_dist = get_distance(next_speed, CALC_TIME);
 	double next_heading = getNextHeading(CALC_TIME);
 
-	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), next_heading);
+	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
 
 	double min_dist_from = (pointToLineDistance(*p, *p2, n) / 1000.0) / KNOTS_KM;
 
@@ -635,27 +684,29 @@ bool Aircraft::defaultTurnDistance()
 
 bool Aircraft::defaultTurnDistance(Point2* p1)
 {
-	int radius_m = onGround() ? 2 : 20;
+	int radius_m = onGround() ? 0.000002 : 0.0002;// ground is about 2 meters
 
 	double interval_dist = get_distance(speed, CALC_TIME);
 	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
 
-	Point2 v = getLocFromBearing(p1->y_, p1->x_, (radius_m / 1000.0), 0);
+	/*Point2 v = getLocFromBearing(p1->y_, p1->x_, (radius_m / 1000.0), 0);
 
 	double num2 = (v.y_ - p1->y_) / 60.0;
 	double num3 = (v.x_ - p1->x_) / NauticalMilesPerDegreeLon(p1->y_);// prev 45.0 for boston
 
 	double radius = sqrt(num3 * num3 + num2 * num2);
 
-	double dist_pt = GetDistance(n.y_, p1->y_, n.x_, p1->x_);
+	double dist_pt = GetDistance(n.y_, p1->y_, n.x_, p1->x_);*/
 
-	/*if (inCircle(Point2(longitude, latitude), n, *p1, radius))
+	if (inCircle(Point2(longitude, latitude), n, *p1, radius_m))
 	{
 		return true;
-	}*/
+	}
 
-	if (dist_pt <= ((radius_m / 1000.0) / KNOTS_KM))
-		return true;
+	//if (dist_pt <= (radius_m / 1000.0))
+	//{		
+	//	return true;
+	//}
 
 	return false;
 }
@@ -704,29 +755,28 @@ Point2* Aircraft::getFuturePoint(TaxiPath* cur_path, TaxiPath* next_path, Point2
 	return p2;
 }
 
-/*Point2** Aircraft::checkEarlyTurn()
+bool Aircraft::doPointSkip()
 {
-	Point2* p2[2] = { nullptr, nullptr };
-	if (next_path)
+	if (ground_next && ground_next_next)
 	{
-		if (taxiway_end)
+		double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
+
+		double next_speed = getNextSpeed(CALC_TIME);
+		double interval_dist = get_distance(next_speed, CALC_TIME);
+
+		Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
+
+		double course = degrees(GetHeading(ground_next->y_, ground_next_next->y_, ground_next->y_, ground_next_next->x_));
+		double angle = get_angle(course, heading);
+		double time_sec = angle / turn_rate;
+		double distance = next_speed * (time_sec / 3600.0);
+
+		double dist_pt = GetDistance(n.y_, ground_cur->y_, n.x_, ground_cur->x_);
+
+		if (dist_pt <= (distance * 1.5))
 		{
-			Point2* n = next_path->getClosestPoint(taxiway_end->y_, taxiway_end->x_);
-			if (next_next_path)
-			{
-				Point2* e = next_path->getClosest(next_next_path);
-				Point2* t = next_path->getNextPoint(n, e);
-
-				double d1 = calculateTurnDistance(n, t);
-
-				if (isTurnReady(n, t, d1))
-				{
-					std::cout << "Turning Early" << std::endl;
-					p2[0] = n;
-					p2[1] = t;
-				}
-			}
+			return true;
 		}
+		return false;
 	}
-	return p2;
-}*/
+}
