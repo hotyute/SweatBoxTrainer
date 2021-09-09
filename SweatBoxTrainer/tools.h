@@ -41,7 +41,11 @@ double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, dou
 
 double get_roll(double start_roll, double end_roll, double total_ms, long long interval_ms);
 
+double get_radius_of_turn(double roll, double TAS);
+
 double get_rot(double roll, double TAS, long long interval_ms);
+
+double get_rot(double roll, double TAS);
 
 double get_ros(double acceleration, long long interval_ms);
 
@@ -96,6 +100,10 @@ double pointToLineDistance(Point2& l1, Point2& l2, Point2& p);
 Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat, double $p2_lon, double $brng2);
 
 bool isHeavyAngle(Point2* o, Point2* p, Point2* p2);
+
+double TurnRadius(double speed, double turnRate);
+
+double HeadingDelta(double hdg1, double hdg2);
 
 template<typename T>
 int pushBack(std::vector<T>& v, T val)

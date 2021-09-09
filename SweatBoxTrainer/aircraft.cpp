@@ -167,7 +167,7 @@ void Aircraft::updateMovement()
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[0];
 	double dist = get_distance(speed, interval);
-	Point2 p = getLocFromBearing(latitude, longitude, (dist * KNOTS_KM), heading);
+	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
 	if (p.x_ != longitude || p.y_ != latitude)
 	{
 		//aircraft moved set flags here
@@ -271,7 +271,9 @@ void Aircraft::pollRoute()
 					point_skip = false;
 				}
 				else
+				{
 					ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
+				}
 
 				ground_cur = ground_points.front();
 
@@ -346,28 +348,6 @@ void Aircraft::prepareRoute()
 						}
 					}
 				}
-
-				/*auto it = ground_points.begin();
-				while (it != ground_points.end())
-				{
-					Point2* point = *it;
-					if (point)
-					{
-						if ((it + 1) != ground_points.end())
-						{
-							Point2* next_point = *(it + 1);
-							if (next_point)
-							{
-								if (GetDistance(point, next_point) <= (50 / KNOTS_FT))
-								{
-									it = ground_points.erase(it);
-									continue;
-								}
-							}
-						}
-					}
-					++it;
-				}*/
 			}
 		}
 	}
@@ -387,11 +367,10 @@ bool Aircraft::checkTooShort()
 		double angle1 = get_angle(brg1, brg2);
 
 
-		double time_sec0 = angle0 / turn_rate;
-		double time_sec1 = angle1 / turn_rate;
+		double turn_radius0 = TurnRadius(speed, turn_rate);
 
-		double distance0 = next_speed * (time_sec0 / 3600.0);
-		double distance1 = next_speed * (time_sec1 / 3600.0);
+		double distance0 = tan(radians(angle0 / 2.0)) * turn_radius0;
+		double distance1 = tan(radians(angle1 / 2.0)) * turn_radius0;
 
 		double dist_pt = GetDistance(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_);
 
@@ -490,14 +469,7 @@ double Aircraft::getNextHeading(double interval_ms)
 	double new_hdg = get_angle_unsigned(hdg(assignedValues.asgd_heading), hdg(heading));
 	if (speed != 0)
 	{
-		/*if (ground_cur && ground_prev)
-		{
-			//double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
-			//next_hdg = hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
-			double h = degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_));
-			next_hdg = calculateGain(*ground_cur, *ground_prev, h);
-		}
-		else*/ if (heading != assignedValues.asgd_heading)
+		if (heading != assignedValues.asgd_heading)
 		{
 			int turnOrientation = onGround() ? -1 : turnOri;
 			if (turnOrientation == -1)
@@ -622,23 +594,23 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 	double next_speed = getNextSpeed(CALC_TIME);
 	double interval_dist = get_distance(next_speed, CALC_TIME);
 
-	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
+	Point2 n = getLocFromBearing(latitude, longitude, interval_dist, heading);
 
 	double locBrg = hdg(degrees(GetHeading(p->y_, p2->y_, p->x_, p2->x_)));
+
 	double angle = get_angle(locBrg, heading);
 	double time_sec = angle / turn_rate;
 	double distance = next_speed * (time_sec / 3600.0);
 
-	double d = line_dist(*p, *p2, Point2(longitude, latitude));
+	double dist_pt = GetDistance(latitude, p->y_, longitude, p->x_);
 
-	Point2 v = getLocFromBearing(p->y_, p->x_, (distance * KNOTS_KM), 0);
+	double turnRadius = TurnRadius(speed, turn_rate);
+	double leadDistance = tan(radians(angle / 2.0)) * turnRadius;
 
-	double dist_pt = GetDistance(n.y_, p->y_, n.x_, p->x_);
-
-	if (dist_pt <= (distance * KNOTS_KM))
+	if (dist_pt <= leadDistance)
 	{
 	#ifdef _DEBUG
-		printf("Turning at distance: %f, %f\n", d, dist_pt);
+		printf("Turning at distance: %f, %f\n", dist_pt, leadDistance);
 	#endif
 		return true;
 	}
@@ -682,24 +654,27 @@ bool Aircraft::defaultTurnDistance()
 	return defaultTurnDistance(ground_cur);
 }
 
-bool Aircraft::defaultTurnDistance(Point2* p1)
+bool Aircraft::defaultTurnDistance(Point2* p)
 {
-	int radius_m = onGround() ? 0.000002 : 0.0002;// ground is about 2 meters
+	int radius_m = onGround() ? 1 : 7;// ground is about 2 meters
 
 	double interval_dist = get_distance(speed, CALC_TIME);
-	Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
+	Point2 n = getLocFromBearing(latitude, longitude, interval_dist, heading);
 
-	/*Point2 v = getLocFromBearing(p1->y_, p1->x_, (radius_m / 1000.0), 0);
+	Point2 v = getLocFromBearing(p->y_, p->x_, (radius_m / 1000.0) / KNOTS_KM, 0);
 
-	double num2 = (v.y_ - p1->y_) / 60.0;
-	double num3 = (v.x_ - p1->x_) / NauticalMilesPerDegreeLon(p1->y_);// prev 45.0 for boston
+	double num2 = (v.y_ - p->y_);
+	double num3 = (v.x_ - p->x_);// prev 45.0 for boston
 
-	double radius = sqrt(num3 * num3 + num2 * num2);
+	double radius = sqrt((num3 * num3) + (num2 * num2));
 
-	double dist_pt = GetDistance(n.y_, p1->y_, n.x_, p1->x_);*/
+	double dist_pt = GetDistance(n.y_, p->y_, n.x_, p->x_);
 
-	if (inCircle(Point2(longitude, latitude), n, *p1, radius_m))
+	if (inCircle(Point2(longitude, latitude), n, *p, radius))
 	{
+	#ifdef _DEBUG
+		printf("radius: %.*f\n", 15, dist_pt);
+	#endif
 		return true;
 	}
 
@@ -764,16 +739,19 @@ bool Aircraft::doPointSkip()
 		double next_speed = getNextSpeed(CALC_TIME);
 		double interval_dist = get_distance(next_speed, CALC_TIME);
 
-		Point2 n = getLocFromBearing(latitude, longitude, (interval_dist * KNOTS_KM), heading);
+		Point2 n = getLocFromBearing(latitude, longitude, interval_dist, heading);
 
 		double course = degrees(GetHeading(ground_next->y_, ground_next_next->y_, ground_next->y_, ground_next_next->x_));
 		double angle = get_angle(course, heading);
 		double time_sec = angle / turn_rate;
 		double distance = next_speed * (time_sec / 3600.0);
 
-		double dist_pt = GetDistance(n.y_, ground_cur->y_, n.x_, ground_cur->x_);
+		double dist_pt = GetDistance(latitude, ground_cur->y_, longitude, ground_cur->x_);
 
-		if (dist_pt <= (distance * 1.5))
+		double turnRadius = TurnRadius(speed, turn_rate);
+		double leadDistance = tan(radians(angle / 2.0)) * turnRadius;
+
+		if (dist_pt <= leadDistance)
 		{
 			return true;
 		}

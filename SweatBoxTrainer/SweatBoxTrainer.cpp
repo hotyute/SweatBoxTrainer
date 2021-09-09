@@ -98,6 +98,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	MSG msg;
 
+	printf("rot: %f\n", get_radius_of_turn(25, 180));
+
 	// Main message loop:
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{

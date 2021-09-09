@@ -27,6 +27,7 @@ void sendFlightPlan(Aircraft& user) {
 	FlightPlan& fp = user.getFlightPlan();
 	out.createFrameVarSizeWord(_SEND_FLIGHT_PLAN);
 	out.writeWord(fp.cycle);
+	out.writeWord(user.getUserIndex());
 	out.writeByte(fp.flightRules);
 	out.writeString((char*)fp.squawkCode.c_str());
 	out.writeString((char*)fp.departure.c_str());

@@ -11,7 +11,7 @@
 
 #include "constants.h"
 
-const double R_EARTH = 6378.14; //KM
+const double EARTH_RADIUS_KM = 6378.14; //KM
 const double EARTH_RADIUS_NM = 3437.670013352;
 
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
@@ -84,16 +84,16 @@ double NauticalMilesPerDegreeLon(double lat)
 	return (M_PI / 180.0) * EARTH_RADIUS_NM * cos(radians(lat));
 }
 
-Point2 getLocFromBearing(double latitude, double longitude, double distancekm, double bearing) {
-	double R = 6378.14;
+Point2 getLocFromBearing(double latitude, double longitude, double distancenm, double bearing) {
 
+	double R = 6378.14;
 	// Degree to Radian
 	double latitude1 = radians(latitude);
 	double longitude1 = radians(longitude);
 	double brng = radians(bearing);
 
-	double latitude2 = asin(sin(latitude1) * cos(distancekm / R) + cos(latitude1) * sin(distancekm / R) * cos(brng));
-	double longitude2 = longitude1 + atan2(sin(brng) * sin(distancekm / R) * cos(latitude1), cos(distancekm / R) - sin(latitude1) * sin(latitude2));
+	double latitude2 = asin(sin(latitude1) * cos(distancenm / EARTH_RADIUS_NM) + cos(latitude1) * sin(distancenm / EARTH_RADIUS_NM) * cos(brng));
+	double longitude2 = longitude1 + atan2(sin(brng) * sin(distancenm / EARTH_RADIUS_NM) * cos(latitude1), cos(distancenm / EARTH_RADIUS_NM) - sin(latitude1) * sin(latitude2));
 
 	// back to degrees
 	latitude2 = degrees(latitude2);
@@ -120,7 +120,7 @@ double GetDistance(double lat1, double lat2, double lon1, double lon2)
 {
 	double lat11 = radians(lat1), lat22 = radians(lat2), lon11 = radians(lon1), lon22 = radians(lon2);
 	double d;
-	d = acos((sin(lat11) * sin(lat22)) + (cos(lat11) * cos(lat22) * cos(lon22 - lon11))) * R_EARTH;
+	d = acos((sin(lat11) * sin(lat22)) + (cos(lat11) * cos(lat22) * cos(lon22 - lon11))) * EARTH_RADIUS_NM;
 	return d;
 }
 
@@ -176,7 +176,7 @@ double GetCTE(double current_lat, double current_lon, double dest_lat, double de
 
 	dist1 = GetDistance(radians(current_lat), radians(dest_lat), radians(current_lon), radians(dest_lon));
 	bearing = GetHeading(current_lat, dest_lat, current_lon, dest_lon);
-	cte = asin(sin(dist1 / R_EARTH) * sin(bearing - track_angle)) * R_EARTH;
+	cte = asin(sin(dist1 / EARTH_RADIUS_KM) * sin(bearing - track_angle)) * EARTH_RADIUS_KM;
 	return cte;
 }
 
@@ -212,9 +212,20 @@ double get_roll(double start_roll, double end_roll, double total_ms, long long i
 	return (end_roll - start_roll) * (interval_ms / total_ms);
 }
 
+double get_radius_of_turn(double roll, double TAS)
+{
+	double G = 1092.0;
+	return (TAS * TAS) / G * tan(radians(roll));
+}
+
 double get_rot(double roll, double TAS, long long interval_ms) {
 	double G = 1092.0;
 	return (G * tan(radians(roll)) / TAS) * (interval_ms / 1000.0);
+}
+
+double get_rot(double roll, double TAS) {
+	double G = 1092.0;
+	return (G * tan(radians(roll)) / TAS);
 }
 
 double get_ros(double acceleration, long long interval_ms) {
@@ -471,8 +482,8 @@ double line_dist(Point2& l1, Point2& l2, Point2& p)
 	double lat3Rads = radians(lat3);
 	double dLon = radians(lon3 - lon1);
 
-	double distanceAC = acos(sin(lat1Rads) * sin(lat3Rads) + cos(lat1Rads) * cos(lat3Rads) * cos(dLon)) * 6371;
-	double min_distance = fabs(asin(sin(distanceAC / 6371) * sin(radians(bearing1) - radians(bearing2))) * 6371);
+	double distanceAC = acos(sin(lat1Rads) * sin(lat3Rads) + cos(lat1Rads) * cos(lat3Rads) * cos(dLon)) * EARTH_RADIUS_KM;
+	double min_distance = fabs(asin(sin(distanceAC / EARTH_RADIUS_KM) * sin(radians(bearing1) - radians(bearing2))) * EARTH_RADIUS_KM);
 
 	return min_distance;
 }
@@ -581,4 +592,22 @@ bool isHeavyAngle(Point2* o, Point2* p, Point2* p2)
 	return get_angle(locBrg, course) > 90;
 }
 
+double TurnRadius(double speed, double turnRate)
+{
+	double nmPerSec = speed / 3600.0;
+	//double degPerSec = nmPerSec / NM_PER_DEG;
+	double fullTurnTime = 360.0 / turnRate;
+	//double circumference = degPerSec * fullTurnTime;
+	double circumference = nmPerSec * fullTurnTime;
+	return circumference / (2.0 * M_PI);
+}
+
+double HeadingDelta(double hdg1, double hdg2)
+{
+	double delta = abs(hdg2 - hdg1);
+	if (delta > 180.0) {
+		delta = 360.0 - delta;
+	}
+	return delta;
+}
 

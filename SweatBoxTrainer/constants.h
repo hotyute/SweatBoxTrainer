@@ -12,4 +12,6 @@ const double KNOTS_KM = 1.852;
 
 const double KNOTS_FT = 6076.1200001180986874;
 
+const double NM_PER_DEG = 60.0;
+
 #endif
