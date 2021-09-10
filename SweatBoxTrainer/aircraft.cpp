@@ -355,17 +355,17 @@ void Aircraft::prepareRoute()
 
 bool Aircraft::checkTooShort()
 {
-	if (ground_cur && ground_next && ground_next_next)
+	if (ground_prev && ground_cur && ground_next && ground_next_next)
 	{
 		double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
 		double next_speed = getNextSpeed(CALC_TIME);
 
+		double brg0 = hdg(degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_)));
 		double brg1 = hdg(degrees(GetHeading(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_)));
 		double brg2 = hdg(degrees(GetHeading(ground_next->y_, ground_next_next->y_, ground_next->x_, ground_next_next->x_)));
 
-		double angle0 = get_angle(heading, brg1);
+		double angle0 = get_angle(brg0, brg1);
 		double angle1 = get_angle(brg1, brg2);
-
 
 		double turn_radius0 = TurnRadius(speed, turn_rate);
 
@@ -381,6 +381,7 @@ bool Aircraft::checkTooShort()
 		}
 		return false;
 	}
+	return false;
 }
 
 bool Aircraft::arrived(Point2* p2)
@@ -392,6 +393,15 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 {
 	if (!p1 || !p2)
 		return false;
+
+	if (!ground_prev)
+	{
+		double brng = get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_);
+		double angle = get_angle(brng, heading);
+
+		if (angle >= 90)
+			return false;
+	}
 
 	if (checkTooShort())
 	{
@@ -751,10 +761,13 @@ bool Aircraft::doPointSkip()
 		double turnRadius = TurnRadius(speed, turn_rate);
 		double leadDistance = tan(radians(angle / 2.0)) * turnRadius;
 
+		printf("dist: %f, %f\n", dist_pt, leadDistance);
+
 		if (dist_pt <= leadDistance)
 		{
 			return true;
 		}
 		return false;
 	}
+	return false;
 }
