@@ -9,6 +9,8 @@ void sendFlightPlan(Aircraft& user);
 
 void updateMode(Aircraft& user);
 
+void sendPingPacket(Aircraft& user);
+
 const int _AIRCRAFT_POS_UPDATE = 1,
 _UPDATE_TRANSPONDER = 2,
 CONTROLLER_POS_UPDATE = 3,

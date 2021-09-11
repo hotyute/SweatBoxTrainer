@@ -592,9 +592,28 @@ DWORD WINAPI CalcThread1(LPVOID)
 	boost::posix_time::ptime end;
 	boost::posix_time::time_duration time;
 
+	boost::posix_time::ptime curTime1 = boost::posix_time::microsec_clock::local_time();
+
 	while (true)
 	{
 		start = boost::posix_time::microsec_clock::local_time();
+
+		if (boost::posix_time::time_duration(boost::posix_time::microsec_clock::local_time()
+			- curTime1).total_milliseconds() >= 10000)
+		{
+			if (AcfMap.size() > 0) 
+			{
+				for (auto iter = AcfMap.begin(); iter != AcfMap.end(); ++iter)
+				{
+					Aircraft* acf1 = iter->second;
+					if (acf1) {
+						Aircraft& aircraft = *acf1;
+						sendPingPacket(aircraft);
+					}
+				}
+			}
+			curTime1 = boost::posix_time::microsec_clock::local_time();
+		}
 
 		//code here
 		update();

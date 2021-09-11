@@ -55,3 +55,9 @@ void sendDisconnect(Aircraft& user) {
 	out.writeByte(0);
 	user.getConnection().sendMessage(&out);
 }
+
+void sendPingPacket(Aircraft& user) {
+	Stream& out = Stream(2);
+	out.createFrame(_PING);
+	user.getConnection().sendMessage(&out);
+}
