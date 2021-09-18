@@ -132,6 +132,7 @@ public:
 	double getNextHeading(double interval_ms);
 	double getNextPoint();
 	void pollRoute();
+	void refreshRoute();
 	void prepareRoute();
 	bool checkTooShort();
 	bool arrived(Point2* p2);

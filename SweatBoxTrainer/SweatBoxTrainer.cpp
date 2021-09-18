@@ -81,6 +81,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	RedirectIOToConsole();
 #endif
 
+	printf("tan(angle): %f\n", get_radius_of_turn(170.0, 0.034));
+
 	// TODO: Place code here.
 
 	// Initialize global strings

@@ -14,6 +14,9 @@
 const double EARTH_RADIUS_KM = 6378.14; //KM
 const double EARTH_RADIUS_NM = 3437.670013352;
 
+const int TURN_RATE_TAXI_MIN = 5;       // Degrees per second.
+const int TURN_RATE_TAXI = 20;          // Degrees per second.
+
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
 	// Skip delimiters at beginning.
 	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
@@ -212,10 +215,26 @@ double get_roll(double start_roll, double end_roll, double total_ms, long long i
 	return (end_roll - start_roll) * (interval_ms / total_ms);
 }
 
-double get_radius_of_turn(double roll, double TAS)
+double get_radius_of_turn(double angle, double radius)
 {
-	double G = 1092.0;
-	return (TAS * TAS) / G * tan(radians(roll));
+	double result = 0.0;
+	double loop_factor = angle / 90.0;
+	while (loop_factor > 0)
+	{
+		double a = angle;
+		if (loop_factor >= 1)
+		{
+			a = 90.0;
+			angle -= 90.0;
+		}
+		else
+		{
+			a = angle;
+		}
+		result += tan(radians(a / 2.0)) * radius;
+		--loop_factor;
+	}
+	return result;
 }
 
 double get_rot(double roll, double TAS, long long interval_ms) {
@@ -539,7 +558,7 @@ Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat,
 
 	double dist12 = 2 * asin(sqrt(sin(dLat / 2) * sin(dLat / 2) +
 		cos(lat1) * cos(lat2) * sin(dLon / 2) * sin(dLon / 2)));
-	if (dist12 == 0) 
+	if (dist12 == 0)
 	{
 		return nullptr;
 	}
@@ -609,5 +628,15 @@ double HeadingDelta(double hdg1, double hdg2)
 		delta = 360.0 - delta;
 	}
 	return delta;
+}
+
+double CalcTaxiTurnRate(double turnAngle)
+{
+	double turnRate = TURN_RATE_TAXI;
+	if (turnAngle <= 90.0) {
+		double pct = turnAngle / 90.0;
+		turnRate = TURN_RATE_TAXI_MIN + ((TURN_RATE_TAXI - TURN_RATE_TAXI_MIN) * pct);
+	}
+	return turnRate;
 }
 

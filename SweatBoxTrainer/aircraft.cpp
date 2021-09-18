@@ -209,7 +209,8 @@ double Aircraft::getNextPoint()
 		{
 			if (arrived(ground_next))
 			{
-				std::cout << "[Arrived at : " << ground_next->parent->name << " : " << ground_next->index << "]" << std::endl;
+				if (ground_cur)
+					std::cout << "[Arrived at : " << ground_cur->parent->name << " : " << ground_cur->index << "]" << std::endl;
 				pollRoute();
 			}
 			else
@@ -265,15 +266,8 @@ void Aircraft::pollRoute()
 		{
 			if (ground_points.size() > 1)
 			{
-				if (point_skip)
-				{
-					ground_prev = false;
-					point_skip = false;
-				}
-				else
-				{
-					ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
-				}
+
+				ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
 
 				ground_cur = ground_points.front();
 
@@ -292,6 +286,27 @@ void Aircraft::pollRoute()
 		else
 		{
 
+		}
+	}
+}
+
+void Aircraft::refreshRoute()
+{
+	Airport* airport_ptr = getAirport();
+
+	if (airport_ptr)
+	{
+		if (onGround())
+		{
+			if (!ground_next && ground_cur && ground_points.size() >= 2)
+			{
+				auto next = (ground_points.begin() + 1);
+
+				next != ground_points.end() ? ground_next = *next : ground_next = nullptr;
+
+				(next != ground_points.end() && ((next + 1) != ground_points.end()))
+					? ground_next_next = *(next + 1) : ground_next_next = nullptr;
+			}
 		}
 	}
 }
@@ -394,21 +409,11 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 	if (!p1 || !p2)
 		return false;
 
-	if (!ground_prev)
-	{
-		double brng = get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_);
-		double angle = get_angle(brng, heading);
-
-		if (angle >= 90)
-			return false;
-	}
-
 	if (checkTooShort())
 	{
 		if (doPointSkip())
 		{
-			point_skip = true;
-			return true;
+
 		}
 	}
 
@@ -606,9 +611,11 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 
 	Point2 n = getLocFromBearing(latitude, longitude, interval_dist, heading);
 
-	double locBrg = hdg(degrees(GetHeading(p->y_, p2->y_, p->x_, p2->x_)));
+	double locBrg0 = ground_prev ? hdg(degrees(GetHeading(ground_prev->y_, p->y_, ground_prev->x_, p->x_))) :
+		hdg(degrees(GetHeading(latitude, p->y_, longitude, p->x_)));
+	double locBrg1 = hdg(degrees(GetHeading(p->y_, p2->y_, p->x_, p2->x_)));
 
-	double angle = get_angle(locBrg, heading);
+	double angle = get_angle(locBrg1, locBrg0);
 	double time_sec = angle / turn_rate;
 	double distance = next_speed * (time_sec / 3600.0);
 
@@ -619,9 +626,9 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 
 	if (dist_pt <= leadDistance)
 	{
-	#ifdef _DEBUG
-		printf("Turning at distance: %f, %f\n", dist_pt, leadDistance);
-	#endif
+#ifdef _DEBUG
+		printf("Turning at distance: %f, %f. angle: %f\n", dist_pt, leadDistance, angle);
+#endif
 		return true;
 	}
 
@@ -682,9 +689,9 @@ bool Aircraft::defaultTurnDistance(Point2* p)
 
 	if (inCircle(Point2(longitude, latitude), n, *p, radius))
 	{
-	#ifdef _DEBUG
+#ifdef _DEBUG
 		printf("radius: %.*f\n", 15, dist_pt);
-	#endif
+#endif
 		return true;
 	}
 
@@ -744,7 +751,7 @@ bool Aircraft::doPointSkip()
 {
 	if (ground_next && ground_next_next)
 	{
-		double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
+		/*double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
 
 		double next_speed = getNextSpeed(CALC_TIME);
 		double interval_dist = get_distance(next_speed, CALC_TIME);
@@ -761,13 +768,17 @@ bool Aircraft::doPointSkip()
 		double turnRadius = TurnRadius(speed, turn_rate);
 		double leadDistance = tan(radians(angle / 2.0)) * turnRadius;
 
-		printf("dist: %f, %f\n", dist_pt, leadDistance);
+		printf("dist: %f, %f: angle(%f)\n", dist_pt, leadDistance, angle);
 
 		if (dist_pt <= leadDistance)
 		{
 			return true;
 		}
-		return false;
+		return false;*/
+		ground_points.erase(std::remove(ground_points.begin(), ground_points.end(), ground_next), ground_points.end());
+		ground_next = nullptr;
+		refreshRoute();
+		return true;
 	}
 	return false;
 }

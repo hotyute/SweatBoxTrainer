@@ -97,7 +97,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 
 		if (type == AV_CLIENT::PILOT) {
 			int flightRules = stream.readUnsignedByte();
-			char assigned_squawk[5], departure[5], arrival[5], alternate[5], cruise[6], ac_type[8], scratch[5], route[128], remarks[128];
+			char assigned_squawk[5], departure[5], arrival[5], alternate[5], cruise[6], ac_type[9], scratch[5], route[128], remarks[128];
 			stream.readString(assigned_squawk);
 			stream.readString(departure);
 			stream.readString(arrival);
