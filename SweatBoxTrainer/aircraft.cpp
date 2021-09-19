@@ -194,11 +194,29 @@ Airport* Aircraft::getAirport()
 	return nullptr;
 }
 
-bool Aircraft::onGround() {
+bool Aircraft::onGround() 
+{
 	Airport* apt = getAirport();
 	if (altitude <= 0 || (airport && altitude <= airport->elevation + 2))
 		return true;
 	return false;
+}
+
+void Aircraft::SetTrackData()
+{
+	if (onGround())
+	{
+		if (ground_cur && ground_next)
+		{
+			double locBrg0 = ground_prev ? degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_))
+				: degrees(GetHeading(latitude, ground_cur->y_, longitude, ground_cur->x_));
+			double locBrg1 = degrees(GetHeading(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_));
+
+			double angle = get_angle(locBrg1, locBrg0);
+
+			//assignedValues.asdg_gnd_turn_rate = CalcTaxiTurnRate(angle);
+		}
+	}
 }
 
 double Aircraft::getNextPoint()

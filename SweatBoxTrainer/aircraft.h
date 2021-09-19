@@ -18,7 +18,7 @@ struct AssignedValues {
 	int asdg_altitude = 0;
 	double asdg_speed = 0;
 	double asdg_roll = 25;
-	double asdg_gnd_turn_rate = 9; // 9 degrees per second
+	double asdg_gnd_turn_rate = 10; // 9 degrees per second
 	double asdg_accel = 2;//per second
 	double asdg_gnd_accel = 0.5;//per second
 };
@@ -128,6 +128,7 @@ public:
 	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
 	Airport* getAirport();
 	bool onGround();
+	void SetTrackData();
 	double getNextSpeed(double interval_ms);
 	double getNextHeading(double interval_ms);
 	double getNextPoint();

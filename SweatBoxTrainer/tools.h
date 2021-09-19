@@ -107,6 +107,8 @@ double HeadingDelta(double hdg1, double hdg2);
 
 double CalcTaxiTurnRate(double turnAngle);
 
+std::string FormatAltitude(std::string altitude);
+
 template<typename T>
 int pushBack(std::vector<T>& v, T val)
 {

@@ -118,6 +118,7 @@ int LoadAGC(std::string path) {
 							fp.departure = args[2].length() > 4 ? args[2].substr(0, 3) : args[2];
 							fp.arrival = args[3].length() > 4 ? args[3].substr(0, 3) : args[3];
 							fp.route = args[4].length() > 128 ? args[4].substr(0, 127) : args[4];
+							fp.cruise = FormatAltitude(args[6].length() > 6 ? args[6].substr(0, 5) : args[6]);
 							fp.alternate = args[7].length() > 4 ? args[7].substr(0, 3) : args[7];
 							fp.remarks = args[8].length() > 128 ? args[8].substr(0, 127) : args[8];
 							++fp.cycle;

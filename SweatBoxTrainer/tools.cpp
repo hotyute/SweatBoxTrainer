@@ -13,6 +13,7 @@
 
 const double EARTH_RADIUS_KM = 6378.14; //KM
 const double EARTH_RADIUS_NM = 3437.670013352;
+const int TRANSITION = 18000;
 
 const int TURN_RATE_TAXI_MIN = 5;       // Degrees per second.
 const int TURN_RATE_TAXI = 20;          // Degrees per second.
@@ -640,3 +641,16 @@ double CalcTaxiTurnRate(double turnAngle)
 	return turnRate;
 }
 
+
+std::string FormatAltitude(std::string altitude)
+{
+	if (altitude.size() == 3)
+	{
+		if (altitude[0] != '0' && altitude[1] != '0')
+		{
+			while (altitude.size() < 5)
+				altitude += "0";
+		}
+	}
+	return altitude;
+}
