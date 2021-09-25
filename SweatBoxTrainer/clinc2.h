@@ -40,7 +40,7 @@ public:
 
 #endif
 
-void decodePackets(Aircraft* aircraft, Stream& in);
+void decodePackets(Aircraft* aircraft, Stream& in, int nBytesRecieved);
 
 bool SetSocketBlocking(SOCKET sock, bool blocking);
 

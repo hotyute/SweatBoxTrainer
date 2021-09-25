@@ -43,7 +43,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	{
 		//update Cycle Change
 		long long time = stream.readQWord();
-		printf("timee_change: %s, %lld\n", aircraft->getIdentity()->callsign.c_str(), time);
+		printf("time_change: %s, %lld\n", aircraft->getIdentity()->callsign.c_str(), time);
 		aircraft->setUpdateTime(time);
 	}
 	if (opCode == 11) {// recieve message

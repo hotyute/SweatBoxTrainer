@@ -567,7 +567,8 @@ DWORD WINAPI SocketThread1(LPVOID lpParameter) {
 		for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)//TODO possible make this thread awake when there is any data in any aircraft socket?
 		{
 			Aircraft& aircraft = *(it->second);
-			if (aircraft.connected) {
+			if (aircraft.connected) 
+			{
 				aircraft.getConnection().run();
 			}
 		}

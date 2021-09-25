@@ -47,19 +47,15 @@ DWORD tcpinterface::run() {
 	{
 		nBytesReceived = recv(sConnect, message, 5000, 0);
 
-		if (nBytesReceived < 0)
+		if (nBytesReceived == SOCKET_ERROR)
 		{
-			int error = errno;
-			if (error == 0) {
-				//no data to read
-				return 0;
+			int error = WSAGetLastError();
+			if (error == WSAECONNABORTED
+				|| error == WSAECONNRESET || error == WSAETIMEDOUT)
+			{
+				closed = true;
+				printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
 			}
-			if (error == EAGAIN || error == EWOULDBLOCK) {
-				//handle 
-				return 0;
-			}
-			closed = true;
-			printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
 			return 0;
 		}
 
@@ -75,24 +71,50 @@ DWORD tcpinterface::run() {
 			if (tcpinterface::current_op == 45)
 			{
 				in.markReaderIndex();
-				if (nBytesReceived >= 11)
+				if (nBytesReceived >= 1)
 				{
 					int loginCode = in.readUnsignedByte();
-					int index = in.readUnsignedWord();
-					long long updateTimeInMillis = in.readQWord();
 					if (loginCode == 1)
 					{
-						aircraft->setUserIndex(index);
-						userStorage1[index] = aircraft;
-						aircraft->setUpdateTime(updateTimeInMillis);
-						Event* position_updates = new PositionUpdates(aircraft);
-						position_updates->eAction.setTicks(0);
-						event_manager1->addEvent(position_updates);
-						hand_shake = false;
-						current_op = -1;
-						in.deleteReaderBlock();
+						if (in.remaining() >= 10)
+						{
+							int index = in.readUnsignedWord();
+							long long updateTimeInMillis = in.readQWord();
+							aircraft->setUserIndex(index);
+							userStorage1[index] = aircraft;
+							aircraft->setUpdateTime(updateTimeInMillis);
+							Event* position_updates = new PositionUpdates(aircraft);
+							position_updates->eAction.setTicks(0);
+							event_manager1->addEvent(position_updates);
+							hand_shake = false;
+							current_op = -1;
+							in.deleteReaderBlock();
 
-						send_initial_packets(*aircraft);
+							send_initial_packets(*aircraft);
+						}
+						else
+						{
+							in.resetReaderIndex();
+						}
+					}
+					else
+					{
+						switch (loginCode)
+						{
+						case 2:
+						{
+							//sendErrorMessage("Invalid protocol Version.");
+							//if (connected)
+							//	disconnect(true);
+							in.deleteReaderBlock();
+							break;
+						}
+						default:
+						{
+							in.deleteReaderBlock();
+							break;
+						}
+						}
 					}
 				}
 				else
@@ -100,19 +122,18 @@ DWORD tcpinterface::run() {
 					in.resetReaderIndex();
 				}
 			}
-			else
+		}
+
+		if (!hand_shake)
+		{
+			if (in.remaining() > 0)
 			{
-				in.clearBuf();
+				decodePackets(aircraft, in, nBytesReceived);
 			}
 		}
 
-		if (!hand_shake) {
-			if (in.remaining() > 0)
-			{
-				//std::cout << aircraft->getIdentity()->callsign << ", " << in.peek() << std::endl;
-				decodePackets(aircraft, in);
-			}
-		}
+		FD_ZERO(&rfds);
+		FD_SET(tcpinterface::sConnect, &rfds);
 
 		//retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
 	}
@@ -123,11 +144,11 @@ DWORD tcpinterface::run() {
 	return 0;
 }
 
-void decodePackets(Aircraft* aircraft, Stream& in) {
+void decodePackets(Aircraft* aircraft, Stream& in, int nBytesRecieved) {
 	while (in.remaining() > 0)
 	{
 		in.markReaderIndex();
-		int opCode = in.readSignedByte(), length = -3;
+		int opCode = in.readUnsignedByte(), length = -3;
 		if (opCode != -1)
 		{
 			for (int j = 0; j < 256; j++)
@@ -164,18 +185,19 @@ void decodePackets(Aircraft* aircraft, Stream& in) {
 			}
 			else if (length == -3)
 			{
-			#ifdef _DEBUG
-				std::cout << aircraft->getIdentity()->callsign << " Unhandled Packet_Id!! : [" << (int)opCode << ", Packet_Size: "
-					<< length << ", Bytes_Ava: " << in.remaining() << "]" << std::endl;
-			#endif
+#ifdef _DEBUG
+				printf("%s [UNHANDLED] Packet_Id!! : %d, Packet_Size: %d, Bytes_Ava: %d nBytes: %d\n",
+					aircraft->getIdentity()->callsign.c_str(), opCode, length, in.remaining(), nBytesRecieved);
+#endif
 				length = in.remaining();
 			}
-		#ifdef _DEBUG
-			//std::cout << aircraft->getIdentity()->callsign << " Packet_Id: " << (int)opCode << ", Packet_Size: "
-			//	<< length << ", Bytes_Ava: " << in.remaining() << std::endl;
-		#endif
+#ifdef _DEBUG
+			//printf("%s Packet_Id: %d, Packet_Size: %d, Bytes_Ava: %d nBytes: %d\n", 
+			//	aircraft->getIdentity()->callsign.c_str(), opCode, length, in.remaining(), nBytesRecieved);
+#endif
 			if (in.remaining() >= length)
 			{
+				//handle
 				processIncomingPackets(aircraft, opCode, in);
 				in.deleteReaderBlock();
 			}
@@ -184,10 +206,6 @@ void decodePackets(Aircraft* aircraft, Stream& in) {
 				in.resetReaderIndex();
 				break;
 			}
-		}
-		else
-		{
-			in.clearBuf();
 		}
 	}
 }
@@ -202,10 +220,8 @@ void tcpinterface::sendMessage(Stream* stream) {
 	}
 
 	w_lock();
-
 	DWORD response = send(tcpinterface::sConnect, stream->buffer, stream->currentOffset, NULL);
-	stream->clearBuf();
-
+	stream->currentOffset = 0;
 	w_unlock();
 }
 
@@ -253,9 +269,9 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 		std::cout << iError << std::endl;
 		if (iError == WSAEWOULDBLOCK)
 		{
-		#ifdef _DEBUG
+#ifdef _DEBUG
 			std::cout << "Attempting to connect.\n";
-		#endif
+#endif
 			fd_set Write, Err;
 			TIMEVAL Timeout;
 			int TimeoutSec = 5; // timeout after 5 seconds

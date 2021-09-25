@@ -5,7 +5,6 @@
 void sendPositionUpdates(Aircraft& user) {
 	Stream& out = Stream(40);
 	out.createFrameVarSize(_AIRCRAFT_POS_UPDATE);
-	out.writeWord(user.getUserIndex());
 	double lat = user.getLatitude();
 	double lon = user.getLongitude();
 	long long latitude = *(long long*)&lat;

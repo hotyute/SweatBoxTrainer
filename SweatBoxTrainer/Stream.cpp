@@ -81,6 +81,7 @@ bool Stream::deleteReaderBlock() {
 
 bool Stream::clearBuf()
 {
+	lastReaderIndex = 0;
 	currentOffset = 0;
 	ZeroMemory(buffer, length);
 	length = 0;
