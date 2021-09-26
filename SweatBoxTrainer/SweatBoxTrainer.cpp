@@ -985,5 +985,9 @@ int processCommands(Aircraft& aircraft, std::string command) {
 
 		return 1;
 	}
+	else if (boost::istarts_with(command, "hs"))
+	{
+
+	}
 	return 0;
 }
