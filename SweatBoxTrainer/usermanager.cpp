@@ -47,7 +47,8 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		aircraft->setUpdateTime(time);
 	}
 	if (opCode == 11) {// recieve message
-		int index = stream.readUnsignedWord();
+		char callsign[25];
+		stream.readString(callsign);
 		char msg[2048];
 		stream.readString(msg);
 	}
