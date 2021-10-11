@@ -194,7 +194,7 @@ Airport* Aircraft::getAirport()
 	return nullptr;
 }
 
-bool Aircraft::onGround() 
+bool Aircraft::onGround()
 {
 	Airport* apt = getAirport();
 	if (altitude <= 0 || (airport && altitude <= airport->elevation + 2))
@@ -202,7 +202,24 @@ bool Aircraft::onGround()
 	return false;
 }
 
-void Aircraft::SetTrackData()
+double Aircraft::GetTrackTurnData()
+{
+	if (onGround())
+	{
+		if (ground_cur && ground_next)
+		{
+			double locBrg0 = ground_prev ? degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_))
+				: degrees(GetHeading(latitude, ground_cur->y_, longitude, ground_cur->x_));
+			double locBrg1 = degrees(GetHeading(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_));
+
+			double angle = get_angle(locBrg1, locBrg0);
+			return CalcTaxiTurnRate(angle);
+		}
+	}
+	return assignedValues.asdg_gnd_turn_rate;
+}
+
+double Aircraft::GetTrackSpeedData()
 {
 	if (onGround())
 	{
@@ -214,9 +231,28 @@ void Aircraft::SetTrackData()
 
 			double angle = get_angle(locBrg1, locBrg0);
 
-			//assignedValues.asdg_gnd_turn_rate = CalcTaxiTurnRate(angle);
+			return CalcTaxiSpeed(angle, defaultValues.speed);
 		}
 	}
+	return speed;
+}
+
+bool Aircraft::OnTrack()
+{
+	if (onGround())
+	{
+		if (ground_cur && ground_prev)
+		{
+			double __unnamed000 = ground_cur->y_, __unnamed001 = ground_cur->x_;
+			double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
+			double locBrg = degrees(GetHeading(ground_prev, ground_cur));//localizer heading
+			double delta = get_angle_unsigned(locBrg, course);
+			double delta2 = get_angle_unsigned(locBrg, heading);
+			//printf("delta: [%f] [%f] [%f]\n", delta, course, locBrg);
+			return (delta < 1 && delta > -1) && (delta2 < 1 && delta2 > -1);
+		}
+	}
+	return false;
 }
 
 double Aircraft::getNextPoint()
@@ -228,7 +264,9 @@ double Aircraft::getNextPoint()
 			if (arrived(ground_next))
 			{
 				if (ground_cur)
+				{
 					std::cout << "[Arrived at : " << ground_cur->parent->name << " : " << ground_cur->index << "]" << std::endl;
+				}
 				pollRoute();
 			}
 			else
@@ -248,6 +286,15 @@ double Aircraft::getNextPoint()
 					double f_heading = calculateGain(*ground_cur, *ground_prev, h);
 					assignedValues.asgd_heading = hdg(f_heading); //hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 				}
+			}
+
+			if (set_rate && OnTrack())
+			{//if not turning
+				if (assignedValues.asdg_gnd_turn_rate != DEFAULT_TURN_RATE)
+					assignedValues.asdg_gnd_turn_rate = DEFAULT_TURN_RATE;
+				if (assignedValues.asdg_speed != defaultValues.speed)
+					assignedValues.asdg_speed = defaultValues.speed;
+				set_rate = false;
 			}
 		}
 	}
@@ -427,15 +474,26 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 	if (!p1 || !p2)
 		return false;
 
-	if (checkTooShort())
+	/*if (checkTooShort())
 	{
 		if (doPointSkip())
 		{
 
 		}
+	}*/
+
+	if (isTurnReady(p1, p2))
+	{
+		if (onGround())
+		{
+			assignedValues.asdg_gnd_turn_rate = GetTrackTurnData();
+			assignedValues.asdg_speed = speed = GetTrackSpeedData();
+			set_rate = true;
+			return true;
+		}
 	}
 
-	return isTurnReady(p1, p2) || defaultTurnDistance();
+	return defaultTurnDistance();
 }
 
 void Aircraft::reset_path()
@@ -469,24 +527,26 @@ double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs
 double Aircraft::getNextSpeed(double interval_ms)
 {
 	double next_speed = speed;
-	if (speed != assignedValues.asdg_speed)
+	if (speed != assignedValues.asdg_speed || (holding && speed != 0))
 	{
-		double acceleration = onGround() ? assignedValues.asdg_gnd_accel : assignedValues.asdg_accel;
+		double a_spd = ((onGround() && holding) ? 0 : assignedValues.asdg_speed);
+		double spd_delta = a_spd - speed;
+		double acceleration = onGround() ? spd_delta < 0 ? assignedValues.asdg_gnd_braking : assignedValues.asdg_gnd_accel
+			: assignedValues.asdg_accel;
 		double amount = get_ros(acceleration, interval_ms);
-		double spd_delta = assignedValues.asdg_speed - speed;
 
 		if (spd_delta != 0)
 		{
 			if (spd_delta < 0) {
-				if ((speed + -amount) <= assignedValues.asdg_speed)
-					next_speed = assignedValues.asdg_speed;
+				if ((speed + -amount) <= a_spd)
+					next_speed = a_spd;
 				else
 					next_speed += -amount;
 			}
 			else if (spd_delta > 0)
 			{
-				if ((speed + amount) >= assignedValues.asdg_speed)
-					next_speed = assignedValues.asdg_speed;
+				if ((speed + amount) >= a_spd)
+					next_speed = a_spd;
 				else
 					next_speed += amount;
 			}
@@ -623,7 +683,7 @@ double Aircraft::calculateTurnDistance(Point2* p, Point2* p2)
 bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 {
 	//TODO Possibly use "future" / next frame speed rather than current speed?
-	double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
+	double turn_rate = onGround() ? GetTrackTurnData() : get_rot(roll, speed, 1000);
 	double next_speed = getNextSpeed(CALC_TIME);
 	double interval_dist = get_distance(next_speed, CALC_TIME);
 
@@ -639,8 +699,12 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 
 	double dist_pt = GetDistance(latitude, p->y_, longitude, p->x_);
 
-	double turnRadius = TurnRadius(speed, turn_rate);
+	double track_speed = GetTrackSpeedData();
+	double turnRadius = TurnRadius(track_speed, turn_rate);
 	double leadDistance = tan(radians(angle / 2.0)) * turnRadius;
+
+	if ((dist_pt - leadDistance) <= GetDecelerationDistance(speed, track_speed, assignedValues.asdg_gnd_braking))
+		assignedValues.asdg_speed = track_speed;
 
 	if (dist_pt <= leadDistance)
 	{
@@ -649,6 +713,14 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 #endif
 		return true;
 	}
+
+	/*if (defaultTurnDistance(p, ((leadDistance * KNOTS_KM)) * 1000.0))
+	{
+#ifdef _DEBUG
+		printf("Turning at distance: %f, %f. angle: %f\n", dist_pt, leadDistance, angle);
+#endif
+		return true;
+	}*/
 
 	//calculate radius
 	/*double num2 = (v.y_ - p->y_) / 60.0;
@@ -686,17 +758,18 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2, double distance)
 
 bool Aircraft::defaultTurnDistance()
 {
-	return defaultTurnDistance(ground_cur);
+	return defaultTurnDistance(ground_cur, onGround() ? 2.2 : 7);
 }
 
-bool Aircraft::defaultTurnDistance(Point2* p)
+bool Aircraft::defaultTurnDistance(Point2* p, double distance_meters)
 {
-	int radius_m = onGround() ? 1 : 7;// ground is about 2 meters
 
 	double interval_dist = get_distance(speed, CALC_TIME);
+
+	// we don't use the "future" point because we update the position just before calling "getNextPoint"
 	Point2 n = getLocFromBearing(latitude, longitude, interval_dist, heading);
 
-	Point2 v = getLocFromBearing(p->y_, p->x_, (radius_m / 1000.0) / KNOTS_KM, 0);
+	Point2 v = getLocFromBearing(p->y_, p->x_, (distance_meters / 1000.0) / KNOTS_KM, 0);
 
 	double num2 = (v.y_ - p->y_);
 	double num3 = (v.x_ - p->x_);// prev 45.0 for boston
@@ -705,18 +778,13 @@ bool Aircraft::defaultTurnDistance(Point2* p)
 
 	double dist_pt = GetDistance(n.y_, p->y_, n.x_, p->x_);
 
-	if (inCircle(Point2(longitude, latitude), n, *p, radius))
+	if (inCircle2(Point2(longitude, latitude), n, *p, radius))
 	{
 #ifdef _DEBUG
 		printf("radius: %.*f\n", 15, dist_pt);
 #endif
 		return true;
 	}
-
-	//if (dist_pt <= (radius_m / 1000.0))
-	//{		
-	//	return true;
-	//}
 
 	return false;
 }

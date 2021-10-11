@@ -13,14 +13,20 @@ class tcpinterface;
 #include "constants.h"
 #include "airport.h"
 
+struct DefaultValues {
+	double speed = 15;
+	double turn_rate = 10;
+};
+
 struct AssignedValues {
 	double asgd_heading = 0;
 	int asdg_altitude = 0;
 	double asdg_speed = 0;
 	double asdg_roll = 25;
 	double asdg_gnd_turn_rate = 10; // 9 degrees per second
-	double asdg_accel = 2;//per second
-	double asdg_gnd_accel = 0.5;//per second
+	double asdg_accel = 5;//per second
+	double asdg_gnd_accel = 2;//per second
+	double asdg_gnd_braking = 5;
 };
 
 class History {
@@ -64,6 +70,7 @@ private:
 	tcpinterface intter = tcpinterface(this);
 	Identity identity;
 	AssignedValues assignedValues;
+	DefaultValues defaultValues;
 	int mode;
 	std::string transponder = "0000";
 	long long update_time;
@@ -73,8 +80,8 @@ private:
 public:
 	int turnOri = -1;
 	std::string apt_icao = "";
-	bool connected = false, point_skip = false;
-	std::vector<std::string> ground_route;
+	bool connected = false, point_skip = false, holding = false, set_rate = false;
+	std::vector<std::string> ground_route, holds;
 	std::vector<Point2*> ground_points;
 	Point2* ground_prev = nullptr, * ground_cur = nullptr, * ground_next = nullptr, * ground_next_next = nullptr;
 	Point2* air_prev = nullptr, * air_cur = nullptr;
@@ -128,7 +135,9 @@ public:
 	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
 	Airport* getAirport();
 	bool onGround();
-	void SetTrackData();
+	double GetTrackTurnData();
+	double GetTrackSpeedData();
+	bool OnTrack();
 	double getNextSpeed(double interval_ms);
 	double getNextHeading(double interval_ms);
 	double getNextPoint();
@@ -140,6 +149,7 @@ public:
 	bool arrived(Point2* p1, Point2* p2);
 	void reset_path();
 	AssignedValues& getAssignedValues() { return assignedValues; }
+	DefaultValues& getDefaultValues() { return defaultValues; }
 	double calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
 	double calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double destHdg);
 	double calculateGain(Point2 cur, Point2 prev, double __unnamed002);
@@ -147,7 +157,7 @@ public:
 	bool isTurnReady(Point2* p, Point2* p2);
 	bool isTurnReady(Point2* p, Point2* p2, double distance);
 	bool defaultTurnDistance();
-	bool defaultTurnDistance(Point2* p1);
+	bool defaultTurnDistance(Point2* p1, double distance_meters);
 	Point2* getFuturePoint(TaxiPath* cur_path, TaxiPath* next_path, Point2* taxiway_end);
 	bool doPointSkip();
 };

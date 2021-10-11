@@ -17,6 +17,8 @@ const int TRANSITION = 18000;
 
 const int TURN_RATE_TAXI_MIN = 5;       // Degrees per second.
 const int TURN_RATE_TAXI = 20;          // Degrees per second.
+const int SPEED_MIN = 10;
+const int SPEED_MAX = 20;
 
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
 	// Skip delimiters at beginning.
@@ -631,6 +633,11 @@ double HeadingDelta(double hdg1, double hdg2)
 	return delta;
 }
 
+double GetDecelerationDistance(double initialSpeed, double finalSpeed, double decelRate)
+{
+	return ((initialSpeed * initialSpeed) - (finalSpeed * finalSpeed)) / (2.0 * decelRate * 3600.0) * DEG_PER_NM;
+}
+
 double CalcTaxiTurnRate(double turnAngle)
 {
 	double turnRate = TURN_RATE_TAXI;
@@ -639,6 +646,19 @@ double CalcTaxiTurnRate(double turnAngle)
 		turnRate = TURN_RATE_TAXI_MIN + ((TURN_RATE_TAXI - TURN_RATE_TAXI_MIN) * pct);
 	}
 	return turnRate;
+}
+
+double CalcTaxiSpeed(double turnAngle, double maxSpeed)
+{
+	if (turnAngle < 1.0)
+		return maxSpeed;
+
+	double turnSpeed = maxSpeed;
+	if (turnAngle > 45.0) {
+		double pct = (turnAngle - 45.0) / (180.0 - 45.0);
+		turnSpeed = SPEED_MIN + ((maxSpeed - SPEED_MIN) * (1.0 * pct));
+	}
+	return turnSpeed;
 }
 
 

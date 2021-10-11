@@ -37,6 +37,10 @@
 #define VS_TEXT 135
 #define SPEED_LBL 136
 #define SPEED_TEXT 137
+#define TRACK_LBL 139
+#define TRACK_TEXT 141
+#define DATA_LBL 142
+#define DATA_TEXT 143
 #define MODE_BUTTON 138
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

@@ -89,6 +89,8 @@ bool inCircle(Point2& p1, Point2& p2, Point2& c, double radius_meters);
 
 bool inCircle2(Point2& p1, Point2& p2, Point2& c, double r);
 
+bool pointCircle(double px, double py, double cx, double cy, double r);
+
 bool linePoint(double x1, double y1, double x2, double y2, double px, double py);
 
 bool intersects(Point2& p1, Point2& p2, Point2& c, double r);
@@ -105,7 +107,11 @@ double TurnRadius(double speed, double turnRate);
 
 double HeadingDelta(double hdg1, double hdg2);
 
+double GetDecelerationDistance(double initialSpeed, double finalSpeed, double decelRate);
+
 double CalcTaxiTurnRate(double turnAngle);
+
+double CalcTaxiSpeed(double turnAngle, double maxSpeed);
 
 std::string FormatAltitude(std::string altitude);
 

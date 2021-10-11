@@ -14,4 +14,8 @@ const double KNOTS_FT = 6076.1200001180986874;
 
 const double NM_PER_DEG = 60.0;
 
+const double DEG_PER_NM = 1.0 / NM_PER_DEG;
+
+const double DEFAULT_TURN_RATE = 10.0;
+
 #endif
