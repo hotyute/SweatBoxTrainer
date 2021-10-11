@@ -37,7 +37,7 @@ struct Identity {
 	std::string login_name;
 	std::string password;
 	std::string username;
-	int id;
+	int id = 0;
 	int controller_rating = 0, controller_position = 0;
 	int pilot_rating = 0;
 };
@@ -55,14 +55,14 @@ public:
 class Aircraft {
 private:
 	Airport* airport = nullptr;
-	int userIndex;
+	int userIndex = -1;
 	HANDLE aMutex;
-	int index;
-	bool heavy;
+	int index = -1;
+	bool heavy = false;
 	std::string acfTitle;
 	double latitude;
 	double longitude;
-	double speed;
+	double speed = 0;
 	double heading, pitch, roll;
 	int altitude = 0, verticalSpeed = 1000;
 	std::vector<History*> historyCount;
@@ -71,16 +71,16 @@ private:
 	Identity identity;
 	AssignedValues assignedValues;
 	DefaultValues defaultValues;
-	int mode;
+	int mode = 0;
 	std::string transponder = "0000";
-	long long update_time;
+	long long update_time = 0;
 	unsigned short visibility = 300;
 	long long last_time[4];
-	AV_CLIENT type;
+	AV_CLIENT type = AV_CLIENT::PILOT;
 public:
 	int turnOri = -1;
 	std::string apt_icao = "";
-	bool connected = false, point_skip = false, holding = false, set_rate = false;
+	bool connected = false, point_skip = false, holding = false, locked_rate = false;
 	std::vector<std::string> ground_route, holds;
 	std::vector<Point2*> ground_points;
 	Point2* ground_prev = nullptr, * ground_cur = nullptr, * ground_next = nullptr, * ground_next_next = nullptr;
@@ -93,7 +93,6 @@ public:
 	void setUpdateTime(long long value) { update_time = value; }
 	void setVisibility(unsigned short vis) { this->visibility = vis; }
 	unsigned short getVisibility() { return this->visibility; }
-	unsigned int Ccallsign;
 	int getIndex();
 	void setIndex(int);
 	FlightPlan& getFlightPlan() { return flight_plan; }
@@ -140,6 +139,7 @@ public:
 	bool OnTrack();
 	double getNextSpeed(double interval_ms);
 	double getNextHeading(double interval_ms);
+	void checkRateReset();
 	double getNextPoint();
 	void pollRoute();
 	void refreshRoute();

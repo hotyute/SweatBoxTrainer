@@ -462,6 +462,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
+	return 0;
 }
 
 // Message handler for about box.
@@ -966,7 +967,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 				aircraft.ground_route.push_back(trim(s));
 			}
 		}
-		//aircraft.set_rate = true;
+		//aircraft.locked_rate = true;
 		aircraft.prepareRoute();
 		aircraft.pollRoute();
 
@@ -1039,7 +1040,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		if (array3.size() >= 2)
 		{
 			aircraft.turnOri = -1;
-			if (!aircraft.set_rate)
+			if (!aircraft.locked_rate)
 				aircraft.getDefaultValues().speed = aircraft.getAssignedValues().asdg_speed = atodd(array3[1]);
 		}
 

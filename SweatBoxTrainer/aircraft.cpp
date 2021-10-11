@@ -148,7 +148,7 @@ void Aircraft::updateSpeed()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[2];
-	speed = getNextSpeed(interval);
+	speed = getNextSpeed((double)interval);
 	last_time[2] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -156,7 +156,7 @@ void Aircraft::updateHeading()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[1];
-	heading = getNextHeading(interval);
+	heading = getNextHeading((double)interval);
 	last_time[1] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -287,15 +287,7 @@ double Aircraft::getNextPoint()
 					assignedValues.asgd_heading = hdg(f_heading); //hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 				}
 			}
-
-			if (set_rate && OnTrack())
-			{//if not turning
-				if (assignedValues.asdg_gnd_turn_rate != DEFAULT_TURN_RATE)
-					assignedValues.asdg_gnd_turn_rate = DEFAULT_TURN_RATE;
-				if (assignedValues.asdg_speed != defaultValues.speed)
-					assignedValues.asdg_speed = defaultValues.speed;
-				set_rate = false;
-			}
+			checkRateReset();		
 		}
 	}
 	else if (air_cur)
@@ -319,6 +311,18 @@ double Aircraft::getNextPoint()
 		}
 	}
 	return -1;
+}
+
+void Aircraft::checkRateReset()
+{
+	if (locked_rate && OnTrack())
+	{//if not turning
+		if (assignedValues.asdg_gnd_turn_rate != DEFAULT_TURN_RATE)
+			assignedValues.asdg_gnd_turn_rate = DEFAULT_TURN_RATE;
+		if (assignedValues.asdg_speed != defaultValues.speed)
+			assignedValues.asdg_speed = defaultValues.speed;
+		locked_rate = false;
+	}
 }
 
 void Aircraft::pollRoute()
@@ -488,7 +492,7 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 		{
 			assignedValues.asdg_gnd_turn_rate = GetTrackTurnData();
 			assignedValues.asdg_speed = speed = GetTrackSpeedData();
-			set_rate = true;
+			locked_rate = true;
 			return true;
 		}
 	}
@@ -503,6 +507,7 @@ void Aircraft::reset_path()
 	ground_next = nullptr;
 	ground_route.clear();
 	ground_points.clear();
+	checkRateReset();
 }
 
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude
@@ -533,7 +538,7 @@ double Aircraft::getNextSpeed(double interval_ms)
 		double spd_delta = a_spd - speed;
 		double acceleration = onGround() ? spd_delta < 0 ? assignedValues.asdg_gnd_braking : assignedValues.asdg_gnd_accel
 			: assignedValues.asdg_accel;
-		double amount = get_ros(acceleration, interval_ms);
+		double amount = get_ros(acceleration, (long long)interval_ms);
 
 		if (spd_delta != 0)
 		{
@@ -558,7 +563,7 @@ double Aircraft::getNextSpeed(double interval_ms)
 double Aircraft::getNextHeading(double interval_ms)
 {
 	double next_hdg = heading;
-	double amount = onGround() ? (assignedValues.asdg_gnd_turn_rate * (interval_ms / 1000.0)) : get_rot(roll, speed, interval_ms);
+	double amount = onGround() ? (assignedValues.asdg_gnd_turn_rate * (interval_ms / 1000.0)) : get_rot(roll, speed, (long long)interval_ms);
 	double new_hdg = get_angle_unsigned(hdg(assignedValues.asgd_heading), hdg(heading));
 	if (speed != 0)
 	{

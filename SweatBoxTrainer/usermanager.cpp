@@ -31,7 +31,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 			char trans_code[1024];
 			stream.readString(trans_code);
 			int squawkMode = stream.readUnsignedByte();
-			int hash = stream.readQWord();
+			long long hash = stream.readQWord();
 
 
 			//user1->setUserIndex(index);
