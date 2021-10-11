@@ -139,7 +139,7 @@ public:
 	bool OnTrack();
 	double getNextSpeed(double interval_ms);
 	double getNextHeading(double interval_ms);
-	void checkRateReset();
+	void checkRateReset(bool no_track);
 	double getNextPoint();
 	void pollRoute();
 	void refreshRoute();

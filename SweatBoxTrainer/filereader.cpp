@@ -16,6 +16,8 @@ Airport* curAirport = nullptr;
 TaxiPath* curPoint = nullptr;
 ApproachPath* curApproach = nullptr;
 
+void processRunways(Airport* airport);
+
 
 int LoadSCT(std::string path) {
 	std::string line;
@@ -259,7 +261,7 @@ int LoadAPT(std::string path)
 								Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
 								p->index = pushBack(curPoint->points, p);
 							}
-							curAirport->runways.push_back((Runway*)curPoint);
+							//curAirport->runways.push_back((Runway*)curPoint);
 						}
 
 						curAirport->all.emplace(curPoint->name, curPoint);
@@ -271,7 +273,7 @@ int LoadAPT(std::string path)
 						{
 							int start = (apprhdg_tag + apprhdgStart.length());
 							curApproach->h_degrees = atodd(line.substr(start));
-						} 
+						}
 						else if (curApproach->type == APPRTYPE::ILS)
 						{
 							size_t gs_tag = line.find(gsStart);
@@ -327,7 +329,8 @@ int LoadAPT(std::string path)
 			}
 			++line_number;
 		}
-		std::cout << "[Loaded Airport Data]" << std::endl;;
+		processRunways(curAirport);
+		printf("[Loaded Airport Data: %s]\n", curAirport->icao.c_str());
 		myfile.close();
 		return 1;
 	}
@@ -340,26 +343,26 @@ int LoadAPT(std::string path)
 
 void handleHeader(std::string& line) {
 	switch (headerId) {
-		case 0://VOR
-		{
-			handleVORLine(line);
-			break;
-		}
-		case 1://NDB
-		{
-			handleNDBLine(line);
-			break;
-		}
-		case 2://AIRPORT
-		{
-			handleAIRPORTLine(line);
-			break;
-		}
-		case 3://FIXES
-		{
-			handleFIXESLine(line);
-			break;
-		}
+	case 0://VOR
+	{
+		handleVORLine(line);
+		break;
+	}
+	case 1://NDB
+	{
+		handleNDBLine(line);
+		break;
+	}
+	case 2://AIRPORT
+	{
+		handleAIRPORTLine(line);
+		break;
+	}
+	case 3://FIXES
+	{
+		handleFIXESLine(line);
+		break;
+	}
 	}
 }
 
@@ -377,4 +380,39 @@ void handleAIRPORTLine(std::string line) {
 
 void handleFIXESLine(std::string line) {
 	std::vector<std::string> args = split(line, " ");
+}
+
+void processRunways(Airport* airport)
+{
+	auto it = airport->all.begin();
+
+	while (it != airport->all.end())
+	{
+		TaxiPath* path = it->second;
+		if (path->type == PATHTYPE::RUNWAY)
+		{
+			std::vector<std::string> names = split(path->name, "/");
+
+			if (names.size() > 1)
+			{
+				TaxiPath* other = new TaxiPath(*path);
+
+				path->name = names[0];
+				other->name = names[1];
+
+				std::reverse(other->points.begin(), other->points.end());
+
+				it = airport->all.erase(it);
+
+				airport->runways.push_back((Runway*)other);
+				airport->runways.push_back((Runway*)path);
+				airport->all.insert(it, { names[0], path });
+				airport->all.insert(it, { names[1], other });
+
+				continue;
+			}
+		}
+
+		++it;
+	}
 }
