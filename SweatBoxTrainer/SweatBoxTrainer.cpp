@@ -207,7 +207,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		if (std::filesystem::exists(path) && std::filesystem::is_directory(path))
 		{
-			for (const auto& entry : std::filesystem::directory_iterator(path)) {
+			for (const auto& entry : std::filesystem::directory_iterator(path)) 
+			{
 				if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".aprt")
 					LoadAPT(entry.path().string());
 			}
