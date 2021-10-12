@@ -12,6 +12,7 @@ class tcpinterface;
 #include "clinc2.h"
 #include "constants.h"
 #include "airport.h"
+#include "events.h"
 
 struct DefaultValues {
 	double speed = 15;
@@ -80,6 +81,7 @@ private:
 public:
 	int turnOri = -1;
 	std::string apt_icao = "";
+	Event* position_updates = new PositionUpdates(this);
 	bool connected = false, point_skip = false, holding = false, locked_rate = false;
 	std::vector<std::string> ground_route;
 	std::vector<Point2*> ground_points, holds;
@@ -98,6 +100,7 @@ public:
 	FlightPlan& getFlightPlan() { return flight_plan; }
 	tcpinterface& getConnection() { return intter; }
 	Identity* getIdentity() { return &identity; }
+	std::string getCallSign() { return identity.callsign; }
 	bool created, que_delete;
 	std::string getAcfTitle();
 	void setAcfTitle(std::string);
@@ -157,7 +160,7 @@ public:
 	bool isTurnReady(Point2* p, Point2* p2);
 	bool isTurnReady(Point2* p, Point2* p2, double distance);
 	bool defaultTurnDistance();
-	bool defaultTurnDistance(Point2* p1, double distance_meters);
+	bool circularDistance(Point2* p1, double distance_meters);
 	Point2* getFuturePoint(TaxiPath* cur_path, TaxiPath* next_path, Point2* taxiway_end);
 	bool doPointSkip();
 	void CollisionDetection();

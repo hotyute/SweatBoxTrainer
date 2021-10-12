@@ -207,7 +207,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		if (std::filesystem::exists(path) && std::filesystem::is_directory(path))
 		{
-			for (const auto& entry : std::filesystem::directory_iterator(path)) 
+			for (const auto& entry : std::filesystem::directory_iterator(path))
 			{
 				if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".aprt")
 					LoadAPT(entry.path().string());
@@ -536,11 +536,6 @@ void connect()
 	}
 }
 
-void disconnect()
-{
-
-}
-
 DWORD WINAPI EventThread1(LPVOID lpParameter) {
 	boost::posix_time::ptime start;
 	boost::posix_time::ptime end;
@@ -569,16 +564,14 @@ DWORD WINAPI SocketThread1(LPVOID lpParameter) {
 		for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)//TODO possible make this thread awake when there is any data in any aircraft socket?
 		{
 			Aircraft& aircraft = *(it->second);
-			if (aircraft.connected)
-			{
+			if (!aircraft.getConnection().closed)
 				aircraft.getConnection().run();
-			}
 		}
 
 		end = boost::posix_time::microsec_clock::local_time();
 
 		boost::posix_time::time_duration time2 = end - start;
-		long long time1 = 3L;
+		long long time1 = 5L;
 		long long time = time1 - time2.total_milliseconds();
 		if (time < 1) {
 			time = 1;

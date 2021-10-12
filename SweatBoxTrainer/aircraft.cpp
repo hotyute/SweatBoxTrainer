@@ -170,7 +170,7 @@ void Aircraft::updateMovement()
 	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
 	if (p.x_ != longitude || p.y_ != latitude)
 	{
-		//aircraft moved set flags here
+		//other moved set flags here
 	}
 	latitude = p.y_;
 	longitude = p.x_;
@@ -727,7 +727,7 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 		return true;
 	}*/
 
-	if (defaultTurnDistance(p, ((leadDistance * KNOTS_KM)) * 1000.0))
+	if (circularDistance(p, ((leadDistance * KNOTS_KM)) * 1000.0))
 	{
 #ifdef _DEBUG
 		printf("Turning at distance: %f, %f. angle: %f\n", dist_pt, leadDistance, angle);
@@ -771,10 +771,10 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2, double distance)
 
 bool Aircraft::defaultTurnDistance()
 {
-	return defaultTurnDistance(ground_cur, onGround() ? 2.2 : 7);
+	return circularDistance(ground_cur, onGround() ? 2.2 : 7);
 }
 
-bool Aircraft::defaultTurnDistance(Point2* p, double distance_meters)
+bool Aircraft::circularDistance(Point2* p, double distance_meters)
 {
 
 	double interval_dist = get_distance(speed, CALC_TIME);
@@ -889,14 +889,34 @@ void Aircraft::CollisionDetection()
 		if (AcfMap.size() > 0) {
 			for (auto& it : AcfMap)
 			{
-				Aircraft& aircraft = *it.second;
-
-				if (aircraft.onGround())
+				if (it.second != this)
 				{
-					if (boost::iequals(aircraft.getAirport()->icao, getAirport()->icao))
+					Aircraft& other = *it.second;
+
+					if (other.onGround())
 					{
-						double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
-						double decel_distance1 = GetDecelerationDistance(speed, 0.0, aircraft.getAssignedValues().asdg_gnd_braking);
+						if (boost::iequals(other.getAirport()->icao, getAirport()->icao))
+						{
+							if (other.ground_prev && ground_prev)
+							{
+								if (boost::iequals(other.ground_prev->parent->name, ground_prev->parent->name))
+								{
+									double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+
+									if (other.holding)
+									{
+										printf("other_holding: %s", other.getCallSign().c_str());
+										double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+										double dist = (300 / KNOTS_FT) + decel_distance0;
+										if (circularDistance(&Point2(other.getLongitude(), other.getLatitude()), ((300 / KNOTS_FT) * KNOTS_KM) * 1000.0))
+										{
+											holding = true;
+											break;
+										}
+									}
+								}
+							}
+						}
 					}
 				}
 			}
@@ -914,7 +934,7 @@ void Aircraft::checkPathHolds()
 			Point2* p = *it;
 			double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
 			double dist = (300 / KNOTS_FT) + decel_distance0;
-			if (defaultTurnDistance(p, (dist * KNOTS_KM) * 1000.0))
+			if (circularDistance(p, (dist * KNOTS_KM) * 1000.0))
 			{
 				holding = true;
 				it = holds.erase(it);

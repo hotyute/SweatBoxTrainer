@@ -47,14 +47,30 @@ DWORD tcpinterface::run() {
 	{
 		nBytesReceived = recv(sConnect, message, 5000, 0);
 
+		if (queue_clean)
+		{
+			in_stream->clearBuf();
+			memset(tcpinterface::message, 0, 5000);
+			closed = true;
+			printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
+			queue_clean = false;
+			return 0;
+		}
+
 		if (nBytesReceived == SOCKET_ERROR)
 		{
 			int error = WSAGetLastError();
 			if (error == WSAECONNABORTED
 				|| error == WSAECONNRESET || error == WSAETIMEDOUT)
 			{
+				disconnect(aircraft, false);
+				in_stream->clearBuf();
+				memset(tcpinterface::message, 0, 5000);
 				closed = true;
-				printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
+				if (error == WSAETIMEDOUT)
+					printf("Connection timeout exceeded 11 seconds\n");
+				else
+					printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
 			}
 			return 0;
 		}
@@ -83,9 +99,8 @@ DWORD tcpinterface::run() {
 							aircraft->setUserIndex(index);
 							userStorage1[index] = aircraft;
 							aircraft->setUpdateTime(updateTimeInMillis);
-							Event* position_updates = new PositionUpdates(aircraft);
-							position_updates->eAction.setTicks(0);
-							event_manager1->addEvent(position_updates);
+							aircraft->position_updates->eAction.setTicks(0);
+							event_manager1->addEvent(aircraft->position_updates);
 							hand_shake = false;
 							current_op = -1;
 							in.deleteReaderBlock();
@@ -228,6 +243,17 @@ void tcpinterface::sendMessage(Stream* stream) {
 void tcpinterface::init_set()
 {
 
+}
+
+int tcpinterface::disconnect_socket() {
+	int iResult = shutdown(tcpinterface::sConnect, 0x01);
+	if (iResult == SOCKET_ERROR) {
+		printf("shutdown failed: %d\n", WSAGetLastError());
+		closesocket(tcpinterface::sConnect);
+		WSACleanup();
+		return 1;
+	}
+	return 0;
 }
 
 int tcpinterface::connectNew(std::string saddr, unsigned short port) {

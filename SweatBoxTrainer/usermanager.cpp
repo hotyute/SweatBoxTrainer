@@ -2,6 +2,7 @@
 
 #include "SweatBoxTrainer.h"
 #include "tools.h"
+#include "packets_out.h"
 
 std::vector<Aircraft*> userStorage1;
 
@@ -156,4 +157,13 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 
 	addUserToLB(cur);
 	return cur;
+}
+
+void disconnect(Aircraft* aircraft, bool queue)
+{
+	sendDisconnect(*aircraft);
+	aircraft->getConnection().queue_clean = queue;
+	aircraft->getConnection().disconnect_socket();
+	aircraft->position_updates->eAction.setRunning(false);
+	aircraft->connected = false;
 }

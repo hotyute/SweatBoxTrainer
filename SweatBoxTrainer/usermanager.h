@@ -20,6 +20,8 @@ PRIVATE_MESSAGE_PACKET = 12;
 #include "aircraft.h"
 #include "Stream.h"
 
+void disconnect(Aircraft* aircraft, bool queue);
+
 extern std::vector<Aircraft*> userStorage1;
 
 void processIncomingPackets(Aircraft* aircraft, int opCode, Stream &stream);

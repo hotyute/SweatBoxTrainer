@@ -19,6 +19,7 @@ public:
 	DWORD run();
 	void sendMessage(Stream*);
 	void init_set();
+	int disconnect_socket();
 	int connectNew(std::string, unsigned short);
 
 	char message[5000];
@@ -33,6 +34,7 @@ public:
 	fd_set rfds;
 	int retval;
 	bool closed = false;
+	bool queue_clean = false;
 
 	void w_lock();
 	void w_unlock();
