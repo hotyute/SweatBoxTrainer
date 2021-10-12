@@ -287,8 +287,9 @@ double Aircraft::getNextPoint()
 					assignedValues.asgd_heading = hdg(f_heading); //hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 				}
 			}
-			checkRateReset(false);		
+			checkRateReset(false);
 		}
+		checkPathHolds();
 	}
 	else if (air_cur)
 	{
@@ -336,7 +337,7 @@ void Aircraft::pollRoute()
 	{
 		if (onGround())
 		{
-			if (ground_points.size() > 1)
+			if (ground_points.size() > 0)
 			{
 
 				ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
@@ -429,6 +430,10 @@ void Aircraft::prepareRoute()
 								if (GetDistance(_end, next_point) > (50 / KNOTS_FT))
 								{
 									ground_points.push_back(_end);
+								}
+								if (next_path->type == PATHTYPE::RUNWAY && (it + 2) == ground_route.end())
+								{
+									holds.push_back(next_point);
 								}
 								ground_points.push_back(next_point);
 							}
@@ -714,21 +719,21 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 	if ((dist_pt - leadDistance) <= GetDecelerationDistance(speed, track_speed, assignedValues.asdg_gnd_braking))
 		assignedValues.asdg_speed = track_speed;
 
-	if (dist_pt <= leadDistance)
-	{
-#ifdef _DEBUG
-		printf("Turning at distance: %f, %f. angle: %f\n", dist_pt, leadDistance, angle);
-#endif
-		return true;
-	}
-
-	/*if (defaultTurnDistance(p, ((leadDistance * KNOTS_KM)) * 1000.0))
+	/*if (dist_pt <= leadDistance)
 	{
 #ifdef _DEBUG
 		printf("Turning at distance: %f, %f. angle: %f\n", dist_pt, leadDistance, angle);
 #endif
 		return true;
 	}*/
+
+	if (defaultTurnDistance(p, ((leadDistance * KNOTS_KM)) * 1000.0))
+	{
+#ifdef _DEBUG
+		printf("Turning at distance: %f, %f. angle: %f\n", dist_pt, leadDistance, angle);
+#endif
+		return true;
+	}
 
 	//calculate radius
 	/*double num2 = (v.y_ - p->y_) / 60.0;
@@ -875,4 +880,49 @@ bool Aircraft::doPointSkip()
 		return true;
 	}
 	return false;
+}
+
+void Aircraft::CollisionDetection()
+{
+	if (onGround())
+	{
+		if (AcfMap.size() > 0) {
+			for (auto& it : AcfMap)
+			{
+				Aircraft& aircraft = *it.second;
+
+				if (aircraft.onGround())
+				{
+					if (boost::iequals(aircraft.getAirport()->icao, getAirport()->icao))
+					{
+						double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+						double decel_distance1 = GetDecelerationDistance(speed, 0.0, aircraft.getAssignedValues().asdg_gnd_braking);
+					}
+				}
+			}
+		}
+	}
+}
+
+void Aircraft::checkPathHolds()
+{
+	if (holds.size() > 0)
+	{
+		auto it = holds.begin();
+		while (it != holds.end())
+		{
+			Point2* p = *it;
+			double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+			double dist = (300 / KNOTS_FT) + decel_distance0;
+			if (defaultTurnDistance(p, (dist * KNOTS_KM) * 1000.0))
+			{
+				holding = true;
+				it = holds.erase(it);
+				//GetDistance(&Point2(longitude, latitude), p)
+				printf("Holding at: %s\n", p->parent->name.c_str());
+				break;
+			}
+			++it;
+		}
+	}
 }

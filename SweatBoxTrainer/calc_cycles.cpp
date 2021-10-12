@@ -28,6 +28,7 @@ void CalculateMovements()
 				aircraft.updateMovement();
 
 				aircraft.getNextPoint();
+				//aircraft.CollisionDetection();
 
 			}
 		}

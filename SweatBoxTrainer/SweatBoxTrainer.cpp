@@ -957,7 +957,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 			for (std::string s : split(hs.substr(3, hs.length() - 1), " "))
 			{
 				capitalize(s);
-				aircraft.holds.push_back(trim(s));
+				//aircraft.holds.push_back(trim(s));
 			}
 		}
 		else
@@ -1052,7 +1052,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		for (std::string s : split(command.substr(3, command.length() - 1), " "))
 		{
 			capitalize(s);
-			aircraft.holds.push_back(trim(s));
+			//aircraft.holds.push_back(trim(s));
 		}
 		return 1;
 	}

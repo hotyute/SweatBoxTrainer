@@ -260,6 +260,7 @@ int LoadAPT(std::string path)
 
 								Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
 								p->index = pushBack(curPoint->points, p);
+								p->parent = curPoint;
 							}
 							//curAirport->runways.push_back((Runway*)curPoint);
 						}

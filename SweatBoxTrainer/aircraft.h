@@ -81,8 +81,8 @@ public:
 	int turnOri = -1;
 	std::string apt_icao = "";
 	bool connected = false, point_skip = false, holding = false, locked_rate = false;
-	std::vector<std::string> ground_route, holds;
-	std::vector<Point2*> ground_points;
+	std::vector<std::string> ground_route;
+	std::vector<Point2*> ground_points, holds;
 	Point2* ground_prev = nullptr, * ground_cur = nullptr, * ground_next = nullptr, * ground_next_next = nullptr;
 	Point2* air_prev = nullptr, * air_cur = nullptr;
 	Aircraft();
@@ -160,6 +160,8 @@ public:
 	bool defaultTurnDistance(Point2* p1, double distance_meters);
 	Point2* getFuturePoint(TaxiPath* cur_path, TaxiPath* next_path, Point2* taxiway_end);
 	bool doPointSkip();
+	void CollisionDetection();
+	void checkPathHolds();
 };
 
 
