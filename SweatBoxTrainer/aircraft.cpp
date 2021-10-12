@@ -266,6 +266,8 @@ double Aircraft::getNextPoint()
 				if (ground_cur)
 				{
 					std::cout << "[Arrived at : " << ground_cur->parent->name << " : " << ground_cur->index << "]" << std::endl;
+					while (ground_cur->parent->name != ground_route.front())
+						ground_route.erase(ground_route.begin());
 				}
 				pollRoute();
 			}
@@ -886,36 +888,25 @@ void Aircraft::CollisionDetection()
 {
 	if (onGround())
 	{
-		if (AcfMap.size() > 0) 
+		if (AcfMap.size() > 0)
 		{
 			for (auto& it : AcfMap)
 			{
 				if (it.second != this)
 				{
 					Aircraft& other = *it.second;
-
-					if (other.onGround())
+					if ((!holding && other.holding) && other.onGround() && (other.getAirport() == getAirport()) && other.ground_prev)
 					{
-						if (other.getAirport() == getAirport())
+						double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+						double dist = (300 / KNOTS_FT) + decel_distance0;
+						if (circularDistance(&Point2(other.getLongitude(), 
+							other.getLatitude()), ((300 / KNOTS_FT) * KNOTS_KM) * 1000.0))
 						{
-							if (other.ground_prev && ground_prev)
+							if (find(ground_route.begin(), ground_route.end(),
+								other.ground_prev->parent->name) != ground_route.end())
 							{
-								if (other.ground_prev->parent->name == ground_prev->parent->name)
-								{
-									double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
-
-									if (other.holding)
-									{
-										printf("other_holding: %s\n", other.getCallSign().c_str());
-										double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
-										double dist = (300 / KNOTS_FT) + decel_distance0;
-										if (circularDistance(&Point2(other.getLongitude(), other.getLatitude()), ((300 / KNOTS_FT) * KNOTS_KM) * 1000.0))
-										{
-											holding = true;
-											break;
-										}
-									}
-								}
+								holding = true;
+								break;
 							}
 						}
 					}

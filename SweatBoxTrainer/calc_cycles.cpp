@@ -13,13 +13,13 @@ void update()
 void CalculateMovements()
 {
 	if (AcfMap.size() > 0) {
-		for (auto iter = AcfMap.begin(); iter != AcfMap.end(); ++iter) 
+		for (auto iter = AcfMap.begin(); iter != AcfMap.end(); ++iter)
 		{
 			Aircraft* acf1 = iter->second;
 			if (acf1) {
 				Aircraft& aircraft = *acf1;
 
-				
+
 
 				AssignedValues& av = aircraft.getAssignedValues();
 
@@ -29,7 +29,8 @@ void CalculateMovements()
 				aircraft.updateHeading();
 				aircraft.updateMovement();
 
-				aircraft.getNextPoint();
+				if (aircraft.getSpeed() > 0 && !aircraft.holding)
+					aircraft.getNextPoint();
 
 			}
 		}
