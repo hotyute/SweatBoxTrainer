@@ -10,6 +10,7 @@
 #include <commdlg.h>
 #include <thread>
 #include <filesystem>
+#include <stdio.h>
 
 #include "usermanager.h"
 #include "events.h"
@@ -921,8 +922,11 @@ void DisplayAircraft() {
 			: SetWindowText(track_hdl, L"None") :
 			SetWindowText(track_hdl, L"None");
 
-		std::wstring turn_rate = std::to_wstring((int)displayed->getAssignedValues().asdg_gnd_turn_rate);
-		SetWindowText(data_hdl, turn_rate.c_str());
+		char data1[20];
+		int length = sprintf(data1, "[%d]", (int)displayed->getAssignedValues().asdg_gnd_turn_rate);
+
+		std::wstring rates(&data1[0], &data1[length]);
+		SetWindowText(data_hdl, rates.c_str());
 
 		displayed->getMode() == 0 ? SetWindowText(mode_button, L"SQUAWK: S") : SetWindowText(mode_button, L"SQUAWK: C");
 	}

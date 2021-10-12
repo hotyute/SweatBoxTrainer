@@ -886,7 +886,8 @@ void Aircraft::CollisionDetection()
 {
 	if (onGround())
 	{
-		if (AcfMap.size() > 0) {
+		if (AcfMap.size() > 0) 
+		{
 			for (auto& it : AcfMap)
 			{
 				if (it.second != this)
@@ -895,17 +896,17 @@ void Aircraft::CollisionDetection()
 
 					if (other.onGround())
 					{
-						if (boost::iequals(other.getAirport()->icao, getAirport()->icao))
+						if (other.getAirport() == getAirport())
 						{
 							if (other.ground_prev && ground_prev)
 							{
-								if (boost::iequals(other.ground_prev->parent->name, ground_prev->parent->name))
+								if (other.ground_prev->parent->name == ground_prev->parent->name)
 								{
 									double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
 
 									if (other.holding)
 									{
-										printf("other_holding: %s", other.getCallSign().c_str());
+										printf("other_holding: %s\n", other.getCallSign().c_str());
 										double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
 										double dist = (300 / KNOTS_FT) + decel_distance0;
 										if (circularDistance(&Point2(other.getLongitude(), other.getLatitude()), ((300 / KNOTS_FT) * KNOTS_KM) * 1000.0))

@@ -23,12 +23,13 @@ void CalculateMovements()
 
 				AssignedValues& av = aircraft.getAssignedValues();
 
+				aircraft.CollisionDetection();
+
 				aircraft.updateSpeed();
 				aircraft.updateHeading();
 				aircraft.updateMovement();
 
 				aircraft.getNextPoint();
-				//aircraft.CollisionDetection();
 
 			}
 		}
