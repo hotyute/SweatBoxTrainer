@@ -923,7 +923,7 @@ void DisplayAircraft() {
 			SetWindowText(track_hdl, L"None");
 
 		char data1[20];
-		int length = sprintf(data1, "[%d]", (int)displayed->getAssignedValues().asdg_gnd_turn_rate);
+		int length = sprintf_s(data1, "[%d]", (int)displayed->getAssignedValues().asdg_gnd_turn_rate);
 
 		std::wstring rates(&data1[0], &data1[length]);
 		SetWindowText(data_hdl, rates.c_str());

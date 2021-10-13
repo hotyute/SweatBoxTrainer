@@ -795,9 +795,6 @@ bool Aircraft::circularDistance(Point2* p, double distance_meters)
 
 	if (inCircle2(Point2(longitude, latitude), n, *p, radius))
 	{
-#ifdef _DEBUG
-		printf("radius: %.*f\n", 15, dist_pt);
-#endif
 		return true;
 	}
 
@@ -888,25 +885,42 @@ void Aircraft::CollisionDetection()
 {
 	if (onGround())
 	{
-		if (AcfMap.size() > 0)
+		if (HoldingFor)
+		{
+			Aircraft& other = *HoldingFor;
+			double angle = get_angle(degrees(GetHeading(&Point2(longitude, latitude), &Point2(other.getLongitude(), other.getLatitude()))), heading);
+			if (angle > 90.0 || GetDistance(&Point2(other.getLongitude(), other.getLatitude()),
+				&Point2(longitude, latitude)) > (300 / KNOTS_FT))
+			{
+				HoldingFor = nullptr;
+				holding = false;
+			}
+		}
+		else if (AcfMap.size() > 0)
 		{
 			for (auto& it : AcfMap)
 			{
 				if (it.second != this)
 				{
 					Aircraft& other = *it.second;
-					if ((!holding && other.holding) && other.onGround() && (other.getAirport() == getAirport()) && other.ground_prev)
+					if (other.onGround() && (other.getAirport() == getAirport()) && other.ground_prev)
 					{
 						double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
 						double dist = (300 / KNOTS_FT) + decel_distance0;
-						if (circularDistance(&Point2(other.getLongitude(), 
+						if (circularDistance(&Point2(other.getLongitude(),
 							other.getLatitude()), ((300 / KNOTS_FT) * KNOTS_KM) * 1000.0))
 						{
-							if (find(ground_route.begin(), ground_route.end(),
-								other.ground_prev->parent->name) != ground_route.end())
+							double angle = get_angle(degrees(GetHeading(&Point2(longitude, latitude), &Point2(other.getLongitude(), other.getLatitude()))), heading);
+							if (angle <= 90.0)
 							{
-								holding = true;
-								break;
+								if (find(ground_route.begin(), ground_route.end(),
+									other.ground_prev->parent->name) != ground_route.end())
+								{
+									HoldingFor = it.second;
+									holding = true;
+									printf("Holding For: %s\n", other.getCallSign().c_str());
+									break;
+								}
 							}
 						}
 					}

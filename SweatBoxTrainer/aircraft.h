@@ -79,6 +79,7 @@ private:
 	long long last_time[4];
 	AV_CLIENT type = AV_CLIENT::PILOT;
 public:
+	Aircraft* HoldingFor = nullptr;
 	int turnOri = -1;
 	std::string apt_icao = "";
 	Event* position_updates = new PositionUpdates(this);
