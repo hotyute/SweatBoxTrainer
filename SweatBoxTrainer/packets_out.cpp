@@ -48,7 +48,7 @@ void updateMode(Aircraft& user) {
 	user.getConnection().sendMessage(&out);
 }
 
-void updateSquawk(Aircraft& user, std::string code) {
+void updateSquawk(Aircraft& user) {
 	Stream& out = Stream(15);
 	out.createFrameVarSize(_UPDATE_TRANSPONDER);
 	out.writeString((char*)user.getSquawkCode().c_str());

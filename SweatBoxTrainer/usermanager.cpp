@@ -126,6 +126,12 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		int index = stream.readUnsignedWord();
 		int vis_range = stream.readUnsignedWord();
 	}
+	if (opCode == 20)
+	{
+		int index = stream.readUnsignedWord();
+		char code[20];
+		stream.readString(code);
+	}
 }
 
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, int altitude, 

@@ -674,3 +674,8 @@ std::string FormatAltitude(std::string altitude)
 	}
 	return altitude;
 }
+
+bool is_digits(const std::string& str)
+{
+	return std::all_of(str.begin(), str.end(), ::isdigit); // C++11
+}

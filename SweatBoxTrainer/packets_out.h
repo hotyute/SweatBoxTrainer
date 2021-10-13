@@ -9,6 +9,8 @@ void sendFlightPlan(Aircraft& user);
 
 void updateMode(Aircraft& user);
 
+void updateSquawk(Aircraft& user);
+
 void sendDisconnect(Aircraft& user);
 
 void sendPingPacket(Aircraft& user);

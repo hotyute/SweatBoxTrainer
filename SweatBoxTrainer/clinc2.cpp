@@ -22,7 +22,8 @@ static int packetSizes[256][2] = {
 	{11, -2},
 	{17, -2},
 	{18, 19},
-	{19, 4}
+	{19, 4},
+	{20, -1}
 };
 
 tcpinterface::tcpinterface(Aircraft* aircraft) {

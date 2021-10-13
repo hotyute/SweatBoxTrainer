@@ -115,6 +115,8 @@ double CalcTaxiSpeed(double turnAngle, double maxSpeed);
 
 std::string FormatAltitude(std::string altitude);
 
+bool is_digits(const std::string& str);
+
 template<typename T>
 int pushBack(std::vector<T>& v, T val)
 {

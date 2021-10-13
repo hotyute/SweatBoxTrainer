@@ -1053,5 +1053,15 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		}
 		return 1;
 	}
+	else if (boost::istarts_with(command, "sq "))
+	{
+		std::string squawk = command.substr(3, command.length() - 1);
+		if (squawk.size() == 4 && is_digits(squawk))
+		{
+			aircraft.setSquawkCode(squawk);
+			updateSquawk(aircraft);
+		}
+		return 1;
+	}
 	return 0;
 }
