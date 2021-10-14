@@ -153,15 +153,25 @@ void Aircraft::updateSpeed()
 	last_time[2] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
+void Aircraft::updateRoll()
+{
+	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long interval = now - last_time[4];
+	roll = getNextRoll((double)interval);
+	last_time[4] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+}
+
 void Aircraft::updateHeading()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[1];
 	heading = getNextHeading((double)interval);
+	if ((heading == assignedValues.asgd_heading) && roll != 0)
+	{
+		assignedValues.asdg_roll = roll = 0;
+	}
 	last_time[1] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
-
-
 
 void Aircraft::updateMovement()
 {
@@ -569,7 +579,7 @@ double Aircraft::getNextSpeed(double interval_ms)
 		double acceleration = onGround() ? (spd_delta < 0 ? assignedValues.asdg_gnd_braking :
 			(takeoff() ? perfValues.takeoff_accel : assignedValues.asdg_gnd_accel))
 			: assignedValues.asdg_accel;
-		double amount = get_ros(acceleration, (long long)interval_ms);
+		double amount = get_per_second(acceleration, interval_ms);
 
 		if (spd_delta != 0)
 		{
@@ -596,51 +606,80 @@ double Aircraft::getNextHeading(double interval_ms)
 	double next_hdg = heading;
 	double amount = onGround() ? (assignedValues.asdg_gnd_turn_rate * (interval_ms / 1000.0)) : get_rot(roll, speed, (long long)interval_ms);
 	double new_hdg = get_angle_unsigned(hdg(assignedValues.asgd_heading), hdg(heading));
+	double a_hdg = assignedValues.asgd_heading;
 	if (speed != 0)
 	{
-		if (heading != assignedValues.asgd_heading)
+		if (heading != a_hdg)
 		{
 			int turnOrientation = onGround() ? -1 : turnOri;
 			if (turnOrientation == -1)
 			{
 				if (new_hdg > 0)
 				{
-					if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + amount))) <= 0)
-						next_hdg = assignedValues.asgd_heading;
+					if (get_angle_unsigned(a_hdg, hdg((heading + amount))) <= 0)
+						next_hdg = a_hdg;
 					else
 						next_hdg = hdg(heading + amount);
 				}
 				else if (new_hdg < 0)
 				{
-					if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + -amount))) >= 0)
-						next_hdg = assignedValues.asgd_heading;
+					if (get_angle_unsigned(a_hdg, hdg((heading + -amount))) >= 0)
+						next_hdg = a_hdg;
 					else
 						next_hdg = hdg(heading + -amount);
 				}
 			}
 			else if (turnOrientation == 0)//left turn
 			{
-				if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + -amount))) >= 0)
-					next_hdg = assignedValues.asgd_heading;
+				if (get_angle_unsigned(a_hdg, hdg((heading + -amount))) >= 0)
+					next_hdg = a_hdg;
 				else
 					next_hdg = hdg(heading + -amount);
 			}
 			else // right turn
 			{
-				if (get_angle_unsigned(assignedValues.asgd_heading, hdg((heading + amount))) <= 0)
-					next_hdg = assignedValues.asgd_heading;
+				if (get_angle_unsigned(a_hdg, hdg((heading + amount))) <= 0)
+					next_hdg = a_hdg;
 				else
 					next_hdg = hdg(heading + amount);
 			}
 		}
 	}
+
 	return next_hdg;
+}
+
+double Aircraft::getNextRoll(double interval_ms)
+{
+	double next_roll = roll;
+	double amount = get_per_second(perfValues.roll_rate, interval_ms);
+
+	double a_roll = assignedValues.asdg_roll;
+
+	double roll_delta = a_roll - roll;
+
+	if (roll_delta < 0)
+	{
+		if ((next_roll - amount) < a_roll)
+			next_roll = a_roll;
+		else
+			next_roll -= amount;
+	}
+	else if (roll_delta > 0)
+	{
+		if ((next_roll + amount) > a_roll)
+			next_roll = a_roll;
+		else
+			next_roll += amount;
+	}
+
+	return next_roll;
 }
 
 double Aircraft::getNextAltitude(double interval_ms)
 {
 	double next_alt = altitude;
-	double amount = (verticalSpeed * ((interval_ms / 1000.0) / 60.0));
+	double amount = get_per_minute(verticalSpeed, interval_ms);
 
 	double a_alt = assignedValues.asdg_altitude;
 	double alt_delta = a_alt - altitude;

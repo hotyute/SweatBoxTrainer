@@ -245,13 +245,22 @@ double get_rot(double roll, double TAS) {
 	return (G * tan(radians(roll)) / TAS);
 }
 
-double get_ros(double acceleration, long long interval_ms) {
-	double G = 1092.0;
+double get_per_second(double acceleration, double interval_ms) {
 	return acceleration * (interval_ms / 1000.0);
 }
 
 double get_distance(double speed_knots, long long interval_ms) {
 	return speed_knots * ((interval_ms / 1000.0) / 3600.0);
+}
+
+double get_per_minute(double value, double interval_ms)
+{
+	return value * ((interval_ms / 1000.0) / 60.0);
+}
+
+double get_per_hour(double value, double interval_ms)
+{
+	return value * ((interval_ms / 1000.0) / 3600.0);
 }
 
 double get_angle(double a1, double a2)

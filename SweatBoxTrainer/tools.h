@@ -47,9 +47,13 @@ double get_rot(double roll, double TAS, long long interval_ms);
 
 double get_rot(double roll, double TAS);
 
-double get_ros(double acceleration, long long interval_ms);
+double get_per_second(double acceleration, double interval_ms);
 
 double get_distance(double speed, long long interval_ms);
+
+double get_per_minute(double value, double interval_ms);
+
+double get_per_hour(double value, double interval_ms);
 
 double get_angle(double brgto, double brgfrom);
 

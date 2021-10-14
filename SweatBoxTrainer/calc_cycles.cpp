@@ -27,6 +27,7 @@ void CalculateMovements()
 				aircraft.CheckFrameFlags();
 
 				aircraft.updateSpeed();
+				aircraft.updateRoll();
 				aircraft.updateHeading();
 				aircraft.updateMovement();
 				aircraft.updateAltitude();

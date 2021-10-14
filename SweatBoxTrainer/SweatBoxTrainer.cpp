@@ -1038,6 +1038,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		if (array3.size() == 2)
 		{
 			aircraft.turnOri = -1;
+			aircraft.getAssignedValues().asdg_roll = aircraft.getPerfValues().max_roll;
 			aircraft.getAssignedValues().asgd_heading = hdg(atodd(array3[1]));
 		}
 
