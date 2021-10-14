@@ -154,6 +154,7 @@
     <ClInclude Include="events.h" />
     <ClInclude Include="filereader.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="geoutils.h" />
     <ClInclude Include="guicon.h" />
     <ClInclude Include="later.h" />
     <ClInclude Include="packets_out.h" />
@@ -174,6 +175,7 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="events.cpp" />
     <ClCompile Include="filereader.cpp" />
+    <ClCompile Include="geoutils.cpp" />
     <ClCompile Include="guicon.cpp" />
     <ClCompile Include="later.cpp" />
     <ClCompile Include="packets_out.cpp" />

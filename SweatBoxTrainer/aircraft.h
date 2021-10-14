@@ -166,6 +166,8 @@ public:
 	bool doPointSkip();
 	void CollisionDetection();
 	void checkPathHolds();
+	Point2 GetCurLoc();
+	Point2 GetNextLoc();
 };
 
 

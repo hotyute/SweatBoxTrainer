@@ -3,6 +3,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "tools.h"
+#include "geoutils.h"
 
 std::unordered_map<std::string, Aircraft*>AcfMap;
 
@@ -898,34 +899,75 @@ void Aircraft::CollisionDetection()
 		}
 		else if (AcfMap.size() > 0)
 		{
+			Aircraft* hold_for = nullptr;
+			double last_distance = 0;
 			for (auto& it : AcfMap)
 			{
 				if (it.second != this)
 				{
 					Aircraft& other = *it.second;
-					if (other.onGround() && (other.getAirport() == getAirport()) && other.ground_prev)
+					if (other.onGround() && (other.getAirport() == getAirport()))
 					{
 						double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+						double cur_dist = GetDistance(&other.GetNextLoc(), &GetNextLoc());
 						double dist = (300 / KNOTS_FT) + decel_distance0;
-						if (circularDistance(&Point2(other.getLongitude(),
-							other.getLatitude()), ((300 / KNOTS_FT) * KNOTS_KM) * 1000.0))
+						if (cur_dist <= dist)
 						{
-							double angle = get_angle(degrees(GetHeading(&Point2(longitude, latitude), &Point2(other.getLongitude(), other.getLatitude()))), heading);
-							if (angle <= 90.0)
+							double angle = get_angle(degrees(GetHeading(&GetNextLoc(), &other.GetNextLoc())), heading);
+							if ((last_distance == 0.0 || cur_dist < last_distance) && angle <= 90.0)
 							{
-								if (find(ground_route.begin(), ground_route.end(),
-									other.ground_prev->parent->name) != ground_route.end())
-								{
-									HoldingFor = it.second;
+								hold_for = it.second;
+								holding = true;
+								last_distance = cur_dist;
+								printf("Holding For: %s\n", other.getCallSign().c_str());
+
+								/*if (ground_prev && (other.ground_prev && ground_prev->parent->name == other.ground_prev->parent->name)
+									|| (other.ground_cur && ground_prev->parent->name == other.ground_cur->parent->name)
+									|| (other.ground_next && ground_prev->parent->name == other.ground_next->parent->name)
+									|| (other.ground_next_next && ground_prev->parent->name == other.ground_next_next->parent->name))
+								{// if on same taxiway
+									hold_for = it.second;
 									holding = true;
+									last_distance = cur_dist;
 									printf("Holding For: %s\n", other.getCallSign().c_str());
-									break;
 								}
+								else if (ground_cur && (other.ground_prev && ground_cur->parent->name == other.ground_prev->parent->name)
+									|| (other.ground_cur && ground_cur->parent->name == other.ground_cur->parent->name)
+									|| (other.ground_next && ground_cur->parent->name == other.ground_next->parent->name)
+									|| (other.ground_next_next && ground_cur->parent->name == other.ground_next_next->parent->name))
+								{//if (going to the same taxiway they are holding on
+									hold_for = it.second;
+									holding = true;
+									last_distance = cur_dist;
+									printf("Holding For: %s\n", other.getCallSign().c_str());
+								}
+								else if (ground_next && (other.ground_prev && ground_next->parent->name == other.ground_prev->parent->name)
+									|| (other.ground_cur && ground_next->parent->name == other.ground_cur->parent->name)
+									|| (other.ground_next && ground_next->parent->name == other.ground_next->parent->name)
+									|| (other.ground_next_next && ground_next->parent->name == other.ground_next_next->parent->name))
+								{//if (going to the same taxiway they are holding on
+									hold_for = it.second;
+									holding = true;
+									last_distance = cur_dist;
+									printf("Holding For: %s\n", other.getCallSign().c_str());
+								}
+								else if (ground_next_next && (other.ground_prev && ground_next->parent->name == other.ground_prev->parent->name)
+									|| (other.ground_cur && ground_next_next->parent->name == other.ground_cur->parent->name)
+									|| (other.ground_next && ground_next_next->parent->name == other.ground_next->parent->name)
+									|| (other.ground_next_next && ground_next_next->parent->name == other.ground_next_next->parent->name))
+								{//if (going to the same taxiway they are holding on
+									hold_for = it.second;
+									holding = true;
+									last_distance = cur_dist;
+									printf("Holding For: %s\n", other.getCallSign().c_str());
+								}*/
 							}
 						}
 					}
 				}
 			}
+			if (hold_for)
+				HoldingFor = hold_for;
 		}
 	}
 }
@@ -951,4 +993,18 @@ void Aircraft::checkPathHolds()
 			++it;
 		}
 	}
+}
+
+Point2 Aircraft::GetCurLoc()
+{
+	return Point2(longitude, latitude);
+}
+
+Point2 Aircraft::GetNextLoc()
+{
+	double next_heading = getNextHeading(CALC_TIME);
+	double next_speed = getNextSpeed(CALC_TIME);
+	double interval_dist = get_distance(next_speed, CALC_TIME);
+
+	return getLocFromBearing(latitude, longitude, interval_dist, next_heading);
 }

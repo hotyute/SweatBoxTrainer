@@ -971,14 +971,14 @@ int processCommands(Aircraft& aircraft, std::string command) {
 
 		return 1;
 	}
-	else if (boost::istarts_with(command, "hold"))
+	else if (boost::iequals(command, "hold"))
 	{
 		if (aircraft.onGround())
 		{
 			aircraft.holding = true;
 		}
 	}
-	else if (boost::istarts_with(command, "res"))
+	else if (boost::iequals(command, "res"))
 	{
 		if (aircraft.onGround())
 		{
@@ -1061,6 +1061,20 @@ int processCommands(Aircraft& aircraft, std::string command) {
 			aircraft.setSquawkCode(squawk);
 			updateSquawk(aircraft);
 		}
+		return 1;
+	}
+	else if (boost::iequals(command, "sn"))
+	{
+		aircraft.setMode(1);
+		SetWindowText(mode_button, L"SQUAWK: C");
+		updateMode(aircraft);
+		return 1;
+	}
+	else if (boost::iequals(command, "ss"))
+	{
+		aircraft.setMode(0);
+		SetWindowText(mode_button, L"SQUAWK: S");
+		updateMode(aircraft);
 		return 1;
 	}
 	return 0;

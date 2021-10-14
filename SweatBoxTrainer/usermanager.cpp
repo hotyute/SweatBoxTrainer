@@ -170,6 +170,6 @@ void disconnect(Aircraft* aircraft, bool queue)
 	sendDisconnect(*aircraft);
 	aircraft->getConnection().queue_clean = queue;
 	aircraft->getConnection().disconnect_socket();
-	aircraft->position_updates->eAction.setRunning(false);
+	aircraft->position_updates->toggle_pause();
 	aircraft->connected = false;
 }

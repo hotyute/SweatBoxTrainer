@@ -75,6 +75,9 @@
     <ClInclude Include="airport.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="geoutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SweatBoxTrainer.cpp">
@@ -123,6 +126,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="airport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="geoutils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

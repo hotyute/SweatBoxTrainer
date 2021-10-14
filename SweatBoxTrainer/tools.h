@@ -85,14 +85,6 @@ double hdg(double heading);
 
 double get_bearing(double lat1, double long1, double lat2, double long2);
 
-bool inCircle(Point2& p1, Point2& p2, Point2& c, double radius_meters);
-
-bool inCircle2(Point2& p1, Point2& p2, Point2& c, double r);
-
-bool pointCircle(double px, double py, double cx, double cy, double r);
-
-bool linePoint(double x1, double y1, double x2, double y2, double px, double py);
-
 bool intersects(Point2& p1, Point2& p2, Point2& c, double r);
 
 double line_dist(Point2& l1, Point2& l2, Point2& p);

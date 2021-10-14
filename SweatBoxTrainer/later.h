@@ -13,6 +13,8 @@ private:
 	long long ticks;
 	boost::posix_time::ptime lastEvent;
 public:
+	bool paused = false;
+
 	EventAction() {
 		running = true;
 		lastEvent = boost::posix_time::microsec_clock::local_time();
@@ -47,6 +49,7 @@ public:
 	EventAction eAction;
 	void* object = nullptr;
 	virtual void execute() = 0;
+	void toggle_pause() { this->eAction.paused = !this->eAction.paused; }
 	virtual void stop() = 0;
 };
 #endif
@@ -56,18 +59,9 @@ public:
 class EventManager {
 private:
 	std::vector<Event*> events;
-	int eventCount = 0;
 
 public:
-	EventManager() : events(MAX_EVENTS, nullptr) { }
-	void addEvent(Event* e) {
-		auto it = std::find(events.begin(), events.end(), nullptr);
-		if (it != events.end())
-			*it = e;
-	}
-	bool removeEvent(Event* e) {
-		return events.erase(std::find(events.begin(), events.end(), e)) != events.end();
-	}
+	void addEvent(Event* e) { events.push_back(e); }
 	void update();
 
 };
