@@ -192,15 +192,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		create_controls(hWnd);
 
+		Event* display_updates = new GraphicsUIUpdates();
+		display_updates->eAction.setTicks(0);
+		event_manager1->addEvent(display_updates);
+
 		CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
 		CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
 		CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
 
 		userStorage1.resize(MAX_AIRCRAFT_SIZE);
-
-		Event* display_updates = new GraphicsUIUpdates();
-		display_updates->eAction.setTicks(0);
-		event_manager1->addEvent(display_updates);
 
 		SetWindowText(console_text, L"\n\n\n\n\n[00:00:00] Hello.");
 
@@ -948,14 +948,6 @@ int processCommands(Aircraft& aircraft, std::string command) {
 				capitalize(s);
 				aircraft.ground_route.push_back(trim(s));
 			}
-
-			std::string hs = _command.substr(pos);
-
-			for (std::string s : split(hs.substr(3, hs.length() - 1), " "))
-			{
-				capitalize(s);
-				//aircraft.holds.push_back(trim(s));
-			}
 		}
 		else
 		{
@@ -968,6 +960,17 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		//aircraft.locked_rate = true;
 		aircraft.prepareRoute();
 		aircraft.pollRoute();
+
+		if (pos != std::string::npos)
+		{
+			std::string hs = _command.substr(pos);
+
+			for (std::string s : split(hs.substr(3, hs.length() - 1), " "))
+			{
+				capitalize(s);
+				aircraft.HoldAt(s);
+			}
+		}
 
 		return 1;
 	}
@@ -1049,7 +1052,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		for (std::string s : split(command.substr(3, command.length() - 1), " "))
 		{
 			capitalize(s);
-			//aircraft.holds.push_back(trim(s));
+			aircraft.HoldAt(s);
 		}
 		return 1;
 	}

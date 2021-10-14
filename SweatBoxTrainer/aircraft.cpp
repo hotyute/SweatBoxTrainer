@@ -292,6 +292,7 @@ double Aircraft::getNextPoint()
 			}
 			checkRateReset(false);
 		}
+		checkPathHolds();
 	}
 	else if (air_cur)
 	{
@@ -933,6 +934,29 @@ void Aircraft::CollisionDetection()
 	}
 }
 
+void Aircraft::checkPathHolds()
+{
+	if (holds.size() > 0)
+	{
+		auto it = holds.begin();
+		while (it != holds.end())
+		{
+			Point2* p = *it;
+			double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+			double dist = (300 / KNOTS_FT) + decel_distance0;
+			if (circularDistance(p, (dist * KNOTS_KM) * 1000.0))
+			{
+				holding = true;
+				it = holds.erase(it);
+				//GetDistance(&Point2(longitude, latitude), p)
+				printf("Holding at: %s\n", p->parent->name.c_str());
+				break;
+			}
+			++it;
+		}
+	}
+}
+
 Point2 Aircraft::GetCurLoc()
 {
 	return Point2(longitude, latitude);
@@ -945,4 +969,25 @@ Point2 Aircraft::GetNextLoc()
 	double interval_dist = get_distance(next_speed, CALC_TIME);
 
 	return getLocFromBearing(latitude, longitude, interval_dist, next_heading);
+}
+
+void Aircraft::HoldAt(std::string s)
+{
+	if (onGround())
+	{
+		Airport& airport = *getAirport();
+		auto it3 = airport.all.find(s);
+		if (it3 != airport.all.end())
+		{
+			TaxiPath& path = *it3->second;
+			for (auto& p : ground_points)
+			{
+				if (path.intersect(*p))
+				{
+					holds.push_back(p);
+					printf("Will hold at: %s\n", p->parent->name.c_str());
+				}
+			}
+		}
+	}
 }

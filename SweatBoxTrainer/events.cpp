@@ -12,7 +12,8 @@ PositionUpdates::PositionUpdates(void* obj)
 void PositionUpdates::execute() {
 	Aircraft* aircraft = (Aircraft*)object;
 	if (PositionUpdates::eAction.getTicks() == 0
-		|| aircraft->getUpdateTime() != PositionUpdates::eAction.getTicks()) {
+		|| aircraft->getUpdateTime() != PositionUpdates::eAction.getTicks()) 
+	{
 		PositionUpdates::eAction.setTicks(aircraft->getUpdateTime());
 	}
 	sendPositionUpdates(*aircraft);

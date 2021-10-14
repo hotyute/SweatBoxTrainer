@@ -27,6 +27,7 @@ public:
 	Point2* angleTest(Point2* orig, Point2* p, Point2* p2);
 	Point2* getClosestPoint(double latitude, double longitude);
 	Point2* getClosest(TaxiPath* next);
+	Point2* intersect(Point2&);
 };
 
 class ApproachPath {
