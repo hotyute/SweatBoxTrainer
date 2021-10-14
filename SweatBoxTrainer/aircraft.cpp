@@ -267,6 +267,10 @@ double Aircraft::getNextPoint()
 				if (ground_cur)
 				{
 					std::cout << "[Arrived at : " << ground_cur->parent->name << " : " << ground_cur->index << "]" << std::endl;
+					if (queue_takeoff && runway_ctx)
+					{
+						handle_takeoff();
+					}
 					while (ground_cur->parent->name != ground_route.front())
 						ground_route.erase(ground_route.begin());
 				}
@@ -353,10 +357,13 @@ void Aircraft::pollRoute()
 
 				(next != ground_points.end() && ((next + 1) != ground_points.end()))
 					? ground_next_next = *(next + 1) : ground_next_next = nullptr;
+
+				set_taxing();
 			}
 			else
 			{
 				reset_path();
+				state = ACF_STATE::IDLE;
 			}
 		}
 		else
@@ -437,6 +444,7 @@ void Aircraft::prepareRoute()
 								if (next_path->type == PATHTYPE::RUNWAY && (it + 2) == ground_route.end())
 								{
 									holds.push_back(next_point);
+									runway_ctx = (Runway*)next_path;
 								}
 								ground_points.push_back(next_point);
 							}
@@ -543,11 +551,12 @@ double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs
 double Aircraft::getNextSpeed(double interval_ms)
 {
 	double next_speed = speed;
-	if (speed != assignedValues.asdg_speed || (holding && speed != 0))
+	if (speed != assignedValues.asdg_speed || (holding() && speed != 0))
 	{
-		double a_spd = ((onGround() && holding) ? 0 : assignedValues.asdg_speed);
+		double a_spd = ((onGround() && holding()) ? 0 : assignedValues.asdg_speed);
 		double spd_delta = a_spd - speed;
-		double acceleration = onGround() ? spd_delta < 0 ? assignedValues.asdg_gnd_braking : assignedValues.asdg_gnd_accel
+		double acceleration = onGround() ? (spd_delta < 0 ? assignedValues.asdg_gnd_braking : 
+			(takeoff() ? assignedValues.asdg_to_accel : assignedValues.asdg_gnd_accel))
 			: assignedValues.asdg_accel;
 		double amount = get_ros(acceleration, (long long)interval_ms);
 
@@ -894,7 +903,7 @@ void Aircraft::CollisionDetection()
 				&Point2(longitude, latitude)) > (300 / KNOTS_FT))
 			{
 				HoldingFor = nullptr;
-				holding = false;
+				set_taxing();
 			}
 		}
 		else if (AcfMap.size() > 0)
@@ -920,7 +929,7 @@ void Aircraft::CollisionDetection()
 									|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev))))
 								{
 									hold_for = it.second;
-									holding = true;
+									state = ACF_STATE::HOLDING;
 									last_distance = cur_dist;
 									printf("Holding For: %s\n", other.getCallSign().c_str());
 								}
@@ -946,7 +955,7 @@ void Aircraft::checkPathHolds()
 			double dist = (300 / KNOTS_FT) + decel_distance0;
 			if (circularDistance(p, (dist * KNOTS_KM) * 1000.0))
 			{
-				holding = true;
+				state = ACF_STATE::HOLDING;
 				it = holds.erase(it);
 				//GetDistance(&Point2(longitude, latitude), p)
 				printf("Holding at: %s\n", p->parent->name.c_str());
@@ -990,4 +999,10 @@ void Aircraft::HoldAt(std::string s)
 			}
 		}
 	}
+}
+
+void Aircraft::handle_takeoff() 
+{
+	assignedValues.asdg_speed = 120;
+	state = ACF_STATE::TAKEOFF;
 }

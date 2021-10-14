@@ -6,6 +6,8 @@
 
 enum class AV_CLIENT { CONTROLLER = 0, PILOT = 1 };
 
+enum class ACF_STATE {IDLE, HOLDING, TAXING, TAKEOFF, LANDING};
+
 const long long CALC_TIME = 30L;
 
 const double KNOTS_KM = 1.852;

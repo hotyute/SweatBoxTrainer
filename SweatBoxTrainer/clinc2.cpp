@@ -100,8 +100,16 @@ DWORD tcpinterface::run() {
 							aircraft->setUserIndex(index);
 							userStorage1[index] = aircraft;
 							aircraft->setUpdateTime(updateTimeInMillis);
-							aircraft->position_updates->eAction.setTicks(0);
-							event_manager1->addEvent(aircraft->position_updates);
+							if (aircraft->position_updates->eAction.paused)
+							{
+								aircraft->position_updates->eAction.setTicks(0);
+								aircraft->position_updates->toggle_pause();
+							}
+							else
+							{
+								aircraft->position_updates->eAction.setTicks(0);
+								event_manager1->addEvent(aircraft->position_updates);
+							}
 							hand_shake = false;
 							current_op = -1;
 							in.deleteReaderBlock();

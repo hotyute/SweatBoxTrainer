@@ -28,6 +28,8 @@ public:
 	Point2* getClosestPoint(double latitude, double longitude);
 	Point2* getClosest(TaxiPath* next);
 	Point2* intersect(Point2&);
+	Point2* getStart();
+	Point2* getEnd();
 };
 
 class ApproachPath {

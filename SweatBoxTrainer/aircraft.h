@@ -27,6 +27,7 @@ struct AssignedValues {
 	double asdg_gnd_turn_rate = 10; // 9 degrees per second
 	double asdg_accel = 5;//per second
 	double asdg_gnd_accel = 2;//per second
+	double asdg_to_accel = 5;//per second
 	double asdg_gnd_braking = 5;
 };
 
@@ -80,10 +81,12 @@ private:
 	AV_CLIENT type = AV_CLIENT::PILOT;
 public:
 	Aircraft* HoldingFor = nullptr;
+	Runway* runway_ctx = nullptr;
 	int turnOri = -1;
 	std::string apt_icao = "";
 	Event* position_updates = new PositionUpdates(this);
-	bool connected = false, point_skip = false, holding = false, locked_rate = false;
+	ACF_STATE state = ACF_STATE::IDLE;
+	bool connected = false, point_skip = false, locked_rate = false, queue_takeoff = false;
 	std::vector<std::string> ground_route;
 	std::vector<Point2*> ground_points, holds;
 	Point2* ground_prev = nullptr, * ground_cur = nullptr, * ground_next = nullptr, * ground_next_next = nullptr;
@@ -122,6 +125,12 @@ public:
 	HANDLE getMutex();
 	void lock();
 	void unlock();
+	void set_holding() { state = ACF_STATE::HOLDING; }
+	bool holding() { return state == ACF_STATE::HOLDING; }
+	void set_taxing() { state = ACF_STATE::TAXING; }
+	bool taxing() { return state == ACF_STATE::TAXING; };
+	bool takeoff() { return state == ACF_STATE::TAKEOFF; };
+	bool idle() { return state == ACF_STATE::IDLE; };
 	//void setUser1(User*);
 	bool isHeavy();
 	void setHeavy(bool);
@@ -169,6 +178,7 @@ public:
 	Point2 GetCurLoc();
 	Point2 GetNextLoc();
 	void HoldAt(std::string s);
+	void handle_takeoff();
 };
 
 

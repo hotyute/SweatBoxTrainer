@@ -495,7 +495,11 @@ void connect()
 		tcpinterface& intter = aircraft.getConnection();
 		if (!aircraft.connected) {
 			//34.142.27.168
-			if (intter.connectNew("34.142.27.168", 4403))
+			std::string ip = "34.142.27.168";
+#ifdef _DEBUG
+			ip = "127.0.0.1";
+#endif
+			if (intter.connectNew(ip, 4403))
 			{
 				aircraft.connected = true;
 				Identity& id = *aircraft.getIdentity();
@@ -935,57 +939,61 @@ void DisplayAircraft() {
 int processCommands(Aircraft& aircraft, std::string command) {
 	if (boost::istarts_with(command, "taxi ")) {
 
-		aircraft.reset_path();
-
-		std::string _command = command.substr(5, (command.length() - 1));
-
-		size_t pos = _command.find("hs ");
-
-		if (pos != std::string::npos)
+		if (aircraft.onGround())
 		{
-			for (std::string s : split(_command.substr(0, pos), " "))
-			{
-				capitalize(s);
-				aircraft.ground_route.push_back(trim(s));
-			}
-		}
-		else
-		{
-			for (std::string s : split(_command, " "))
-			{
-				capitalize(s);
-				aircraft.ground_route.push_back(trim(s));
-			}
-		}
-		//aircraft.locked_rate = true;
-		aircraft.prepareRoute();
-		aircraft.pollRoute();
+			aircraft.reset_path();
 
-		if (pos != std::string::npos)
-		{
-			std::string hs = _command.substr(pos);
+			std::string _command = command.substr(5, (command.length() - 1));
 
-			for (std::string s : split(hs.substr(3, hs.length() - 1), " "))
+			size_t pos = _command.find("hs ");
+
+			if (pos != std::string::npos)
 			{
-				capitalize(s);
-				aircraft.HoldAt(s);
+				for (std::string s : split(_command.substr(0, pos), " "))
+				{
+					capitalize(s);
+					aircraft.ground_route.push_back(trim(s));
+				}
 			}
+			else
+			{
+				for (std::string s : split(_command, " "))
+				{
+					capitalize(s);
+					aircraft.ground_route.push_back(trim(s));
+				}
+			}
+			//aircraft.locked_rate = true;
+			aircraft.prepareRoute();
+			aircraft.pollRoute();
+
+			if (pos != std::string::npos)
+			{
+				std::string hs = _command.substr(pos);
+
+				for (std::string s : split(hs.substr(3, hs.length() - 1), " "))
+				{
+					capitalize(s);
+					aircraft.HoldAt(s);
+				}
+			}
+				
 		}
 
 		return 1;
 	}
 	else if (boost::iequals(command, "hold"))
 	{
-		if (aircraft.onGround())
+		if (aircraft.onGround() && aircraft.taxing())
 		{
-			aircraft.holding = true;
+			aircraft.set_holding();
 		}
 	}
 	else if (boost::iequals(command, "res"))
 	{
-		if (aircraft.onGround())
+		if (aircraft.onGround() && aircraft.holding())
 		{
-			aircraft.holding = false;
+			aircraft.set_taxing();
 		}
 	}
 	else if (boost::istarts_with(command, "tl "))
@@ -1078,6 +1086,24 @@ int processCommands(Aircraft& aircraft, std::string command) {
 		aircraft.setMode(0);
 		SetWindowText(mode_button, L"SQUAWK: S");
 		updateMode(aircraft);
+		return 1;
+	}
+	else if (boost::iequals(command, "cto"))
+	{
+		if (aircraft.onGround() && aircraft.holding())
+		{
+			if (aircraft.runway_ctx && aircraft.ground_cur)
+			{
+				Runway* runway = aircraft.runway_ctx;
+				if (aircraft.ground_cur->parent->name == runway->name)
+				{
+					runway->getPoints(aircraft.ground_cur, runway->getEnd(), aircraft.ground_points);
+					aircraft.ground_points.push_back(runway->getEnd());
+					aircraft.queue_takeoff = true;
+					aircraft.set_taxing();
+				}
+			}
+		}
 		return 1;
 	}
 	return 0;

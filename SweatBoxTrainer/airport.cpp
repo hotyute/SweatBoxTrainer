@@ -156,3 +156,13 @@ Point2* TaxiPath::intersect(Point2& p)
 	}
 	return p2add;
 }
+
+Point2* TaxiPath::getStart()
+{
+	return points.front();
+}
+
+Point2* TaxiPath::getEnd()
+{
+	return points.back();
+}

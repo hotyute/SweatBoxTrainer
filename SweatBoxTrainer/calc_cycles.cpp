@@ -29,7 +29,7 @@ void CalculateMovements()
 				aircraft.updateHeading();
 				aircraft.updateMovement();
 
-				if (aircraft.getSpeed() > 0 && !aircraft.holding)
+				if (aircraft.getSpeed() > 0 && (!aircraft.holding() && !aircraft.idle()))
 					aircraft.getNextPoint();
 
 			}
