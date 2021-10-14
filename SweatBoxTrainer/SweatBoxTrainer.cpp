@@ -902,13 +902,13 @@ void HandleSelectedLB(DWORD iSelected)
 void DisplayAircraft() {
 	if (displayed)
 	{
-		std::wstring alt = std::to_wstring(displayed->getAltitude());
+		std::wstring alt = std::to_wstring((int)displayed->getAltitude());
 		SetWindowText(altitude, alt.c_str());
 
 		std::wstring hdg = std::to_wstring((int)displayed->getHeading());
 		SetWindowText(heading, hdg.c_str());
 
-		std::wstring vs = std::to_wstring(displayed->getVerticalSpeed());
+		std::wstring vs = std::to_wstring((int)displayed->getVerticalSpeed());
 		SetWindowText(vs_hdl, vs.c_str());
 
 		std::wstring lat = std::to_wstring(displayed->getLatitude());
@@ -1028,8 +1028,10 @@ int processCommands(Aircraft& aircraft, std::string command) {
 	}
 	else if (boost::istarts_with(command, "fh "))
 	{
-
-		aircraft.reset_path();
+		if (aircraft.onGround())
+		{
+			aircraft.reset_path();
+		}
 
 		std::vector<std::string> array3 = split(command, " ");
 
@@ -1095,10 +1097,14 @@ int processCommands(Aircraft& aircraft, std::string command) {
 			if (aircraft.runway_ctx && aircraft.ground_cur)
 			{
 				Runway* runway = aircraft.runway_ctx;
-				if (aircraft.ground_cur->parent->name == runway->name)
+				Point2& cur = *aircraft.ground_cur;
+				if (cur.parent->name == runway->name)
 				{
-					runway->getPoints(aircraft.ground_cur, runway->getEnd(), aircraft.ground_points);
+					aircraft.reset_path();
+					aircraft.ground_points.push_back(&cur);
+					runway->getPoints(&cur, runway->getEnd(), aircraft.ground_points);
 					aircraft.ground_points.push_back(runway->getEnd());
+					aircraft.pollRoute();
 					aircraft.queue_takeoff = true;
 					aircraft.set_taxing();
 				}

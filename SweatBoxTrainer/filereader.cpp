@@ -127,6 +127,16 @@ int LoadAGC(std::string path) {
 							fp.remarks = args[8].length() > 128 ? args[8].substr(0, 127) : args[8];
 							++fp.cycle;
 						}
+						processed_lines++;
+					}
+					else if (processed_lines == 2)
+					{
+						std::vector<std::string> args = split(line, ":");
+						if (curAircraft)
+						{
+							curAircraft->getPerfValues().takeoff_accel = atodd(args[0]);
+							curAircraft->getPerfValues().v1 = atodd(args[1]);
+						}
 						processed_lines = 0;
 					}
 				}

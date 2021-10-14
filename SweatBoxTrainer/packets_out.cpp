@@ -16,7 +16,7 @@ void sendPositionUpdates(Aircraft& user) {
 		+ ((static_cast<long long>((int)((user.getHeading() * 1024.0) / 360.0))) << 2);
 	out.writeQWord(infoHash);
 	out.writeWord((int)user.getSpeed());
-	out.writeQWord(user.getAltitude());
+	out.writeQWord((long long)user.getAltitude());
 	out.endFrameVarSize();
 	user.getConnection().sendMessage(&out);
 }

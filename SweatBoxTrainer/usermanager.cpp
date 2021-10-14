@@ -134,8 +134,8 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	}
 }
 
-Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, int altitude, 
-	int verticalSpeed, int mode, std::string squawkCode) {
+Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude, 
+	double verticalSpeed, int mode, std::string squawkCode) {
 	Aircraft* cur = new Aircraft();
 	AssignedValues& av = cur->getAssignedValues();
 	cur->lock();

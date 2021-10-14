@@ -15,11 +15,6 @@ const double EARTH_RADIUS_KM = 6378.14; //KM
 const double EARTH_RADIUS_NM = 3437.670013352;
 const int TRANSITION = 18000;
 
-const int TURN_RATE_TAXI_MIN = 5;       // Degrees per second.
-const int TURN_RATE_TAXI = 20;          // Degrees per second.
-const int SPEED_MIN = 10;
-const int SPEED_MAX = 20;
-
 std::vector<std::string>& split(const std::string& str, const std::string& delimiters, std::vector<std::string>& elems, int times) {
 	// Skip delimiters at beginning.
 	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);

@@ -61,11 +61,11 @@ void Aircraft::setLongitude(double value) {
 	Aircraft::longitude = value;
 }
 
-int Aircraft::getAltitude() {
+double Aircraft::getAltitude() {
 	return Aircraft::altitude;
 }
 
-void Aircraft::setAltitude(int val) {
+void Aircraft::setAltitude(double val) {
 	Aircraft::altitude = val;
 }
 
@@ -178,6 +178,14 @@ void Aircraft::updateMovement()
 	last_time[0] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
+void Aircraft::updateAltitude()
+{
+	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long interval = now - last_time[3];
+	altitude = getNextAltitude((double)interval);
+	last_time[3] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+}
+
 Airport* Aircraft::getAirport()
 {
 	if (!empty(apt_icao))
@@ -267,11 +275,7 @@ double Aircraft::getNextPoint()
 				if (ground_cur)
 				{
 					std::cout << "[Arrived at : " << ground_cur->parent->name << " : " << ground_cur->index << "]" << std::endl;
-					if (queue_takeoff && runway_ctx)
-					{
-						handle_takeoff();
-					}
-					while (ground_cur->parent->name != ground_route.front())
+					while (ground_route.size() > 0 && (ground_cur->parent->name != ground_route.front()))
 						ground_route.erase(ground_route.begin());
 				}
 				pollRoute();
@@ -294,9 +298,11 @@ double Aircraft::getNextPoint()
 					assignedValues.asgd_heading = hdg(f_heading); //hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 				}
 			}
-			checkRateReset(false);
+			if (!takeoff())
+				checkRateReset(false);
 		}
-		checkPathHolds();
+		if (!takeoff())
+			checkPathHolds();
 	}
 	else if (air_cur)
 	{
@@ -358,12 +364,12 @@ void Aircraft::pollRoute()
 				(next != ground_points.end() && ((next + 1) != ground_points.end()))
 					? ground_next_next = *(next + 1) : ground_next_next = nullptr;
 
-				set_taxing();
+				if (!takeoff())
+					set_taxing();
 			}
 			else
 			{
 				reset_path();
-				state = ACF_STATE::IDLE;
 			}
 		}
 		else
@@ -505,7 +511,7 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 		}
 	}*/
 
-	if (isTurnReady(p1, p2))
+	if (!takeoff() && isTurnReady(p1, p2))
 	{
 		if (onGround())
 		{
@@ -526,7 +532,12 @@ void Aircraft::reset_path()
 	ground_next = nullptr;
 	ground_route.clear();
 	ground_points.clear();
+	holds.clear();
 	checkRateReset(true);
+	if (onGround() && !takeoff())
+	{
+		state = ACF_STATE::IDLE;
+	}
 }
 
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude
@@ -555,8 +566,8 @@ double Aircraft::getNextSpeed(double interval_ms)
 	{
 		double a_spd = ((onGround() && holding()) ? 0 : assignedValues.asdg_speed);
 		double spd_delta = a_spd - speed;
-		double acceleration = onGround() ? (spd_delta < 0 ? assignedValues.asdg_gnd_braking : 
-			(takeoff() ? assignedValues.asdg_to_accel : assignedValues.asdg_gnd_accel))
+		double acceleration = onGround() ? (spd_delta < 0 ? assignedValues.asdg_gnd_braking :
+			(takeoff() ? perfValues.takeoff_accel : assignedValues.asdg_gnd_accel))
 			: assignedValues.asdg_accel;
 		double amount = get_ros(acceleration, (long long)interval_ms);
 
@@ -624,6 +635,32 @@ double Aircraft::getNextHeading(double interval_ms)
 		}
 	}
 	return next_hdg;
+}
+
+double Aircraft::getNextAltitude(double interval_ms)
+{
+	double next_alt = altitude;
+	double amount = (verticalSpeed * ((interval_ms / 1000.0) / 60.0));
+
+	double a_alt = assignedValues.asdg_altitude;
+	double alt_delta = a_alt - altitude;
+
+	if (alt_delta < 0)
+	{
+		if ((next_alt - amount) < a_alt)
+			next_alt = a_alt;
+		else
+			next_alt -= amount;
+	}
+	else if (alt_delta > 0)
+	{
+		if ((next_alt + amount) > a_alt)
+			next_alt = a_alt;
+		else
+			next_alt += amount;
+	}
+
+	return next_alt;
 }
 
 double Aircraft::calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double default_hdg)
@@ -891,6 +928,25 @@ bool Aircraft::doPointSkip()
 	return false;
 }
 
+void Aircraft::CheckFrameFlags()
+{
+	if (onGround())
+	{
+		if (OnTrack())
+		{
+			if (queue_takeoff && runway_ctx)
+			{
+				handle_takeoff_roll();
+				queue_takeoff = false;
+			}
+			else if (takeoff() && speed == perfValues.v1)
+			{
+				handle_takeoff_rotate();
+			}
+		}
+	}
+}
+
 void Aircraft::CollisionDetection()
 {
 	if (onGround())
@@ -1001,8 +1057,19 @@ void Aircraft::HoldAt(std::string s)
 	}
 }
 
-void Aircraft::handle_takeoff() 
+void Aircraft::handle_takeoff_roll()
 {
+	assignedValues.asdg_gnd_turn_rate = TURN_RATE_TAXI;
+	locked_rate = false;
 	assignedValues.asdg_speed = 120;
 	state = ACF_STATE::TAKEOFF;
+}
+
+void Aircraft::handle_takeoff_rotate()
+{
+	reset_path();
+	assignedValues.asdg_gnd_turn_rate = 10;
+	assignedValues.asdg_speed = 200;
+	assignedValues.asdg_altitude = 5000;
+	state = ACF_STATE::AIRBORNE;
 }

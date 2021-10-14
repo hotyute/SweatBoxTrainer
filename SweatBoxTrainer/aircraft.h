@@ -19,15 +19,19 @@ struct DefaultValues {
 	double turn_rate = 10;
 };
 
+struct PerfValues {
+	double v1 = 120;
+	double takeoff_accel = 5;//per second
+};
+
 struct AssignedValues {
 	double asgd_heading = 0;
-	int asdg_altitude = 0;
+	double asdg_altitude = 0;
 	double asdg_speed = 0;
 	double asdg_roll = 25;
 	double asdg_gnd_turn_rate = 10; // 9 degrees per second
 	double asdg_accel = 5;//per second
 	double asdg_gnd_accel = 2;//per second
-	double asdg_to_accel = 5;//per second
 	double asdg_gnd_braking = 5;
 };
 
@@ -66,18 +70,19 @@ private:
 	double longitude;
 	double speed = 0;
 	double heading, pitch, roll;
-	int altitude = 0, verticalSpeed = 1000;
+	double altitude = 0, verticalSpeed = 1000;
 	std::vector<History*> historyCount;
 	FlightPlan flight_plan;
 	tcpinterface intter = tcpinterface(this);
 	Identity identity;
 	AssignedValues assignedValues;
 	DefaultValues defaultValues;
+	PerfValues perfValues;
 	int mode = 0;
 	std::string transponder = "0000";
 	long long update_time = 0;
 	unsigned short visibility = 300;
-	long long last_time[4];
+	long long last_time[5];
 	AV_CLIENT type = AV_CLIENT::PILOT;
 public:
 	Aircraft* HoldingFor = nullptr;
@@ -112,8 +117,8 @@ public:
 	void setLatitude(double);
 	double getLongitude();
 	void setLongitude(double);
-	int getAltitude();
-	void setAltitude(int);
+	double getAltitude();
+	void setAltitude(double);
 	double getSpeed();
 	void setSpeed(double);
 	double getHeading();
@@ -141,10 +146,11 @@ public:
 	void updateSpeed();
 	void updateHeading();
 	void updateMovement();
+	void updateAltitude();
 	AV_CLIENT getType() { return type; }
 	void setType(AV_CLIENT t) { type = t; }
-	int getVerticalSpeed() { return verticalSpeed; }
-	void setVerticalSpeed(int vs) { verticalSpeed = vs; }
+	double getVerticalSpeed() { return verticalSpeed; }
+	void setVerticalSpeed(double vs) { verticalSpeed = vs; }
 	Airport* getAirport();
 	bool onGround();
 	double GetTrackTurnData();
@@ -152,6 +158,7 @@ public:
 	bool OnTrack();
 	double getNextSpeed(double interval_ms);
 	double getNextHeading(double interval_ms);
+	double getNextAltitude(double interval_ms);
 	void checkRateReset(bool no_track);
 	double getNextPoint();
 	void pollRoute();
@@ -163,6 +170,7 @@ public:
 	void reset_path();
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	DefaultValues& getDefaultValues() { return defaultValues; }
+	PerfValues& getPerfValues() { return perfValues; }
 	double calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude);
 	double calculateLoc(double __unnamed000, double __unnamed001, double __unnamed002, double destHdg);
 	double calculateGain(Point2 cur, Point2 prev, double __unnamed002);
@@ -173,12 +181,14 @@ public:
 	bool circularDistance(Point2* p1, double distance_meters);
 	Point2* getFuturePoint(TaxiPath* cur_path, TaxiPath* next_path, Point2* taxiway_end);
 	bool doPointSkip();
+	void CheckFrameFlags();
 	void CollisionDetection();
 	void checkPathHolds();
 	Point2 GetCurLoc();
 	Point2 GetNextLoc();
 	void HoldAt(std::string s);
-	void handle_takeoff();
+	void handle_takeoff_roll();
+	void handle_takeoff_rotate();
 };
 
 

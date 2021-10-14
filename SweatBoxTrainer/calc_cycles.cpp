@@ -24,10 +24,12 @@ void CalculateMovements()
 				AssignedValues& av = aircraft.getAssignedValues();
 
 				aircraft.CollisionDetection();
+				aircraft.CheckFrameFlags();
 
 				aircraft.updateSpeed();
 				aircraft.updateHeading();
 				aircraft.updateMovement();
+				aircraft.updateAltitude();
 
 				if (aircraft.getSpeed() > 0 && (!aircraft.holding() && !aircraft.idle()))
 					aircraft.getNextPoint();
