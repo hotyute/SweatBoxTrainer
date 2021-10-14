@@ -430,7 +430,7 @@ void Aircraft::prepareRoute()
 							{
 								path.getPoints(last, _end, ground_points);
 								Point2* next_point = next_path->getClosestPoint(_end->y_, _end->x_);
-								if (GetDistance(_end, next_point) > (50 / KNOTS_FT))
+								if (!taxiIntersect(*_end, *next_point))
 								{
 									ground_points.push_back(_end);
 								}
@@ -916,51 +916,14 @@ void Aircraft::CollisionDetection()
 							double angle = get_angle(degrees(GetHeading(&GetNextLoc(), &other.GetNextLoc())), heading);
 							if ((last_distance == 0.0 || cur_dist < last_distance) && angle <= 90.0)
 							{
-								hold_for = it.second;
-								holding = true;
-								last_distance = cur_dist;
-								printf("Holding For: %s\n", other.getCallSign().c_str());
-
-								/*if (ground_prev && (other.ground_prev && ground_prev->parent->name == other.ground_prev->parent->name)
-									|| (other.ground_cur && ground_prev->parent->name == other.ground_cur->parent->name)
-									|| (other.ground_next && ground_prev->parent->name == other.ground_next->parent->name)
-									|| (other.ground_next_next && ground_prev->parent->name == other.ground_next_next->parent->name))
-								{// if on same taxiway
+								if ((ground_prev && (other.ground_prev && taxiIntersect(*ground_prev, *other.ground_prev)))
+									|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev))))
+								{
 									hold_for = it.second;
 									holding = true;
 									last_distance = cur_dist;
 									printf("Holding For: %s\n", other.getCallSign().c_str());
 								}
-								else if (ground_cur && (other.ground_prev && ground_cur->parent->name == other.ground_prev->parent->name)
-									|| (other.ground_cur && ground_cur->parent->name == other.ground_cur->parent->name)
-									|| (other.ground_next && ground_cur->parent->name == other.ground_next->parent->name)
-									|| (other.ground_next_next && ground_cur->parent->name == other.ground_next_next->parent->name))
-								{//if (going to the same taxiway they are holding on
-									hold_for = it.second;
-									holding = true;
-									last_distance = cur_dist;
-									printf("Holding For: %s\n", other.getCallSign().c_str());
-								}
-								else if (ground_next && (other.ground_prev && ground_next->parent->name == other.ground_prev->parent->name)
-									|| (other.ground_cur && ground_next->parent->name == other.ground_cur->parent->name)
-									|| (other.ground_next && ground_next->parent->name == other.ground_next->parent->name)
-									|| (other.ground_next_next && ground_next->parent->name == other.ground_next_next->parent->name))
-								{//if (going to the same taxiway they are holding on
-									hold_for = it.second;
-									holding = true;
-									last_distance = cur_dist;
-									printf("Holding For: %s\n", other.getCallSign().c_str());
-								}
-								else if (ground_next_next && (other.ground_prev && ground_next->parent->name == other.ground_prev->parent->name)
-									|| (other.ground_cur && ground_next_next->parent->name == other.ground_cur->parent->name)
-									|| (other.ground_next && ground_next_next->parent->name == other.ground_next->parent->name)
-									|| (other.ground_next_next && ground_next_next->parent->name == other.ground_next_next->parent->name))
-								{//if (going to the same taxiway they are holding on
-									hold_for = it.second;
-									holding = true;
-									last_distance = cur_dist;
-									printf("Holding For: %s\n", other.getCallSign().c_str());
-								}*/
 							}
 						}
 					}

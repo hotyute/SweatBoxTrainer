@@ -1,6 +1,7 @@
 #include "geoutils.h"
 
 #include "tools.h"
+#include "constants.h"
 
 #include <windows.h>
 #include <algorithm> 
@@ -92,5 +93,5 @@ bool linePoint(double x1, double y1, double x2, double y2, double px, double py)
 
 bool taxiIntersect(Point2& p, Point2& p2)
 {
-	return false;
+	return GetDistance(&p, &p2) <= (50 / KNOTS_FT);
 }
