@@ -292,7 +292,6 @@ double Aircraft::getNextPoint()
 			}
 			checkRateReset(false);
 		}
-		checkPathHolds();
 	}
 	else if (air_cur)
 	{
@@ -929,31 +928,7 @@ void Aircraft::CollisionDetection()
 					}
 				}
 			}
-			if (hold_for)
-				HoldingFor = hold_for;
-		}
-	}
-}
-
-void Aircraft::checkPathHolds()
-{
-	if (holds.size() > 0)
-	{
-		auto it = holds.begin();
-		while (it != holds.end())
-		{
-			Point2* p = *it;
-			double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
-			double dist = (300 / KNOTS_FT) + decel_distance0;
-			if (circularDistance(p, (dist * KNOTS_KM) * 1000.0))
-			{
-				holding = true;
-				it = holds.erase(it);
-				//GetDistance(&Point2(longitude, latitude), p)
-				printf("Holding at: %s\n", p->parent->name.c_str());
-				break;
-			}
-			++it;
+			if (hold_for) HoldingFor = hold_for;
 		}
 	}
 }

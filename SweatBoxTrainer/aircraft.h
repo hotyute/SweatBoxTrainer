@@ -165,7 +165,6 @@ public:
 	Point2* getFuturePoint(TaxiPath* cur_path, TaxiPath* next_path, Point2* taxiway_end);
 	bool doPointSkip();
 	void CollisionDetection();
-	void checkPathHolds();
 	Point2 GetCurLoc();
 	Point2 GetNextLoc();
 };
