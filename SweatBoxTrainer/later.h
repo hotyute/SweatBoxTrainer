@@ -61,6 +61,11 @@ private:
 	std::vector<Event*> events;
 	int eventCount = 0;
 
+/// <summary>
+/// We create all event spots Immediately so we can be more "multi-thread compliant
+/// </summary>
+/// <param name="e"></param>
+
 public:
 	EventManager() : events(MAX_EVENTS, nullptr) { }
 	void addEvent(Event* e) {

@@ -3,12 +3,18 @@
 #include "packets_out.h"
 #include "usermanager.h"
 
+/// <summary>
+/// Create the PositionUpdate Event
+/// </summary>
+/// <param name="obj"></param>
 PositionUpdates::PositionUpdates(void* obj)
 {
 	this->object = obj;
 }
 
-//event handler for position updates
+/// <summary>
+/// Where the code gets executed
+/// </summary>
 void PositionUpdates::execute() {
 	Aircraft* aircraft = (Aircraft*)object;
 	if (PositionUpdates::eAction.getTicks() == 0
