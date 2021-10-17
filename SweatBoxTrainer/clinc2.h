@@ -33,8 +33,7 @@ public:
 	int TimeoutSec1 = 30; //
 	fd_set rfds;
 	int retval;
-	bool closed = false;
-	bool queue_clean = false;
+	bool closed = true;
 
 	void w_lock();
 	void w_unlock();

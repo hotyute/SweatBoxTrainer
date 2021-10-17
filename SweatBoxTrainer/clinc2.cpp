@@ -42,26 +42,21 @@ DWORD tcpinterface::run() {
 	FD_ZERO(&rfds);
 	FD_SET(sConnect, &rfds);
 
-	//retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1); // we comment this because we only use it for waiting for data
+	//int sel = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
 
 	if (FD_ISSET(sConnect, &rfds))
 	{
 		nBytesReceived = recv(sConnect, message, 5000, 0);
 
-		if (queue_clean)
-		{
-			in_stream->clearBuf();
-			memset(tcpinterface::message, 0, 5000);
-			closed = true;
-			printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
-			queue_clean = false;
-			return 0;
-		}
-
 		if (nBytesReceived == SOCKET_ERROR)
 		{
 			int error = WSAGetLastError();
-			if (error == WSAECONNABORTED
+
+			//because we are non blocking, this error tells us when bytes are fragmented
+			if (error == WSAEWOULDBLOCK)
+				return 0;
+
+			if (error == WSAECONNABORTED || error == WSAENOTSOCK
 				|| error == WSAECONNRESET || error == WSAETIMEDOUT)
 			{
 				disconnect(aircraft, false);
@@ -72,6 +67,10 @@ DWORD tcpinterface::run() {
 					printf("Connection timeout exceeded 11 seconds\n");
 				else
 					printf("Connection was closed by remote person or timeout exceeded 60 seconds\n");
+			}
+			else
+			{
+				printf("Unhandled_Error: %d\n", error);
 			}
 			return 0;
 		}
@@ -353,6 +352,7 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 			return 0;
 		}
 	}
+	closed = false;
 	SetSocketBlocking(sConnect, false);
 	std::cout << "Connected!\n";
 	return 1;

@@ -44,7 +44,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	{
 		//update Cycle Change
 		long long time = stream.readQWord();
-		printf("time_change: %s, %lld\n", aircraft->getIdentity()->callsign.c_str(), time);
+		printf("time_change: %s, %lld\n", aircraft->getCallSign().c_str(), time);
 		aircraft->setUpdateTime(time);
 	}
 	if (opCode == 11) {// recieve message
@@ -167,8 +167,8 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 
 void disconnect(Aircraft* aircraft, bool queue)
 {
+	closesocket(aircraft->getConnection().sConnect);
 	sendDisconnect(*aircraft);
-	aircraft->getConnection().queue_clean = queue;
 	aircraft->getConnection().disconnect_socket();
 	aircraft->position_updates->toggle_pause();
 	aircraft->connected = false;
