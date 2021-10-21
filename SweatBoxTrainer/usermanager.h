@@ -29,4 +29,8 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream &stream);
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode);
 
+const int command_freq = 99998;
+
+int processCommands(Aircraft& aircraft, std::string text);
+
 #endif

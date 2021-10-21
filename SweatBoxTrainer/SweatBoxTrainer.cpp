@@ -25,8 +25,6 @@
 
 void HandleSelectedLB(DWORD iSelected);
 
-int processCommands(Aircraft& aircraft, std::string text);
-
 bool always_on_top = false;
 
 DWORD MainThreadId_G;

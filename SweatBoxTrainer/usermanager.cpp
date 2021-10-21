@@ -18,14 +18,14 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		int vis_range = stream.readUnsignedWord();
 		long long lat = stream.readQWord();
 		long long lon = stream.readQWord();
-		if (type == AV_CLIENT::CONTROLLER) 
+		if (type == AV_CLIENT::CONTROLLER)
 		{
 			//do nothing but read the stream
 			int controller_rating = stream.readUnsignedByte();
 			int controller_position = stream.readUnsignedByte();
 
 		}
-		else if (type == AV_CLIENT::PILOT) 
+		else if (type == AV_CLIENT::PILOT)
 		{
 			char acfTitle[1024];
 			stream.readString(acfTitle);
@@ -40,7 +40,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		}
 
 	}
-	if (opCode == 10) 
+	if (opCode == 10)
 	{
 		//update Cycle Change
 		long long time = stream.readQWord();
@@ -59,7 +59,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 13) {
 		//ping packet
 	}
-	if (opCode == 14) 
+	if (opCode == 14)
 	{
 		//Pilot  Update Packet
 		int index = stream.readUnsignedWord();
@@ -78,20 +78,34 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		long long alt = stream.readQWord();
 		double altitude = *(double*)&alt;
 	}
-	if (opCode == 15) 
+	if (opCode == 15)
 	{
 		int index = stream.readUnsignedWord();
 		int frequency = stream.readDWord();
+		bool asel = stream.readUnsignedByte() == 1;
 		char msg[2048];
 		stream.readString(msg);
+		if (frequency == command_freq)
+		{
+			std::string message = std::string(msg);
+			if (asel)
+			{
+				std::string pre_cursor = aircraft->getCallSign() + ", ";
+				std::size_t pos = message.find(aircraft->getCallSign() + ", ");
+				if (pos != std::string::npos)
+				{
+					processCommands(*aircraft, message.substr(pos + pre_cursor.length()));
+				}
+			}
+		}
 		//handle frequency commands
 	}
-	if (opCode == 16) 
+	if (opCode == 16)
 	{
 		int index = stream.readUnsignedWord();
 		int mode = stream.readUnsignedByte();
 	}
-	if (opCode == 17) 
+	if (opCode == 17)
 	{//update flight plan packet
 		int index = stream.readUnsignedWord();
 		int cur_cycle = stream.readUnsignedWord();
@@ -134,7 +148,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	}
 }
 
-Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude, 
+Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode) {
 	Aircraft* cur = new Aircraft();
 	AssignedValues& av = cur->getAssignedValues();
