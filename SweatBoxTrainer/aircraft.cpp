@@ -975,8 +975,13 @@ void Aircraft::CheckFrameFlags()
 		{
 			if (queue_takeoff && runway_ctx)
 			{
-				handle_takeoff_roll();
-				queue_takeoff = false;
+				if (!lineup)
+				{
+					handle_takeoff_roll();
+					queue_takeoff = false;
+				}
+				else
+					set_holding();
 			}
 			else if (takeoff() && speed == perfValues.v1)
 			{

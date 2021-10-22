@@ -975,7 +975,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 					aircraft.HoldAt(s);
 				}
 			}
-				
+
 		}
 
 		return 1;
@@ -991,7 +991,8 @@ int processCommands(Aircraft& aircraft, std::string command) {
 	{
 		if (aircraft.onGround() && aircraft.holding())
 		{
-			aircraft.set_taxing();
+			if (!aircraft.lineup && !aircraft.queue_takeoff)
+				aircraft.set_taxing();
 		}
 	}
 	else if (boost::istarts_with(command, "tl "))
@@ -1093,6 +1094,33 @@ int processCommands(Aircraft& aircraft, std::string command) {
 	{
 		if (aircraft.onGround() && aircraft.holding())
 		{
+			if (aircraft.queue_takeoff && aircraft.lineup && aircraft.holding())
+			{
+				aircraft.lineup = false;
+				aircraft.set_taxing();
+			}
+			else if (aircraft.runway_ctx && aircraft.ground_cur)
+			{
+				Runway* runway = aircraft.runway_ctx;
+				Point2& cur = *aircraft.ground_cur;
+				if (cur.parent->name == runway->name)
+				{
+					aircraft.reset_path();
+					aircraft.ground_points.push_back(&cur);
+					runway->getPoints(&cur, runway->getEnd(), aircraft.ground_points);
+					aircraft.ground_points.push_back(runway->getEnd());
+					aircraft.pollRoute();
+					aircraft.queue_takeoff = true;
+					aircraft.set_taxing();
+				}
+			}
+		}
+		return 1;
+	}
+	else if (boost::iequals(command, "ph") || boost::iequals(command, "lw"))
+	{
+		if (aircraft.onGround() && aircraft.holding())
+		{
 			if (aircraft.runway_ctx && aircraft.ground_cur)
 			{
 				Runway* runway = aircraft.runway_ctx;
@@ -1105,6 +1133,7 @@ int processCommands(Aircraft& aircraft, std::string command) {
 					aircraft.ground_points.push_back(runway->getEnd());
 					aircraft.pollRoute();
 					aircraft.queue_takeoff = true;
+					aircraft.lineup = true;
 					aircraft.set_taxing();
 				}
 			}

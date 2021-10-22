@@ -93,7 +93,7 @@ public:
 	std::string apt_icao = "";
 	Event* position_updates = new PositionUpdates(this);
 	ACF_STATE state = ACF_STATE::IDLE;
-	bool connected = false, point_skip = false, locked_rate = false, queue_takeoff = false;
+	bool connected = false, point_skip = false, locked_rate = false, queue_takeoff = false, lineup = false;
 	std::vector<std::string> ground_route;
 	std::vector<Point2*> ground_points, holds;
 	Point2* ground_prev = nullptr, * ground_cur = nullptr, * ground_next = nullptr, * ground_next_next = nullptr;
