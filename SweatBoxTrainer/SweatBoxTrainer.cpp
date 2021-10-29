@@ -934,8 +934,10 @@ void DisplayAircraft() {
 	}
 }
 
-int processCommands(Aircraft& aircraft, std::string command) {
-	if (boost::istarts_with(command, "taxi ")) {
+int processCommands(Aircraft& aircraft, std::string command) 
+{
+	if (boost::istarts_with(command, "taxi ")) 
+	{
 
 		if (aircraft.onGround())
 		{
@@ -1138,6 +1140,12 @@ int processCommands(Aircraft& aircraft, std::string command) {
 				}
 			}
 		}
+		return 1;
+	}
+	else if (boost::istarts_with(command, "msg "))
+	{
+		std::string msg = command.substr(4);
+		sendUserMessage(aircraft, 99998, "", msg);
 		return 1;
 	}
 	return 0;

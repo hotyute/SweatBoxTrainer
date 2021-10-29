@@ -15,6 +15,8 @@ void sendDisconnect(Aircraft& user);
 
 void sendPingPacket(Aircraft& user);
 
+void sendUserMessage(Aircraft& user, int frequency, std::string to, std::string message);
+
 const int _AIRCRAFT_POS_UPDATE = 1,
 _UPDATE_TRANSPONDER = 2,
 CONTROLLER_POS_UPDATE = 3,

@@ -68,3 +68,13 @@ void sendPingPacket(Aircraft& user) {
 	out.createFrame(_PING);
 	user.getConnection().sendMessage(&out);
 }
+
+void sendUserMessage(Aircraft& user, int frequency, std::string to, std::string message) {
+	Stream& out = Stream(512);
+	out.createFrameVarSizeWord(_USER_MESSAGE);
+	out.writeString((char*)to.c_str());
+	out.writeDWord(frequency);//99998 = 199.998
+	out.writeString((char*)message.c_str());
+	out.endFrameVarSizeWord();
+	user.getConnection().sendMessage(&out);
+}
