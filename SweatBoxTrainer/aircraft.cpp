@@ -1026,7 +1026,8 @@ void Aircraft::CollisionDetection()
 							if ((last_distance == 0.0 || cur_dist < last_distance) && angle <= 90.0)
 							{
 								if ((ground_prev && (other.ground_prev && taxiIntersect(*ground_prev, *other.ground_prev)))
-									|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev))))
+									|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev) ||
+										other.ground_cur && taxiIntersect(*ground_cur, *other.ground_cur))))
 								{
 									hold_for = it.second;
 									state = ACF_STATE::HOLDING;
