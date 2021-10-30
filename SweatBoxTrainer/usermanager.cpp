@@ -31,10 +31,16 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 			stream.readString(acfTitle);
 			char trans_code[1024];
 			stream.readString(trans_code);
-			int squawkMode = stream.readUnsignedByte();
+			int m = stream.readUnsignedByte();
 			long long hash = stream.readQWord();
-
-
+			int squawkMode = m >> 4;
+			bool heavy = (m & 0xf) == 1;
+			unsigned long long num2 = hash >> 22;
+			unsigned int num3 = hash >> 12 & 1023u;
+			unsigned int num4 = hash >> 2 & 1023u;
+			double pitch = num2 / 1024.0 * -360.0;
+			double roll = num3 / 1024.0 * -360.0;
+			double heading = num4 / 1024.0 * 360.0;
 			//user1->setUserIndex(index);
 			//userStorage1[index] = user1;
 		}
