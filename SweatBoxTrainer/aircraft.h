@@ -88,6 +88,7 @@ private:
 	AV_CLIENT type = AV_CLIENT::PILOT;
 public:
 	Aircraft* HoldingFor = nullptr;
+	TaxiPath* HoldingAt = nullptr, * HoldingDepart = nullptr;
 	Runway* runway_ctx = nullptr;
 	int turnOri = -1;
 	std::string apt_icao = "";
@@ -193,6 +194,7 @@ public:
 	void HoldAt(std::string s);
 	void handle_takeoff_roll();
 	void handle_takeoff_rotate();
+	bool holding_for_takeoff() { return runway_ctx && HoldingDepart && runway_ctx == HoldingDepart; }
 };
 
 

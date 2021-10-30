@@ -1003,11 +1003,14 @@ void Aircraft::CollisionDetection()
 				&Point2(longitude, latitude)) > (300 / KNOTS_FT))
 			{
 				HoldingFor = nullptr;
-				set_taxing();
+				if (!HoldingAt && !HoldingDepart)
+					set_taxing();
 			}
 		}
 		else if (AcfMap.size() > 0)
 		{
+			if (holding())
+				return;
 			Aircraft* hold_for = nullptr;
 			double last_distance = 0;
 			for (auto& it : AcfMap)
@@ -1039,30 +1042,50 @@ void Aircraft::CollisionDetection()
 					}
 				}
 			}
-			if (hold_for) HoldingFor = hold_for;
+			HoldingFor = hold_for;
 		}
 	}
 }
 
 void Aircraft::checkPathHolds()
 {
-	if (holds.size() > 0)
+	if (onGround())
 	{
-		auto it = holds.begin();
-		while (it != holds.end())
+		if (HoldingAt || HoldingDepart)
 		{
-			Point2* p = *it;
-			double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
-			double dist = (300 / KNOTS_FT) + decel_distance0;
-			if (circularDistance(p, (dist * KNOTS_KM) * 1000.0))
+
+		}
+		else
+		{
+			if (holding())
+				return;
+			if (holds.size() > 0)
 			{
-				state = ACF_STATE::HOLDING;
-				it = holds.erase(it);
-				//GetDistance(&Point2(longitude, latitude), p)
-				printf("Holding at: %s\n", p->parent->name.c_str());
-				break;
+				auto it = holds.begin();
+				while (it != holds.end())
+				{
+					Point2* p = *it;
+					double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+					double dist = (300 / KNOTS_FT) + decel_distance0;
+					if (circularDistance(p, (dist * KNOTS_KM) * 1000.0))
+					{
+						state = ACF_STATE::HOLDING;
+						it = holds.erase(it);
+						//GetDistance(&Point2(longitude, latitude), p)
+						if (p->parent)
+						{
+							printf("Holding at: %s\n", p->parent->name.c_str());
+							if (runway_ctx && runway_ctx == p->parent)
+							{
+								HoldingDepart = p->parent;
+							}
+							HoldingAt = p->parent;
+						}
+						continue;
+					}
+					++it;
+				}
 			}
-			++it;
 		}
 	}
 }

@@ -934,9 +934,9 @@ void DisplayAircraft() {
 	}
 }
 
-int processCommands(Aircraft& aircraft, std::string command) 
+int processCommands(Aircraft& aircraft, std::string command)
 {
-	if (boost::istarts_with(command, "taxi ")) 
+	if (boost::istarts_with(command, "taxi "))
 	{
 
 		if (aircraft.onGround())
@@ -993,8 +993,17 @@ int processCommands(Aircraft& aircraft, std::string command)
 	{
 		if (aircraft.onGround() && aircraft.holding())
 		{
-			if (!aircraft.lineup && !aircraft.queue_takeoff)
-				aircraft.set_taxing();
+			if (!aircraft.HoldingFor)
+			{
+				if (aircraft.HoldingAt)
+				{
+					aircraft.HoldingAt = nullptr;
+					if (!aircraft.HoldingDepart)
+						aircraft.set_taxing();
+				}
+				else if (!aircraft.lineup && !aircraft.queue_takeoff)
+					aircraft.set_taxing();
+			}
 		}
 	}
 	else if (boost::istarts_with(command, "tl "))
@@ -1094,17 +1103,20 @@ int processCommands(Aircraft& aircraft, std::string command)
 	}
 	else if (boost::iequals(command, "cto"))
 	{
-		if (aircraft.onGround() && aircraft.holding())
+		if (aircraft.onGround() && aircraft.holding() && aircraft.HoldingDepart)
 		{
 			if (aircraft.queue_takeoff && aircraft.lineup && aircraft.holding())
 			{
 				aircraft.lineup = false;
 				aircraft.set_taxing();
 			}
-			else if (aircraft.runway_ctx && aircraft.ground_cur)
+			else if (aircraft.runway_ctx && (aircraft.runway_ctx == aircraft.HoldingDepart) && aircraft.ground_cur)
 			{
 				Runway* runway = aircraft.runway_ctx;
-				Point2& cur = *aircraft.ground_cur;
+				Point2& cur = aircraft.ground_cur->parent->name == runway->name ? *aircraft.ground_cur :
+					(aircraft.ground_next && aircraft.ground_next->parent->name == runway->name) ? *aircraft.ground_next :
+					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next :
+					*aircraft.ground_cur;
 				if (cur.parent->name == runway->name)
 				{
 					aircraft.reset_path();
@@ -1121,12 +1133,15 @@ int processCommands(Aircraft& aircraft, std::string command)
 	}
 	else if (boost::iequals(command, "ph") || boost::iequals(command, "lw"))
 	{
-		if (aircraft.onGround() && aircraft.holding())
+		if (aircraft.onGround() && aircraft.holding() && aircraft.HoldingDepart)
 		{
-			if (aircraft.runway_ctx && aircraft.ground_cur)
+			if (aircraft.runway_ctx && (aircraft.runway_ctx == aircraft.HoldingDepart) && aircraft.ground_cur)
 			{
 				Runway* runway = aircraft.runway_ctx;
-				Point2& cur = *aircraft.ground_cur;
+				Point2& cur = aircraft.ground_cur->parent->name == runway->name ? *aircraft.ground_cur :
+					(aircraft.ground_next && aircraft.ground_next->parent->name == runway->name) ? *aircraft.ground_next :
+					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next :
+					*aircraft.ground_cur;
 				if (cur.parent->name == runway->name)
 				{
 					aircraft.reset_path();
