@@ -290,7 +290,17 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 		return 0;
 	}
 
-	addr.sin_addr.s_addr = inet_addr(saddr.c_str());
+	struct hostent* to;
+	if ((to = gethostbyname(saddr.c_str())) == NULL)
+	{
+		fprintf(stderr, "gethostbyname() error...\n");
+		MessageBox(hWnd, L"Host Name Error!", L"Notice",
+			MB_OK | MB_ICONINFORMATION);
+		return 0;
+	}
+
+	//addr.sin_addr.s_addr = inet_addr(saddr.c_str());
+	memcpy(&addr.sin_addr, to->h_addr_list[0], to->h_length);
 
 	addr.sin_port = htons(port);
 
