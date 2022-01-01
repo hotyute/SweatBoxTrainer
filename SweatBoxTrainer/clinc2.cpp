@@ -11,7 +11,8 @@
 #include "usermanager.h"
 #include "packets_out.h"
 
-static int packetSizes[256] =
+/* Use Official Packet Output App to update this. */
+const int packetSizes[256] =
 {
 -3, -3, -3, -3, -3, -3, -3, -3, -3, -2, 8, -2, 2, 0, 36,
 -2, 3, -2, 19, 4, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3,
