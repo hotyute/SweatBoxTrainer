@@ -54,35 +54,6 @@ bool Stream::resetReaderIndex()
 	return false;
 }
 
-/*bool Stream::deleteReaderBlock() {
-	if (currentOffset == 0)
-	{
-		return false;
-	}
-
-	int block_size = (length - markedReaderIndex);
-	if (block_size > 0)
-	{
-		int rem_block_size = (length - currentOffset);
-		if (rem_block_size > 0 && length != currentOffset)
-		{
-			char* temp = new char[rem_block_size];
-			memcpy(temp, buffer + currentOffset, rem_block_size);
-			memset(buffer + markedReaderIndex, 0, block_size);
-			length -= (block_size - rem_block_size);
-			memcpy(buffer + markedReaderIndex, temp, rem_block_size);
-			delete[] temp;
-		}
-		else
-		{
-			memset(buffer + markedReaderIndex, 0, block_size);
-			length -= block_size;
-		}
-		currentOffset = markedReaderIndex;
-	}
-	return false;
-}*/
-
 bool Stream::deleteReaderBlock() {
 	if (currentOffset == 0)
 	{
