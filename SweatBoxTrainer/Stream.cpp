@@ -11,10 +11,10 @@
 Stream::Stream() {
 	buffer = new char[5000];
 	memset(buffer, 0, 5000);
-	size = 5000;
+	capacity = 5000;
 
 	currentOffset = 0;
-	lastReaderIndex = 0;
+	markedReaderIndex = 0;
 	for (int i = 0; i < 32; i++)
 		bitMaskOut[i] = (1 << i) - 1;
 	frameStackPtr = -1;
@@ -24,11 +24,10 @@ Stream::Stream() {
 Stream::Stream(int newSize) {
 	buffer = new char[newSize];
 	memset(buffer, 0, newSize);
-	size = newSize;
+	capacity = newSize;
 
 	currentOffset = 0;
-	lastReaderIndex = 0;
-	length = newSize;
+	markedReaderIndex = 0;
 	for (int i = 0; i < 32; i++)
 		bitMaskOut[i] = (1 << i) - 1;
 	frameStackPtr = -1;
@@ -40,217 +39,257 @@ Stream::~Stream() {
 }
 
 int Stream::remaining() {
-	return currentOffset < length ? length - currentOffset : 0;
+	return currentOffset < writeIndex ? writeIndex - currentOffset : 0;
 }
 
 bool Stream::markReaderIndex()
 {
-	lastReaderIndex = currentOffset;
+	markedReaderIndex = currentOffset;
 	return false;
 }
 
 bool Stream::resetReaderIndex()
 {
-	currentOffset = lastReaderIndex;
+	currentOffset = markedReaderIndex;
 	return false;
 }
 
-bool Stream::deleteReaderBlock() {
-	int block_size = (length - lastReaderIndex);
+/*bool Stream::deleteReaderBlock() {
+	if (currentOffset == 0)
+	{
+		return false;
+	}
+
+	int block_size = (length - markedReaderIndex);
 	if (block_size > 0)
 	{
 		int rem_block_size = (length - currentOffset);
-		if (rem_block_size > 0)
+		if (rem_block_size > 0 && length != currentOffset)
 		{
 			char* temp = new char[rem_block_size];
 			memcpy(temp, buffer + currentOffset, rem_block_size);
-			memset(buffer + lastReaderIndex, 0, block_size);
+			memset(buffer + markedReaderIndex, 0, block_size);
 			length -= (block_size - rem_block_size);
-			memcpy(buffer + lastReaderIndex, temp, rem_block_size);
+			memcpy(buffer + markedReaderIndex, temp, rem_block_size);
 			delete[] temp;
 		}
 		else
 		{
-			memset(buffer + lastReaderIndex, 0, block_size);
+			memset(buffer + markedReaderIndex, 0, block_size);
 			length -= block_size;
 		}
-		currentOffset = lastReaderIndex;
+		currentOffset = markedReaderIndex;
 	}
 	return false;
+}*/
+
+bool Stream::deleteReaderBlock() {
+	if (currentOffset == 0)
+	{
+		return false;
+	}
+	if (writeIndex != currentOffset)
+	{
+		memcpy(buffer, buffer + currentOffset, writeIndex - currentOffset);
+		writeIndex -= currentOffset;
+		adjustMarkers(currentOffset);
+		currentOffset = 0;
+	}
+	else
+	{
+		adjustMarkers(currentOffset);
+		writeIndex = currentOffset = 0;
+	}
+	return false;
+}
+
+void Stream::adjustMarkers(int decrement) {
+	if (markedReaderIndex <= decrement) {
+		markedReaderIndex = 0;
+		if (markedWriterIndex <= decrement) {
+			markedWriterIndex = 0;
+		}
+		else {
+			markedWriterIndex -= decrement;
+		}
+	}
+	else {
+		markedReaderIndex -= decrement;
+		markedWriterIndex -= decrement;
+	}
 }
 
 bool Stream::clearBuf()
 {
-	lastReaderIndex = 0;
-	currentOffset = 0;
-	ZeroMemory(buffer, length);
-	length = 0;
+	markedReaderIndex = 0;
+	ZeroMemory(buffer, capacity);
+	currentOffset = writeIndex = 0;
 	return false;
 }
 
 void Stream::createFrame(int id) {
-	buffer[currentOffset++] = (unsigned char)id;
+	buffer[writeIndex++] = (unsigned char)id;
 }
 
 void Stream::createFrameVarSize(int id) { // creates a variable sized
 											// frame
-	buffer[currentOffset++] = (unsigned char)id;
-	buffer[currentOffset++] = 0; // placeholder for size byte
+	buffer[writeIndex++] = (unsigned char)id;
+	buffer[writeIndex++] = 0; // placeholder for size byte
 	if (frameStackPtr >= frameStackSize - 1) {
 		printf("Stack overflow\n");
 	}
 	else
-		frameStack[++frameStackPtr] = currentOffset;
+		frameStack[++frameStackPtr] = writeIndex;
 }
 
 void Stream::createFrameVarSizeWord(int id) { // creates a variable sized
 												// frame
-	buffer[currentOffset++] = (unsigned char)id;
+	buffer[writeIndex++] = (unsigned char)id;
 	writeWord(0); // placeholder for size word
 	if (frameStackPtr >= frameStackSize - 1) {
 		printf("Stack overflow\n");
 	}
 	else
-		frameStack[++frameStackPtr] = currentOffset;
+		frameStack[++frameStackPtr] = writeIndex;
 }
 
 void Stream::endFrameVarSize() {// ends a variable sized frame
 	if (frameStackPtr < 0)
 		printf("Stack empty (byte)\n");
 	else
-		writeFrameSize(currentOffset - frameStack[frameStackPtr--]);
+		writeFrameSize(writeIndex - frameStack[frameStackPtr--]);
 }
 
 void Stream::endFrameVarSizeWord() { // ends a variable sized frame
 	if (frameStackPtr < 0)
 		printf("Stack empty (short)\n");
 	else
-		writeFrameSizeWord(currentOffset - frameStack[frameStackPtr--]);
+		writeFrameSizeWord(writeIndex - frameStack[frameStackPtr--]);
 }
 
 
 //Write types
 void Stream::writeByte(int i) {
-	buffer[currentOffset++] = (char)i; //umm (byte)?
+	buffer[writeIndex++] = (char)i; //umm (byte)?
 }
 
 void Stream::writeByteA(int i) {
-	buffer[currentOffset++] = (char)(i + 128);
+	buffer[writeIndex++] = (char)(i + 128);
 }
 
 void Stream::writeByteC(int i) {
-	buffer[currentOffset++] = (char)(-i);
+	buffer[writeIndex++] = (char)(-i);
 }
 
 void Stream::writeBytes(char abyte0[], int i, int j) {
 	for (int k = j; k < j + i; k++)
-		buffer[currentOffset++] = abyte0[k];
+		buffer[writeIndex++] = abyte0[k];
 
 }
 
 void Stream::writeByteS(int i) {
-	buffer[currentOffset++] = (char)(128 - i);
+	buffer[writeIndex++] = (char)(128 - i);
 }
 
 void Stream::writeBytes_reverse(char abyte0[], int i, int j) {
 	for (int k = (j + i) - 1; k >= j; k--)
-		buffer[currentOffset++] = abyte0[k];
+		buffer[writeIndex++] = abyte0[k];
 
 }
 
 void Stream::writeBytes_reverseA(char abyte0[], int i, int j) {
 	for (int k = (j + i) - 1; k >= j; k--)
-		buffer[currentOffset++] = (char)(abyte0[k] + 128);
+		buffer[writeIndex++] = (char)(abyte0[k] + 128);
 
 }
 
 void Stream::write3Byte(int i) {
-	buffer[currentOffset++] = (char)(i >> 16);
-	buffer[currentOffset++] = (char)(i >> 8);
-	buffer[currentOffset++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 16);
+	buffer[writeIndex++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)i;
 }
 
 void Stream::writeDWord(int i) {
-	buffer[currentOffset++] = (char)(i >> 24);
-	buffer[currentOffset++] = (char)(i >> 16);
-	buffer[currentOffset++] = (char)(i >> 8);
-	buffer[currentOffset++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 24);
+	buffer[writeIndex++] = (char)(i >> 16);
+	buffer[writeIndex++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)i;
 }
 
 void Stream::writeDWord_v1(int i) {
-	buffer[currentOffset++] = (char)(i >> 8);
-	buffer[currentOffset++] = (char)i;
-	buffer[currentOffset++] = (char)(i >> 24);
-	buffer[currentOffset++] = (char)(i >> 16);
+	buffer[writeIndex++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 24);
+	buffer[writeIndex++] = (char)(i >> 16);
 }
 
 void Stream::writeDWord_v2(int i) {
-	buffer[currentOffset++] = (char)(i >> 16);
-	buffer[currentOffset++] = (char)(i >> 24);
-	buffer[currentOffset++] = (char)i;
-	buffer[currentOffset++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)(i >> 16);
+	buffer[writeIndex++] = (char)(i >> 24);
+	buffer[writeIndex++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 8);
 }
 
 void Stream::writeDWordBigEndian(int i) {
-	buffer[currentOffset++] = (char)i;
-	buffer[currentOffset++] = (char)(i >> 8);
-	buffer[currentOffset++] = (char)(i >> 16);
-	buffer[currentOffset++] = (char)(i >> 24);
+	buffer[writeIndex++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)(i >> 16);
+	buffer[writeIndex++] = (char)(i >> 24);
 }
 
 void Stream::writeFrameSize(int i) {
-	buffer[currentOffset - i - 1] = (char)i;
+	buffer[writeIndex - i - 1] = (char)i;
 }
 
 void Stream::writeFrameSizeWord(int i) {
-	buffer[currentOffset - i - 2] = (char)(i >> 8);
-	buffer[currentOffset - i - 1] = (char)i;
+	buffer[writeIndex - i - 2] = (char)(i >> 8);
+	buffer[writeIndex - i - 1] = (char)i;
 }
 
 void Stream::writeQWord(unsigned __int64 l) {
-	buffer[currentOffset++] = (char)(unsigned int)(l >> 56);
-	buffer[currentOffset++] = (char)(unsigned int)(l >> 48);
-	buffer[currentOffset++] = (char)(unsigned int)(l >> 40);
-	buffer[currentOffset++] = (char)(unsigned int)(l >> 32);
-	buffer[currentOffset++] = (char)(unsigned int)(l >> 24);
-	buffer[currentOffset++] = (char)(unsigned int)(l >> 16);
-	buffer[currentOffset++] = (char)(unsigned int)(l >> 8);
-	buffer[currentOffset++] = (char)(unsigned int)l;
+	buffer[writeIndex++] = (char)(unsigned int)(l >> 56);
+	buffer[writeIndex++] = (char)(unsigned int)(l >> 48);
+	buffer[writeIndex++] = (char)(unsigned int)(l >> 40);
+	buffer[writeIndex++] = (char)(unsigned int)(l >> 32);
+	buffer[writeIndex++] = (char)(unsigned int)(l >> 24);
+	buffer[writeIndex++] = (char)(unsigned int)(l >> 16);
+	buffer[writeIndex++] = (char)(unsigned int)(l >> 8);
+	buffer[writeIndex++] = (char)(unsigned int)l;
 }
 
 void Stream::writeString(char* s) {
-	memcpy(buffer + currentOffset, s, strlen(s));
-	currentOffset += strlen(s);
-	buffer[currentOffset++] = 0;
+	memcpy(buffer + writeIndex, s, strlen(s));
+	writeIndex += strlen(s);
+	buffer[writeIndex++] = 0;
 }
 
 void Stream::writeWord(int i) {
-	buffer[currentOffset++] = (char)(i >> 8);
-	buffer[currentOffset++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)i;
 }
 
 void Stream::writeWordA(int i) {
-	buffer[currentOffset++] = (char)(i >> 8);
-	buffer[currentOffset++] = (char)(i + 128);
+	buffer[writeIndex++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)(i + 128);
 }
 
 void Stream::writeWordBigEndian(int i) {
-	buffer[currentOffset++] = (char)i;
-	buffer[currentOffset++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 8);
 }
 void Stream::writeWordBigEndian_dup(int i) {
-	buffer[currentOffset++] = (char)i;
-	buffer[currentOffset++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)i;
+	buffer[writeIndex++] = (char)(i >> 8);
 }
 
 void Stream::writeWordBigEndianA(int i) {
-	buffer[currentOffset++] = (char)(i + 128);
-	buffer[currentOffset++] = (char)(i >> 8);
+	buffer[writeIndex++] = (char)(i + 128);
+	buffer[writeIndex++] = (char)(i >> 8);
 }
 
 //bit editing
 void Stream::initBitAccess() {
-	bitPosition = currentOffset * 8;
+	bitPosition = writeIndex * 8;
 }
 
 void Stream::writeBits(int numBits, int value) {
@@ -273,7 +312,7 @@ void Stream::writeBits(int numBits, int value) {
 }
 
 void Stream::finishBitAccess() {
-	currentOffset = (bitPosition + 7) / 8;
+	writeIndex = (bitPosition + 7) / 8;
 }
 
 //read types
@@ -281,7 +320,6 @@ void Stream::finishBitAccess() {
 void Stream::readBytes(char abyte0[], int i, int j) {
 	for (int k = j; k < j + i; k++)
 		abyte0[k] = buffer[currentOffset++];
-
 }
 
 void Stream::readBytes_reverse(char abyte0[], int i, int j) {
@@ -414,8 +452,8 @@ int Stream::readUnsignedWord() {
 
 int Stream::read3Byte() {
 	currentOffset += 3;
-	int i = (((buffer[currentOffset - 3] & 0xff) << 16) 
-		+ ((buffer[currentOffset - 2] & 0xff) << 8) 
+	int i = (((buffer[currentOffset - 3] & 0xff) << 16)
+		+ ((buffer[currentOffset - 2] & 0xff) << 8)
 		+ (0xff & buffer[currentOffset - 1]));
 	if (i > 8388607) {
 		i -= 16777216;

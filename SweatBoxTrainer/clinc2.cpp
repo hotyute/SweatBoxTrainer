@@ -35,6 +35,7 @@ const int packetSizes[256] =
 };
 
 tcpinterface::tcpinterface(Aircraft* aircraft) {
+	this->writeMutex = CreateMutex(NULL, FALSE, NULL);
 	this->in_stream = new Stream(5000);
 	this->in_stream->clearBuf();
 	this->aircraft = aircraft;
@@ -87,8 +88,8 @@ DWORD tcpinterface::run() {
 			return 0;
 
 		Stream& in = *in_stream;
-		memcpy(in.buffer + in.length, message, nBytesReceived);
-		in.length += nBytesReceived;
+		memcpy(in.buffer + in.writeIndex, message, nBytesReceived);
+		in.writeIndex += nBytesReceived;
 
 		if (tcpinterface::hand_shake)
 		{
@@ -235,17 +236,17 @@ void decodePackets(Aircraft* aircraft, Stream& in, int nBytesRecieved) {
 }
 
 void tcpinterface::sendMessage(Stream* stream) {
-	if (!this->aircraft->connected)
+	if (this->aircraft && !this->aircraft->connected)
 		return;
 
-	if (stream->currentOffset == 0) {
-		printf("Can't flush empty stream o.O\n");
+	if (stream->writeIndex == 0) {
+		MessageBox(hWnd, L"Can't flush empty stream o.O", L"Notice", MB_OK | MB_ICONINFORMATION);
 		return;
 	}
 
 	w_lock();
-	DWORD response = send(tcpinterface::sConnect, stream->buffer, stream->currentOffset, NULL);
-	stream->currentOffset = 0;
+	DWORD response = send(tcpinterface::sConnect, stream->buffer, stream->writeIndex, NULL);
+	stream->writeIndex = 0;
 	w_unlock();
 }
 
@@ -336,19 +337,23 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 				&Timeout);
 			if (iResult == 0)
 			{
-				std::cout << "Connect Timeout (" << TimeoutSec << " Sec).\n";
-				system("pause");
-				return 1;
+				char buff[256];
+				sprintf_s(buff, "Connect Timeout (%d Sec).", TimeoutSec);
+				MessageBox(hWnd, (LPCWSTR)buff, L"Notice", MB_OK | MB_ICONINFORMATION);
+				//system("pause");
+				return 0;
 			}
 			else
 			{
 				if (FD_ISSET(sConnect, &Write))
 				{
+#ifdef _DEBUG
 					std::cout << "Connected!\n";
+#endif
 				}
 				if (FD_ISSET(sConnect, &Err))
 				{
-					std::cout << "Select error.\n";
+					MessageBox(hWnd, L"Select Error.", L"Notice", MB_OK | MB_ICONINFORMATION);
 					//system("pause");
 					return 0;
 				}
@@ -356,7 +361,9 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 		}
 		else
 		{
+#ifdef _DEBUG
 			std::cout << "Failed to connect!" << std::endl;
+#endif
 			MessageBox(hWnd, L"Failed to connect to Server!", L"Notice",
 				MB_OK | MB_ICONINFORMATION);
 			WSACleanup();
@@ -365,7 +372,9 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 	}
 	closed = false;
 	SetSocketBlocking(sConnect, false);
+#ifdef _DEBUG
 	std::cout << "Connected!\n";
+#endif
 	return 1;
 }
 

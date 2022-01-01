@@ -491,11 +491,12 @@ void connect()
 	{
 		Aircraft& aircraft = *(it->second);
 		tcpinterface& intter = aircraft.getConnection();
-		if (!aircraft.connected) {
+		if (!aircraft.connected) 
+		{
 			//34.142.27.168
 			std::string ip = "vax.ddns.net";
 #ifdef _DEBUG
-			ip = "127.0.0.1";
+			ip = "vax.ddns.net";
 #endif
 			if (intter.connectNew(ip, 4403))
 			{

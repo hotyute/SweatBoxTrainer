@@ -65,9 +65,9 @@ public:
 	int peek(int position);
 
 	char* buffer;
+	int writeIndex = 0;
 	int currentOffset; //offset of last position in buffer.
-	int length;
-	int size;
+	int capacity;
 
 	void initBitAccess();
 	void writeBits(int numBits, int value);
@@ -76,13 +76,15 @@ public:
 	bool markReaderIndex();
 	bool resetReaderIndex();
 	bool deleteReaderBlock();
+	void adjustMarkers(int decrement);
 	bool clearBuf();
 private:
 	int bitPosition;
 	int bitMaskOut[32];
 	int frameStackPtr;
 	int frameStack[frameStackSize];
-	int lastReaderIndex;
+	int markedReaderIndex;
+	int markedWriterIndex;
 
 };
 #endif
