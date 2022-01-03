@@ -983,7 +983,7 @@ void Aircraft::CheckFrameFlags()
 				else
 					set_holding();
 			}
-			else if (takeoff() && speed == perfValues.v1)
+			else if (takeoff() && speed >= perfValues.v1)
 			{
 				handle_takeoff_rotate();
 			}

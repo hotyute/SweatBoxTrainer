@@ -7,6 +7,16 @@
 std::vector<Aircraft*> userStorage1;
 
 void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
+	if (opCode == 7) {
+		char msg[256];
+		stream.readString(msg);
+	}
+
+	if (opCode == 8) {
+		char wx[256];
+		stream.readString(wx);
+	}
+
 	if (opCode == 9) {
 		//create new user packet
 		int index = stream.readUnsignedWord();
