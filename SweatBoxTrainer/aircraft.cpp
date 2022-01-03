@@ -544,6 +544,8 @@ void Aircraft::reset_path()
 	ground_points.clear();
 	holds.clear();
 	checkRateReset(true);
+	queue_takeoff = false;
+	lineup = false;
 	if (onGround() && !takeoff())
 	{
 		state = ACF_STATE::IDLE;
