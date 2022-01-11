@@ -87,6 +87,7 @@ private:
 	long long last_time[5];
 	AV_CLIENT type = AV_CLIENT::PILOT;
 public:
+	int frequency[2];
 	Aircraft* HoldingFor = nullptr;
 	TaxiPath* HoldingAt = nullptr, * HoldingDepart = nullptr;
 	Runway* runway_ctx = nullptr;

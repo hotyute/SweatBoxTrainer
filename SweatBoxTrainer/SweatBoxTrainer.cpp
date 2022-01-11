@@ -496,7 +496,7 @@ void connect()
 			//34.142.27.168
 			std::string ip = "vax.ddns.net";
 #ifdef _DEBUG
-			ip = "vax.ddns.net";
+			ip = "127.0.0.1";
 #endif
 			if (intter.connectNew(ip, 4403))
 			{
@@ -517,6 +517,8 @@ void connect()
 				stream.writeQWord(doubleToRawBits(aircraft.getLongitude()));
 				stream.writeWord(aircraft.getVisibility());
 				stream.writeByte(static_cast<int>(type));
+				stream.write3Byte(aircraft.frequency[0]);
+				stream.write3Byte(aircraft.frequency[1]);
 				if (type == AV_CLIENT::CONTROLLER)
 				{
 					stream.writeByte(id.controller_rating);
@@ -687,7 +689,8 @@ void create_controls(HWND hwnd) {
 
 	SetMenu(hwnd, hMenuBar);
 
-	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", L"Commands [199.998]:",
+	std::string freq = "Commands [" + frequency_to_string(command_freq) + "]:";
+	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", (LPCWSTR)std::wstring(freq.begin(), freq.end()).c_str() ,
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
 		35, 310, 150, 20,
 		hwnd, (HMENU)COMMANDS_LBL, NULL, NULL
@@ -1161,7 +1164,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 	else if (boost::istarts_with(command, "msg "))
 	{
 		std::string msg = command.substr(4);
-		sendUserMessage(aircraft, 99998, "", msg);
+		sendUserMessage(aircraft, msg_freq, "", msg);
 		return 1;
 	}
 	return 0;

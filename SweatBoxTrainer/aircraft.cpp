@@ -18,10 +18,8 @@ Aircraft::Aircraft() {
 	Aircraft::heading = 0;
 	Aircraft::roll = 0;
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
-	for (int i = 0; i < 4; ++i)
-	{
-		last_time[i] = now;
-	}
+	std::fill_n(last_time, sizeof(last_time) / sizeof(last_time[0]), now);
+	std::fill_n(frequency, sizeof(frequency) / sizeof(frequency[0]), 99998);
 }
 
 Aircraft::~Aircraft()

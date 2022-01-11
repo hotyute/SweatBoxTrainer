@@ -113,6 +113,10 @@ std::string FormatAltitude(std::string altitude);
 
 bool is_digits(const std::string& str);
 
+int string_to_frequency(std::string frequency);
+
+std::string frequency_to_string(int frequency);
+
 template<typename T>
 int pushBack(std::vector<T>& v, T val)
 {

@@ -33,7 +33,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 			//do nothing but read the stream
 			int controller_rating = stream.readUnsignedByte();
 			int controller_position = stream.readUnsignedByte();
-
+			int controller_freq = stream.read3Byte();
 		}
 		else if (type == AV_CLIENT::PILOT)
 		{
@@ -97,7 +97,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 15)
 	{
 		int index = stream.readUnsignedWord();
-		int frequency = stream.readDWord();
+		int frequency = stream.read3Byte();
 		bool asel = stream.readUnsignedByte() == 1;
 		char msg[2048];
 		stream.readString(msg);
@@ -162,11 +162,19 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		char code[20];
 		stream.readString(code);
 	}
+	if (opCode == 21)
+	{
+		int index = stream.readUnsignedWord();
+		int flags = stream.readUnsignedByte();
+		int freq = stream.readDWord();
+	}
 }
 
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode) {
 	Aircraft* cur = new Aircraft();
+	cur->frequency[0] = command_freq;
+	cur->frequency[1] = msg_freq;
 	AssignedValues& av = cur->getAssignedValues();
 	cur->lock();
 	cur->setType(AV_CLIENT::PILOT);

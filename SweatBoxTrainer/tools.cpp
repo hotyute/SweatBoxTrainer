@@ -604,3 +604,27 @@ bool is_digits(const std::string& str)
 {
 	return std::all_of(str.begin(), str.end(), ::isdigit); // C++11
 }
+
+int string_to_frequency(std::string frequency)
+{
+	if (frequency.size() == 7)
+	{
+
+		frequency.erase(frequency.begin());
+		frequency.erase(frequency.begin() + 2);
+
+		return atodd(frequency);
+	}
+
+	return 99998;
+}
+
+std::string frequency_to_string(int frequency)
+{
+	std::string raw = std::to_string(frequency);
+
+	raw.insert(0, "1");
+	raw.insert(3, ".");
+
+	return raw;
+}
