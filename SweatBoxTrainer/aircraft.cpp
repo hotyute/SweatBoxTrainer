@@ -159,6 +159,14 @@ void Aircraft::updateRoll()
 	last_time[4] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
+void Aircraft::updatePitch()
+{
+	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long interval = now - last_time[5];
+	pitch = getNextPitch((double)interval);
+	last_time[5] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+}
+
 void Aircraft::updateHeading()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
@@ -190,6 +198,10 @@ void Aircraft::updateAltitude()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[3];
+	if ((altitude == assignedValues.asdg_altitude) && pitch != 0)
+	{
+		assignedValues.asdg_pitch = pitch = 0;
+	}
 	altitude = getNextAltitude((double)interval);
 	last_time[3] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
@@ -657,6 +669,33 @@ double Aircraft::getNextHeading(double interval_ms)
 	}
 
 	return next_hdg;
+}
+
+double Aircraft::getNextPitch(double interval_ms)
+{
+	double next_pitch = pitch;
+	double amount = get_per_second(perfValues.pitch_rate, interval_ms);
+
+	double a_pitch = assignedValues.asdg_pitch;
+
+	double pitch_delta = a_pitch - pitch;
+
+	if (pitch_delta < 0)
+	{
+		if ((next_pitch - amount) < a_pitch)
+			next_pitch = a_pitch;
+		else
+			next_pitch -= amount;
+	}
+	else if (pitch_delta > 0)
+	{
+		if ((next_pitch + amount) > a_pitch)
+			next_pitch = a_pitch;
+		else
+			next_pitch += amount;
+	}
+
+	return next_pitch;
 }
 
 double Aircraft::getNextRoll(double interval_ms)
@@ -1149,5 +1188,9 @@ void Aircraft::handle_takeoff_rotate()
 	assignedValues.asdg_gnd_turn_rate = 10;
 	assignedValues.asdg_speed = perfValues.climb;
 	assignedValues.asdg_altitude = perfValues.init_alt;
+	if (perfValues.init_alt > altitude)
+		assignedValues.asdg_pitch = perfValues.max_pitch_up;
+	else if (perfValues.init_alt < altitude)
+		assignedValues.asdg_pitch = perfValues.max_pitch_down;
 	state = ACF_STATE::AIRBORNE;
 }

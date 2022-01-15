@@ -25,7 +25,10 @@ struct PerfValues {
 	double init_alt = 5000;
 	double takeoff_accel = 5;//per second
 	double roll_rate = 5;
+	double pitch_rate = 5;
 	double max_roll = 30;
+	double max_pitch_up = 15;
+	double max_pitch_down = 10;
 };
 
 struct AssignedValues {
@@ -33,6 +36,7 @@ struct AssignedValues {
 	double asdg_altitude = 0;
 	double asdg_speed = 0;
 	double asdg_roll = 0;
+	double asdg_pitch = 0;
 	double asdg_gnd_turn_rate = 10; // 9 degrees per second
 	double asdg_accel = 5;//per second
 	double asdg_gnd_accel = 2;//per second
@@ -73,7 +77,7 @@ private:
 	double latitude;
 	double longitude;
 	double speed = 0;
-	double heading, pitch, roll = 0;
+	double heading, pitch = 0, roll = 0;
 	double altitude = 0, verticalSpeed = 1000;
 	std::vector<History*> historyCount;
 	FlightPlan flight_plan;
@@ -86,7 +90,7 @@ private:
 	std::string transponder = "0000";
 	long long update_time = 0;
 	unsigned short visibility = 300;
-	long long last_time[5];
+	long long last_time[6];
 	AV_CLIENT type = AV_CLIENT::PILOT;
 public:
 	int frequency[2];
@@ -152,6 +156,7 @@ public:
 	void setMode(int mode);
 	void updateSpeed();
 	void updateRoll();
+	void updatePitch();
 	void updateHeading();
 	void updateMovement();
 	void updateAltitude();
@@ -166,6 +171,7 @@ public:
 	bool OnTrack();
 	double getNextSpeed(double interval_ms);
 	double getNextHeading(double interval_ms);
+	double getNextPitch(double interval_ms);
 	double getNextRoll(double interval_ms);
 	double getNextAltitude(double interval_ms);
 	void checkRateReset(bool no_track);
