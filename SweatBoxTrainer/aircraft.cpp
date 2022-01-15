@@ -1188,9 +1188,14 @@ void Aircraft::handle_takeoff_rotate()
 	assignedValues.asdg_gnd_turn_rate = 10;
 	assignedValues.asdg_speed = perfValues.climb;
 	assignedValues.asdg_altitude = perfValues.init_alt;
-	if (perfValues.init_alt > altitude)
-		assignedValues.asdg_pitch = perfValues.max_pitch_up;
-	else if (perfValues.init_alt < altitude)
-		assignedValues.asdg_pitch = perfValues.max_pitch_down;
+	pass_standard_pitch(perfValues.init_alt);
 	state = ACF_STATE::AIRBORNE;
+}
+
+void Aircraft::pass_standard_pitch(double init_alt)
+{
+	if (init_alt > assignedValues.asdg_altitude)
+		assignedValues.asdg_pitch = perfValues.max_pitch_up;
+	else if (init_alt < assignedValues.asdg_altitude)
+		assignedValues.asdg_pitch = perfValues.max_pitch_down;
 }

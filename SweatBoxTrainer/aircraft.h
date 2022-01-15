@@ -204,6 +204,7 @@ public:
 	void HoldAt(std::string s);
 	void handle_takeoff_roll();
 	void handle_takeoff_rotate();
+	void pass_standard_pitch(double altitude);
 	bool holding_for_takeoff() { return runway_ctx && HoldingDepart && runway_ctx == HoldingDepart; }
 };
 
