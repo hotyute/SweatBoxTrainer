@@ -21,6 +21,8 @@ struct DefaultValues {
 
 struct PerfValues {
 	double v1 = 120;
+	double climb = 200;
+	double init_alt = 5000;
 	double takeoff_accel = 5;//per second
 	double roll_rate = 5;
 	double max_roll = 30;

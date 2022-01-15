@@ -136,6 +136,8 @@ int LoadAGC(std::string path) {
 						{
 							curAircraft->getPerfValues().takeoff_accel = atodd(args[0]);
 							curAircraft->getPerfValues().v1 = atodd(args[1]);
+							curAircraft->getPerfValues().climb = atodd(args[2]);
+							curAircraft->getPerfValues().init_alt = atodd(args[3]);
 						}
 						processed_lines = 0;
 					}

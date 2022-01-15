@@ -1,6 +1,8 @@
 #ifndef STREAM_H
 #define STREAM_H
 
+#include <string>
+
 static const int frameStackSize = 10;
 
 class Stream {
@@ -52,6 +54,7 @@ public:
 	int readSignedWordBigEndian();
 	int readSignedWordBigEndianA();
 	void readString(char* output);
+	void readString(int init_size, std::string& output);
 	unsigned char readUnsignedByte();
 	unsigned char readUnsignedByteA();
 	unsigned char readUnsignedByteC();

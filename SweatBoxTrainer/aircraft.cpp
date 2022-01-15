@@ -1129,7 +1129,7 @@ void Aircraft::handle_takeoff_roll()
 {
 	assignedValues.asdg_gnd_turn_rate = TURN_RATE_TAXI;
 	locked_rate = false;
-	assignedValues.asdg_speed = 120;
+	assignedValues.asdg_speed = perfValues.v1;
 	state = ACF_STATE::TAKEOFF;
 }
 
@@ -1137,7 +1137,7 @@ void Aircraft::handle_takeoff_rotate()
 {
 	reset_path();
 	assignedValues.asdg_gnd_turn_rate = 10;
-	assignedValues.asdg_speed = 200;
-	assignedValues.asdg_altitude = 5000;
+	assignedValues.asdg_speed = perfValues.climb;
+	assignedValues.asdg_altitude = perfValues.init_alt;
 	state = ACF_STATE::AIRBORNE;
 }

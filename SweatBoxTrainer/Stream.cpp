@@ -399,6 +399,18 @@ void Stream::readString(char* output) {
 	output[outputOffset++] = '\0';//Null Terminator
 }
 
+void Stream::readString(int init_size, std::string& output) {
+	output.resize(init_size);
+	int count = 0;
+	byte b;
+	int outputOffset = 0;
+	while ((b = buffer[currentOffset++]) != 0 && count++ < 5000) {
+		output[outputOffset++] = b;
+	}
+	//output[outputOffset++] = '\0';//Null Terminator
+	output.resize(outputOffset);
+}
+
 unsigned char Stream::readUnsignedByte() {
 	return buffer[currentOffset++] & 0xff;
 }
