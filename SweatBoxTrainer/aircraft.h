@@ -100,6 +100,7 @@ public:
 	bool connected = false, point_skip = false, locked_rate = false, queue_takeoff = false, lineup = false;
 	std::vector<std::string> ground_route;
 	std::vector<Point2*> ground_points, holds;
+	Point2* init_crse_p = nullptr;
 	Point2* ground_prev = nullptr, * ground_cur = nullptr, * ground_next = nullptr, * ground_next_next = nullptr;
 	Point2* air_prev = nullptr, * air_cur = nullptr;
 	Aircraft();

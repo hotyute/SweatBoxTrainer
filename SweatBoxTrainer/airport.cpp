@@ -5,6 +5,25 @@
 
 std::unordered_map<std::string, Airport*> airports;
 
+Point2* TaxiPath::getPrevPoint(Point2* to, Point2* next)
+{
+	if (to->index < next->index)
+	{
+		if ((to->index - 1) >= 0)
+		{
+			return points[to->index - 1];
+		}
+	}
+	else if (to->index > next->index)
+	{
+		if ((to->index + 1) < points.size())
+		{
+			return points[to->index + 1];
+		}
+	}
+	return nullptr;
+}
+
 Point2* TaxiPath::getNextPoint(Point2* p, Point2* p2)
 {
 	//std::cout << p->index << ", " << p2->index << std::endl;

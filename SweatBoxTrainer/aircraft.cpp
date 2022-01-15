@@ -292,12 +292,21 @@ double Aircraft::getNextPoint()
 			{
 				if (!ground_prev)
 				{
-					double brng = get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_);
-					if (assignedValues.asgd_heading != brng)
+					/*if (init_crse_p)
 					{
-						assignedValues.asgd_heading = brng;
-						return brng;
+						double h = hdg(degrees(GetHeading(init_crse_p->y_, ground_cur->y_, init_crse_p->x_, ground_cur->x_)));
+						double f_heading = calculateGain(*ground_cur, *init_crse_p, h);
+						assignedValues.asgd_heading = hdg(f_heading); //hdg(h - GetCTE2(*ground_prev, *ground_cur, latitude, longitude, speed));
 					}
+					else
+					{*/
+						double brng = get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_);
+						if (assignedValues.asgd_heading != brng)
+						{
+							assignedValues.asgd_heading = brng;
+							return brng;
+						}
+					//}
 				}
 				else
 				{
@@ -437,6 +446,7 @@ void Aircraft::prepareRoute()
 							{
 								Point2* np = path.getNextPoint(p, path.getClosest(next_path));
 								p = path.angleTest(&Point2(longitude, latitude), p, np);
+								init_crse_p = path.getPrevPoint(p, path.getNextPoint(p, path.getClosest(next_path)));
 							}
 
 							ground_points.push_back(p);
