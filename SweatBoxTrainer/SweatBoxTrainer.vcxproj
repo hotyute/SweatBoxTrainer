@@ -72,13 +72,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>C:\boost_1_74_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\boost_1_74_0;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\boost_1_74_0\stage\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\boost_1_74_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>C:\boost_1_74_0\stage\lib;$(LibraryPath)</LibraryPath>
-    <IncludePath>C:\boost_1_74_0;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\boost_1_74_0\stage\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\boost_1_74_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="aircraft.h" />
     <ClInclude Include="airport.h" />
+    <ClInclude Include="basic_stream.h" />
     <ClInclude Include="calc_cycles.h" />
     <ClInclude Include="clinc.h" />
     <ClInclude Include="clinc2.h" />
@@ -160,7 +161,6 @@
     <ClInclude Include="packets_out.h" />
     <ClInclude Include="point2d.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="Stream.h" />
     <ClInclude Include="SweatBoxTrainer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tools.h" />
@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClCompile Include="aircraft.cpp" />
     <ClCompile Include="airport.cpp" />
+    <ClCompile Include="basic_stream.cpp" />
     <ClCompile Include="calc_cycles.cpp" />
     <ClCompile Include="clinc.cpp" />
     <ClCompile Include="clinc2.cpp" />
@@ -180,7 +181,6 @@
     <ClCompile Include="later.cpp" />
     <ClCompile Include="packets_out.cpp" />
     <ClCompile Include="point2d.cpp" />
-    <ClCompile Include="Stream.cpp" />
     <ClCompile Include="SweatBoxTrainer.cpp" />
     <ClCompile Include="tools.cpp" />
     <ClCompile Include="usermanager.cpp" />

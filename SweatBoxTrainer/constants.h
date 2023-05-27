@@ -1,5 +1,5 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#pragma once
+
 
 #define MAX_EVENTS 1536
 #define MAX_AIRCRAFT_SIZE 1024
@@ -24,5 +24,3 @@ const int TURN_RATE_TAXI_MIN = 5;       // Degrees per second.
 const int TURN_RATE_TAXI = 20;          // Degrees per second.
 const int SPEED_MIN = 10;
 const int SPEED_MAX = 20;
-
-#endif

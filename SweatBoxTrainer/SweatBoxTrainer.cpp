@@ -1,23 +1,28 @@
 // SweatBoxTrainer.cpp : Defines the entry point for the application.
 //
 
-#include "framework.h"
 #include "SweatBoxTrainer.h"
+#include "framework.h"
 #include "packets_out.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <commdlg.h>
-#include <thread>
 #include <filesystem>
-#include <stdio.h>
+#include <cstdio>
+#include <thread>
 
-#include "usermanager.h"
-#include "events.h"
-#include "tools.h"
-#include "guicon.h"
+#include "basic_stream.h"
 #include "calc_cycles.h"
+#include "events.h"
 #include "filereader.h"
+#include "tools.h"
+#include "usermanager.h"
+#include "resource.h"
+
+#ifdef _DEBUG
+#include "guicon.h"
+#endif
 
 #define MAX_LOADSTRING 100
 
@@ -490,53 +495,50 @@ void connect()
 	for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)
 	{
 		Aircraft& aircraft = *(it->second);
-		tcpinterface& intter = aircraft.getConnection();
+		tcp_manager& tcp = aircraft.getConnection();
 		if (!aircraft.connected) 
 		{
 			//34.142.27.168
-			std::string ip = "vax.ddns.net";
-#ifdef _DEBUG
-			ip = "127.0.0.1";
-#endif
-			if (intter.connectNew(ip, 4403))
+			const std::string ip = "127.0.0.1";
+			if (tcp.connectNew(ip, 4403))
 			{
 				aircraft.connected = true;
 				Identity& id = *aircraft.getIdentity();
-				Stream stream = Stream(200);
+				BasicStream stream = BasicStream(512);
 				AV_CLIENT type = aircraft.getType();
-				intter.hand_shake = true;
-				intter.current_op = 45;
-				stream.createFrameVarSizeWord(45);
-				stream.writeDWord(PROTO_VERSION);
-				stream.writeString((char*)id.callsign.c_str());
-				stream.writeString((char*)id.login_name.c_str());
-				stream.writeString((char*)id.username.c_str());
-				stream.writeString((char*)id.password.c_str());
-				stream.writeQWord(1000);//request time
-				stream.writeQWord(doubleToRawBits(aircraft.getLatitude()));
-				stream.writeQWord(doubleToRawBits(aircraft.getLongitude()));
-				stream.writeWord(aircraft.getVisibility());
-				stream.writeByte(static_cast<int>(type));
-				stream.write3Byte(aircraft.frequency[0]);
-				stream.write3Byte(aircraft.frequency[1]);
+				tcp.hand_shake = true;
+				tcp.current_op = 45;
+				stream.create_frame_var_size_word(45);
+				stream.write_int(PROTO_VERSION);
+				stream.write_string(id.callsign.c_str());
+				stream.write_string(id.login_name.c_str());
+				stream.write_string(id.username.c_str());
+				stream.write_string(id.password.c_str());
+				stream.write_qword(1000);//request time
+				stream.write_qword(doubleToRawBits(aircraft.getLatitude()));
+				stream.write_qword(doubleToRawBits(aircraft.getLongitude()));
+				stream.write_short(aircraft.getVisibility());
+				stream.write_byte(static_cast<int>(type));
+				stream.write_3byte(aircraft.frequency[0]);
+				stream.write_3byte(aircraft.frequency[1]);
 				if (type == AV_CLIENT::CONTROLLER)
 				{
-					stream.writeByte(id.controller_rating);
-					stream.writeByte(id.controller_position);
+					stream.write_byte(id.controller_rating);
+					stream.write_byte(id.controller_position);
 				}
 				else if (type == AV_CLIENT::PILOT)
 				{
-					stream.writeByte(id.pilot_rating);
-					stream.writeString((char*)aircraft.getAcfTitle().c_str());
-					stream.writeString((char*)aircraft.getSquawkCode().c_str());
-					stream.writeByte(aircraft.getMode());
-					long long infoHash = ((static_cast<long long>((int)((aircraft.getPitch() * 1024.0) / -360.0))) << 22)
-						+ ((static_cast<long long>((int)((aircraft.getRoll() * 1024.0) / -360.0))) << 12)
-						+ ((static_cast<long long>((int)((aircraft.getHeading() * 1024.0) / 360.0))) << 2);
-					stream.writeQWord(infoHash);
+					stream.write_byte(id.pilot_rating);
+					stream.write_string(aircraft.getAcfTitle().c_str());
+					stream.write_string(aircraft.getSquawkCode().c_str());
+					stream.write_byte(aircraft.getMode());
+					const long long infoHash = ((static_cast<long long>((int)((aircraft.getPitch() * 1024.0) / -360.0))) << 22)
+						+ ((static_cast<long long>(static_cast<int>((aircraft.getRoll() * 1024.0) / -360.0))) << 12)
+						+ ((static_cast<long long>(static_cast<int>((aircraft.getHeading() * 1024.0) / 360.0))) << 2);
+					stream.write_qword(infoHash);
 				}
-				stream.endFrameVarSizeWord();
-				intter.sendMessage(&stream);
+				stream.end_frame_var_size_word();
+				aircraft.getConnection().sendMessage(&stream);
 			}
 		}
 	}

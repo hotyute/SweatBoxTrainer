@@ -6,7 +6,7 @@
 
 std::vector<Aircraft*> userStorage1;
 
-void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
+void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream& stream) {
 	if (opCode == 7) {
 		char msg[256];
 		stream.readString(msg);
@@ -19,20 +19,20 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 
 	if (opCode == 9) {
 		//create new user packet
-		int index = stream.readUnsignedWord();
-		AV_CLIENT type = static_cast<AV_CLIENT>(stream.readUnsignedByte());
+		int index = stream.read_unsigned_short();
+		AV_CLIENT type = static_cast<AV_CLIENT>(stream.read_unsigned_byte());
 		char callSign1[1024], full_name[1024], username[1024];
 		stream.readString(callSign1);
 		stream.readString(username);
 		stream.readString(full_name);
-		int vis_range = stream.readUnsignedWord();
+		int vis_range = stream.read_unsigned_short();
 		long long lat = stream.readQWord();
 		long long lon = stream.readQWord();
 		if (type == AV_CLIENT::CONTROLLER)
 		{
 			//do nothing but read the stream
-			int controller_rating = stream.readUnsignedByte();
-			int controller_position = stream.readUnsignedByte();
+			int controller_rating = stream.read_unsigned_byte();
+			int controller_position = stream.read_unsigned_byte();
 			int controller_freq = stream.read3Byte();
 		}
 		else if (type == AV_CLIENT::PILOT)
@@ -41,7 +41,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 			stream.readString(acfTitle);
 			char trans_code[1024];
 			stream.readString(trans_code);
-			int m = stream.readUnsignedByte();
+			int m = stream.read_unsigned_byte();
 			long long hash = stream.readQWord();
 			int squawkMode = m >> 4;
 			bool heavy = (m & 0xf) == 1;
@@ -70,7 +70,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		stream.readString(msg);
 	}
 	if (opCode == 12) {//delete user packet
-		int index = stream.readUnsignedWord();
+		int index = stream.read_unsigned_short();
 	}
 	if (opCode == 13) {
 		//ping packet
@@ -78,7 +78,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 14)
 	{
 		//Pilot  Update Packet
-		int index = stream.readUnsignedWord();
+		int index = stream.read_unsigned_short();
 		long long lat = stream.readQWord();
 		long long lon = stream.readQWord();
 		double latitude = *(double*)&lat;
@@ -90,15 +90,15 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 		double pitch = num2 / 1024.0 * -360.0;
 		double roll = num3 / 1024.0 * -360.0;
 		double heading = num4 / 1024.0 * 360.0;
-		int groundSpeed = stream.readUnsignedWord();
+		int groundSpeed = stream.read_unsigned_short();
 		long long alt = stream.readQWord();
 		double altitude = *(double*)&alt;
 	}
 	if (opCode == 15)
 	{
-		int index = stream.readUnsignedWord();
+		int index = stream.read_unsigned_short();
 		int frequency = stream.read3Byte();
-		bool asel = stream.readUnsignedByte() == 1;
+		bool asel = stream.read_unsigned_byte() == 1;
 		char msg[2048];
 		stream.readString(msg);
 		if (frequency == command_freq)
@@ -118,17 +118,17 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	}
 	if (opCode == 16)
 	{
-		int index = stream.readUnsignedWord();
-		int mode = stream.readUnsignedByte();
+		int index = stream.read_unsigned_short();
+		int mode = stream.read_unsigned_byte();
 	}
 	if (opCode == 17)
 	{//update flight plan packet
-		int index = stream.readUnsignedWord();
-		int cur_cycle = stream.readUnsignedWord();
-		AV_CLIENT type = static_cast<AV_CLIENT>(stream.readUnsignedByte());
+		int index = stream.read_unsigned_short();
+		int cur_cycle = stream.read_unsigned_short();
+		AV_CLIENT type = static_cast<AV_CLIENT>(stream.read_unsigned_byte());
 
 		if (type == AV_CLIENT::PILOT) {
-			int flightRules = stream.readUnsignedByte();
+			int flightRules = stream.read_unsigned_byte();
 			char assigned_squawk[5], departure[5], arrival[5], alternate[5], cruise[6], ac_type[9], scratch[5], route[128], remarks[128];
 			stream.readString(assigned_squawk);
 			stream.readString(departure);
@@ -144,29 +144,29 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, Stream& stream) {
 	if (opCode == 18)
 	{
 		//Controller Update Packet
-		int index = stream.readUnsignedWord();
+		int index = stream.read_unsigned_short();
 		long long lat = stream.readQWord();
 		long long lon = stream.readQWord();
-		double latitude = *(double*)&lat;
-		double longitude = *(double*)&lon;
-		int flags = stream.readUnsignedByte();
+		double latitude = *reinterpret_cast<double*>(&lat);
+		double longitude = *reinterpret_cast<double*>(&lon);
+		int flags = stream.read_unsigned_byte();
 	}
 	if (opCode == 19)
 	{
-		int index = stream.readUnsignedWord();
-		int vis_range = stream.readUnsignedWord();
+		int index = stream.read_unsigned_short();
+		int vis_range = stream.read_unsigned_short();
 	}
 	if (opCode == 20)
 	{
-		int index = stream.readUnsignedWord();
+		int index = stream.read_unsigned_short();
 		char code[20];
 		stream.readString(code);
 	}
 	if (opCode == 21)
 	{
-		int index = stream.readUnsignedWord();
-		int flags = stream.readUnsignedByte();
-		int freq = stream.readDWord();
+		int index = stream.read_unsigned_short();
+		int flags = stream.read_unsigned_byte();
+		int freq = stream.read_unsigned_int();
 	}
 }
 

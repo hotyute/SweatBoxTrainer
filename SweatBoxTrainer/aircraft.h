@@ -1,18 +1,15 @@
-#ifndef AIRCRAFT_H 
-#define AIRCFAFT_H
+#pragma once
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <Windows.h>
-#include <vector>
 #include <unordered_map>
+#include <vector>
+#include <Windows.h>
 
-class tcpinterface;
-
-#include "clinc2.h"
-#include "constants.h"
 #include "airport.h"
+#include "constants.h"
 #include "events.h"
+#include "clinc2.h"
 
 struct DefaultValues {
 	double speed = 15;
@@ -81,7 +78,7 @@ private:
 	double altitude = 0, verticalSpeed = 1000;
 	std::vector<History*> historyCount;
 	FlightPlan flight_plan;
-	tcpinterface intter = tcpinterface(this);
+	tcp_manager tcp_ = tcp_manager(this);
 	Identity identity;
 	AssignedValues assignedValues;
 	DefaultValues defaultValues;
@@ -118,7 +115,7 @@ public:
 	int getIndex();
 	void setIndex(int);
 	FlightPlan& getFlightPlan() { return flight_plan; }
-	tcpinterface& getConnection() { return intter; }
+	tcp_manager& getConnection() { return tcp_; }
 	Identity* getIdentity() { return &identity; }
 	std::string getCallSign() { return identity.callsign; }
 	bool created, que_delete;
@@ -216,5 +213,3 @@ extern Aircraft* getAircraftByIndex(int);
 void addUserToLB(Aircraft* user);
 
 void DisplayAircraft();
-
-#endif

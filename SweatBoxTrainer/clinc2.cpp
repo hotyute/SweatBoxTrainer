@@ -4,15 +4,14 @@
 #include <winsock.h>
 #include <iostream>
 #include <tchar.h>
-#include <errno.h>
 
 #include "events.h"
-#include "config.h"
 #include "usermanager.h"
 #include "packets_out.h"
+#include "SweatBoxTrainer.h"
 
 /* Use Official Packet Output App to update this. */
-const int packetSizes[256] =
+constexpr int packet_sizes[256] =
 {
 -3, -3, -3, -3, -3, -3, -3, -1, -1, -2, 8, -2, 2, 0, 36,
 -2, 3, -2, 19, 4, -1, 7, -3, -3, -3, -3, -3, -3, -3, -3,
@@ -34,28 +33,24 @@ const int packetSizes[256] =
 -3,
 };
 
-tcpinterface::tcpinterface(Aircraft* aircraft) {
-	this->writeMutex = CreateMutex(NULL, FALSE, NULL);
-	this->in_stream = new Stream(5000);
-	this->in_stream->clearBuf();
+tcp_manager::tcp_manager(Aircraft* aircraft) {
+	this->in_stream = new BasicStream();
 	this->aircraft = aircraft;
-	memset(tcpinterface::message, 0, 5000);
 	timeout1.tv_sec = TimeoutSec1;
 	timeout1.tv_usec = 0;
 	sConnect = INVALID_SOCKET;
 }
 
-DWORD tcpinterface::run() {
-	ZeroMemory(message, sizeof(message));
+DWORD tcp_manager::run() {
 
 	FD_ZERO(&rfds);
 	FD_SET(sConnect, &rfds);
 
-	//int sel = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
+	//int sel = select(tcp_manager::sConnect + 1, &rfds, 0, 0, &timeout1);
 
 	if (FD_ISSET(sConnect, &rfds))
 	{
-		nBytesReceived = recv(sConnect, message, 5000, 0);
+		nBytesReceived = in_stream->add_data(sConnect);
 
 		if (nBytesReceived == SOCKET_ERROR)
 		{
@@ -69,8 +64,7 @@ DWORD tcpinterface::run() {
 				|| error == WSAECONNRESET || error == WSAETIMEDOUT)
 			{
 				disconnect(aircraft, false);
-				in_stream->clearBuf();
-				memset(tcpinterface::message, 0, 5000);
+				in_stream->clear();
 				closed = true;
 				if (error == WSAETIMEDOUT)
 					printf("Connection timeout exceeded 11 seconds\n");
@@ -87,24 +81,22 @@ DWORD tcpinterface::run() {
 		if (nBytesReceived == 0)
 			return 0;
 
-		Stream& in = *in_stream;
-		memcpy(in.buffer + in.writeIndex, message, nBytesReceived);
-		in.writeIndex += nBytesReceived;
+		BasicStream& in = *in_stream;
 
-		if (tcpinterface::hand_shake)
+		if (hand_shake)
 		{
-			if (tcpinterface::current_op == 45)
+			if (current_op == 45)
 			{
-				in.markReaderIndex();
+				in.mark_position();
 				if (nBytesReceived >= 1)
 				{
-					int loginCode = in.readUnsignedByte();
+					const int loginCode = in.read_unsigned_byte();
 					if (loginCode == 1)
 					{
-						if (in.remaining() >= 10)
+						if (in.available() >= 10)
 						{
-							int index = in.readUnsignedWord();
-							long long updateTimeInMillis = in.readQWord();
+							const int index = in.read_unsigned_short();
+							const long long updateTimeInMillis = in.readQWord();
 							aircraft->setUserIndex(index);
 							userStorage1[index] = aircraft;
 							aircraft->setUpdateTime(updateTimeInMillis);
@@ -120,13 +112,13 @@ DWORD tcpinterface::run() {
 							}
 							hand_shake = false;
 							current_op = -1;
-							in.deleteReaderBlock();
+							in.delete_marked_block();
 
 							send_initial_packets(*aircraft);
 						}
 						else
 						{
-							in.resetReaderIndex();
+							in.reset();
 						}
 					}
 					else
@@ -138,12 +130,12 @@ DWORD tcpinterface::run() {
 							//sendErrorMessage("Invalid protocol Version.");
 							//if (connected)
 							//	disconnect(true);
-							in.deleteReaderBlock();
+							in.delete_marked_block();
 							break;
 						}
 						default:
 						{
-							in.deleteReaderBlock();
+							in.delete_marked_block();
 							break;
 						}
 						}
@@ -151,23 +143,23 @@ DWORD tcpinterface::run() {
 				}
 				else
 				{
-					in.resetReaderIndex();
+					in.reset();
 				}
 			}
 		}
 
 		if (!hand_shake)
 		{
-			if (in.remaining() > 0)
+			if (in.available() > 0)
 			{
 				decodePackets(aircraft, in, nBytesReceived);
 			}
 		}
 
 		FD_ZERO(&rfds);
-		FD_SET(tcpinterface::sConnect, &rfds);
+		FD_SET(tcp_manager::sConnect, &rfds);
 
-		//retval = select(tcpinterface::sConnect + 1, &rfds, 0, 0, &timeout1);
+		//retval = select(tcp_manager::sConnect + 1, &rfds, 0, 0, &timeout1);
 	}
 	if (retval == SOCKET_ERROR)
 	{
@@ -176,35 +168,36 @@ DWORD tcpinterface::run() {
 	return 0;
 }
 
-void decodePackets(Aircraft* aircraft, Stream& in, int nBytesRecieved) {
-	while (in.remaining() > 0)
+void decodePackets(Aircraft* aircraft, BasicStream& in, int nBytesReceived) {
+	while (in.available() > 0)
 	{
-		in.markReaderIndex();
-		int opCode = in.readUnsignedByte(), length = -3;
+		in.mark_position();
+		const int opCode = in.read_unsigned_byte();
+		int length = -3;
 		if (opCode != -1)
 		{
-			length = packetSizes[opCode];
+			length = packet_sizes[opCode];
 			if (length == -1)
 			{
-				if (in.remaining() >= 1)
+				if (in.available() >= 1)
 				{
-					length = in.readUnsignedByte();
+					length = in.read_unsigned_byte();
 				}
 				else
 				{
-					in.resetReaderIndex();
+					in.reset();
 					break;
 				}
 			}
 			else if (length == -2)
 			{
-				if (in.remaining() >= 2)
+				if (in.available() >= 2)
 				{
-					length = in.readUnsignedWord();
+					length = in.read_unsigned_short();
 				}
 				else
 				{
-					in.resetReaderIndex();
+					in.reset();
 					break;
 				}
 			}
@@ -212,61 +205,77 @@ void decodePackets(Aircraft* aircraft, Stream& in, int nBytesRecieved) {
 			{
 #ifdef _DEBUG
 				printf("%s [UNHANDLED] Packet_Id!! : %d, Packet_Size: %d, Bytes_Ava: %d nBytes: %d\n",
-					aircraft->getIdentity()->callsign.c_str(), opCode, length, in.remaining(), nBytesRecieved);
+					aircraft->getIdentity()->callsign.c_str(), opCode, length, in.available(), nBytesReceived);
 #endif
-				length = in.remaining();
+				length = in.available();
 			}
 #ifdef _DEBUG
 			//printf("%s Packet_Id: %d, Packet_Size: %d, Bytes_Ava: %d nBytes: %d\n", 
-			//	aircraft->getIdentity()->callsign.c_str(), opCode, length, in.remaining(), nBytesRecieved);
+			//	aircraft->getIdentity()->callsign.c_str(), opCode, length, in.available(), nBytesRecieved);
 #endif
-			if (in.remaining() >= length)
+			if (in.available() >= length)
 			{
 				//handle
 				processIncomingPackets(aircraft, opCode, in);
-				in.deleteReaderBlock();
+				in.delete_marked_block();
 			}
 			else
 			{
-				in.resetReaderIndex();
+				in.reset();
 				break;
 			}
 		}
 	}
 }
 
-void tcpinterface::sendMessage(Stream* stream) {
+void tcp_manager::sendMessage(BasicStream* stream) {
+	std::lock_guard<std::mutex> lock(tcp_manager::writeMutex);
 	if (this->aircraft && !this->aircraft->connected)
 		return;
 
-	if (stream->writeIndex == 0) {
+	if (stream->get_index() == 0) {
 		MessageBox(hWnd, L"Can't flush empty stream o.O", L"Notice", MB_OK | MB_ICONINFORMATION);
 		return;
 	}
-
-	w_lock();
-	DWORD response = send(tcpinterface::sConnect, stream->buffer, stream->writeIndex, NULL);
-	stream->writeIndex = 0;
-	w_unlock();
+	send_data(tcp_manager::sConnect, std::vector<char>(stream->data, stream->data + stream->index));
+	stream->clear();
 }
 
-void tcpinterface::init_set()
+void tcp_manager::send_data(SOCKET clientSocket, const std::vector<char>& buffer) {
+	size_t totalSent = 0;
+	size_t remaining = buffer.size();
+
+	while (totalSent < buffer.size()) {
+		const int sent = send(clientSocket, buffer.data() + totalSent, static_cast<int>(remaining), 0);
+		if (sent == SOCKET_ERROR) {
+			std::cerr << "Error sending broadcast message: " << WSAGetLastError() << std::endl;
+			break;
+		}
+
+		printf("sent: %d\n", sent);
+
+		totalSent += sent;
+		remaining -= sent;
+	}
+}
+
+void tcp_manager::init_set()
 {
 
 }
 
-int tcpinterface::disconnect_socket() {
-	int iResult = shutdown(tcpinterface::sConnect, 0x01);
+int tcp_manager::disconnect_socket() {
+	int iResult = shutdown(tcp_manager::sConnect, 0x01);
 	if (iResult == SOCKET_ERROR) {
 		printf("shutdown failed: %d\n", WSAGetLastError());
-		closesocket(tcpinterface::sConnect);
+		closesocket(tcp_manager::sConnect);
 		WSACleanup();
 		return 1;
 	}
 	return 0;
 }
 
-int tcpinterface::connectNew(std::string saddr, unsigned short port) {
+int tcp_manager::connectNew(std::string saddr, unsigned short port) {
 	int err;
 	WSADATA wsaData;
 	WORD DLLVersion;
@@ -376,16 +385,6 @@ int tcpinterface::connectNew(std::string saddr, unsigned short port) {
 	std::cout << "Connected!\n";
 #endif
 	return 1;
-}
-
-void tcpinterface::w_lock()
-{
-	WaitForSingleObject(writeMutex, INFINITE);
-}
-
-void tcpinterface::w_unlock()
-{
-	ReleaseMutex(writeMutex);
 }
 
 bool SetSocketBlocking(SOCKET sock, bool blocking)

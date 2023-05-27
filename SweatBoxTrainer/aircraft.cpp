@@ -8,15 +8,15 @@
 std::unordered_map<std::string, Aircraft*>AcfMap;
 
 Aircraft::Aircraft() {
-	Aircraft::aMutex = CreateMutex(NULL, FALSE, L"Aircraft Mutex");
-	Aircraft::created = false;
-	Aircraft::que_delete = false;
-	Aircraft::altitude = 0;
-	Aircraft::pitch = 0;
-	Aircraft::latitude = 0;
-	Aircraft::longitude = 0;
-	Aircraft::heading = 0;
-	Aircraft::roll = 0;
+	aMutex = CreateMutex(NULL, FALSE, L"Aircraft Mutex");
+	created = false;
+	que_delete = false;
+	altitude = 0;
+	pitch = 0;
+	latitude = 0;
+	longitude = 0;
+	heading = 0;
+	roll = 0;
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	std::fill_n(last_time, sizeof(last_time) / sizeof(last_time[0]), now);
 	std::fill_n(frequency, sizeof(frequency) / sizeof(frequency[0]), 99998);
@@ -155,7 +155,7 @@ void Aircraft::updateRoll()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[4];
-	roll = getNextRoll((double)interval);
+	roll = getNextRoll(static_cast<double>(interval));
 	last_time[4] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -163,7 +163,7 @@ void Aircraft::updatePitch()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[5];
-	pitch = getNextPitch((double)interval);
+	pitch = getNextPitch(static_cast<double>(interval));
 	last_time[5] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -379,7 +379,7 @@ void Aircraft::pollRoute()
 	{
 		if (onGround())
 		{
-			if (ground_points.size() > 0)
+			if (!ground_points.empty())
 			{
 
 				ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
@@ -410,9 +410,7 @@ void Aircraft::pollRoute()
 
 void Aircraft::refreshRoute()
 {
-	Airport* airport_ptr = getAirport();
-
-	if (airport_ptr)
+	if (Airport* airport_ptr = getAirport())
 	{
 		if (onGround())
 		{
@@ -431,59 +429,54 @@ void Aircraft::refreshRoute()
 
 void Aircraft::prepareRoute()
 {
-	Airport* airport_ptr = getAirport();
-
-	if (airport_ptr)
+	if (Airport* airport_ptr = getAirport())
 	{
-		if (onGround())
+		if (onGround() && !ground_route.empty())
 		{
-			if (ground_route.size() > 0)
+			Airport& airport = *airport_ptr;
+
+			for (auto it = ground_route.begin(); it != ground_route.end(); ++it)
 			{
-				Airport& airport = *airport_ptr;
-
-				for (auto it = ground_route.begin(); it != ground_route.end(); ++it)
+				auto it2 = airport.all.find(*it);
+				if (it2 != airport.all.end())
 				{
-					auto it2 = airport.all.find(*it);
-					if (it2 != airport.all.end())
+					TaxiPath& path = *it2->second;
+
+					TaxiPath* next_path = ((it + 1) != ground_route.end()) ? airport.all.find(*(it + 1))->second : nullptr;
+
+					if (ground_points.empty())
 					{
-						TaxiPath& path = *it2->second;
-
-						TaxiPath* next_path = ((it + 1) != ground_route.end()) ? airport.all.find(*(it + 1))->second : nullptr;
-
-						if (ground_points.empty())
-						{
-							Point2* p = path.getClosestPoint(latitude, longitude);
-
-							if (next_path)
-							{
-								Point2* np = path.getNextPoint(p, path.getClosest(next_path));
-								p = path.angleTest(&Point2(longitude, latitude), p, np);
-								init_crse_p = path.getPrevPoint(p, path.getNextPoint(p, path.getClosest(next_path)));
-							}
-
-							ground_points.push_back(p);
-						}
+						Point2* p = path.getClosestPoint(latitude, longitude);
 
 						if (next_path)
 						{
-							Point2* last = ground_points.back();
-							Point2* _end = path.getClosest(next_path);
+							Point2* np = path.getNextPoint(p, path.getClosest(next_path));
+							p = path.angleTest(&Point2(longitude, latitude), p, np);
+							init_crse_p = path.getPrevPoint(p, path.getNextPoint(p, path.getClosest(next_path)));
+						}
 
-							if (last && _end)
+						ground_points.push_back(p);
+					}
+
+					if (next_path)
+					{
+						Point2* last = ground_points.back();
+						Point2* _end = path.getClosest(next_path);
+
+						if (last && _end)
+						{
+							path.getPoints(last, _end, ground_points);
+							Point2* next_point = next_path->getClosestPoint(_end->y_, _end->x_);
+							if (!taxiIntersect(*_end, *next_point))
 							{
-								path.getPoints(last, _end, ground_points);
-								Point2* next_point = next_path->getClosestPoint(_end->y_, _end->x_);
-								if (!taxiIntersect(*_end, *next_point))
-								{
-									ground_points.push_back(_end);
-								}
-								if (next_path->type == PATHTYPE::RUNWAY && (it + 2) == ground_route.end())
-								{
-									holds.push_back(next_point);
-									runway_ctx = (Runway*)next_path;
-								}
-								ground_points.push_back(next_point);
+								ground_points.push_back(_end);
 							}
+							if (next_path->type == PATHTYPE::RUNWAY && (it + 2) == ground_route.end())
+							{
+								holds.push_back(next_point);
+								runway_ctx = static_cast<Runway*>(next_path);
+							}
+							ground_points.push_back(next_point);
 						}
 					}
 				}

@@ -1,5 +1,4 @@
-#ifndef PACKETS_OUT_H
-#define PACKETS_OUT_H
+#pragma once
 
 #include "usermanager.h"
 
@@ -30,5 +29,3 @@ _SEND_FLIGHT_PLAN = 10,
 _FLIGHT_PLAN_REQ = 11,
 _PRIVATE_MESSAGE = 12,
 _PRIMARY_FREQ = 13;
-
-#endif

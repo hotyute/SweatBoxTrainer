@@ -15,16 +15,15 @@ REQUEST_FLIGHT_PLAN_PACKET = 11,
 PRIVATE_MESSAGE_PACKET = 12;
 
 #include <vector>
-#include <unordered_map>
 
 #include "aircraft.h"
-#include "Stream.h"
+#include "basic_stream.h"
 
 void disconnect(Aircraft* aircraft, bool queue);
 
 extern std::vector<Aircraft*> userStorage1;
 
-void processIncomingPackets(Aircraft* aircraft, int opCode, Stream &stream);
+void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream &stream);
 
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode);

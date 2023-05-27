@@ -1,9 +1,6 @@
-#ifndef SWEATBOXTRAINER_H
-#define SWEATBOXTRAINER_H
+#pragma once
 
 #include <Windows.h>
-
-#include "resource.h"
 
 static const int CLIENT_PORT = 6809;
 extern bool done;
@@ -17,5 +14,3 @@ DWORD __stdcall SocketThread1(LPVOID lpParameter);
 DWORD WINAPI CalcThread1(LPVOID);
 
 void create_controls(HWND hWnd);
-
-#endif
