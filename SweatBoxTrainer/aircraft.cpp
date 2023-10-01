@@ -283,6 +283,7 @@ bool Aircraft::OnTrack()
 	}
 	return false;
 }
+double SOME_SMALL_THRESHOLD = 5.0;
 
 double Aircraft::getNextPoint()
 {
@@ -312,12 +313,30 @@ double Aircraft::getNextPoint()
 					}
 					else
 					{*/
-						double brng = get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_);
-						if (assignedValues.asgd_heading != brng)
-						{
-							assignedValues.asgd_heading = brng;
-							return brng;
-						}
+					double brng = get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_);
+
+					// Calculate and store the turn angle for later use in the update cycle
+					this->initialTurnAngle = fabs(heading - brng);
+					if (this->initialTurnAngle > 180.0) {
+						this->initialTurnAngle = 360.0 - this->initialTurnAngle;
+					}
+
+					// Check if the aircraft has completed the turn
+					if (fabs(heading - get_bearing(latitude, longitude, ground_cur->y_, ground_cur->x_)) < SOME_SMALL_THRESHOLD) {
+						if (assignedValues.asdg_speed != defaultValues.speed)
+							assignedValues.asdg_speed = defaultValues.speed;
+						this->initialTurnAngle = -1.0;  // Reset the turn angle
+					}
+					else {
+						double speedForTurn = calcSpeedForInitTurn(this->initialTurnAngle);
+						assignedValues.asdg_speed = speedForTurn;
+					}
+
+					if (assignedValues.asgd_heading != brng)
+					{
+						assignedValues.asgd_heading = brng;
+						return brng;
+					}
 					//}
 				}
 				else

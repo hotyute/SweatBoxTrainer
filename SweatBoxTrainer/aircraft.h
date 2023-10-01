@@ -75,6 +75,7 @@ private:
 	double longitude;
 	double speed = 0;
 	double heading, pitch = 0, roll = 0;
+	double initialTurnAngle = -1.0;
 	double altitude = 0, verticalSpeed = 1000;
 	std::vector<History*> historyCount;
 	FlightPlan flight_plan;
@@ -203,6 +204,7 @@ public:
 	void handle_takeoff_rotate();
 	void pass_standard_pitch(double altitude);
 	bool holding_for_takeoff() { return runway_ctx && HoldingDepart && runway_ctx == HoldingDepart; }
+	double calcSpeedForInitTurn(double turnAngle);
 };
 
 

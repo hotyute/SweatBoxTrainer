@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "constants.h"
+#include "aircraft.h"
 
 const double EARTH_RADIUS_KM = 6378.14; //KM
 const double EARTH_RADIUS_NM = 3437.670013352;
@@ -105,6 +106,29 @@ Point2 getLocFromBearing(double latitude, double longitude, double distancenm, d
 	double long2 = round_up(longitude2, 8);
 
 	return Point2(long2, lat2);
+}
+
+Point2 calculatePointInDirection(const Point2& start, double bearing, double distance) {
+	// Convert latitude and longitude of the starting point from degrees to radians
+	double latRad = start.y_ * M_PI / 180.0;
+	double lonRad = start.x_ * M_PI / 180.0;
+
+	// Convert bearing from degrees to radians
+	double bearingRad = bearing * M_PI / 180.0;
+
+	// Earth's radius in kilometers
+	const double R = 6371.0;
+
+	// Calculate new latitude and longitude in radians
+	double newLatRad = asin(sin(latRad) * cos(distance / R) + cos(latRad) * sin(distance / R) * cos(bearingRad));
+	double newLonRad = lonRad + atan2(sin(bearingRad) * sin(distance / R) * cos(latRad), cos(distance / R) - sin(latRad) * sin(newLatRad));
+
+	// Convert new latitude and longitude from radians to degrees
+	Point2 newPoint;
+	newPoint.y_ = newLatRad * 180.0 / M_PI;
+	newPoint.x_ = newLonRad * 180.0 / M_PI;
+
+	return newPoint;
 }
 
 double GetDistance(Point2* p1, Point2* p2)
@@ -584,6 +608,27 @@ double CalcTaxiSpeed(double turnAngle, double maxSpeed)
 		turnSpeed = SPEED_MIN + ((maxSpeed - SPEED_MIN) * (1.0 * pct));
 	}
 	return turnSpeed;
+}
+
+double MAX_INIT_SPEED = 10.0;
+
+double Aircraft::calcSpeedForInitTurn(double turnAngle) {
+	// This function determines the speed based on the turn angle.
+	// The sharper the turn, the slower the speed.
+	// You can adjust the logic as per your requirements.
+
+	if (turnAngle < 10) {
+		return MAX_INIT_SPEED; // Some constant max speed value
+	}
+	else if (turnAngle < 45) {
+		return 0.75 * MAX_INIT_SPEED;
+	}
+	else if (turnAngle < 90) {
+		return 0.5 * MAX_INIT_SPEED;
+	}
+	else {
+		return 0.25 * MAX_INIT_SPEED;
+	}
 }
 
 
