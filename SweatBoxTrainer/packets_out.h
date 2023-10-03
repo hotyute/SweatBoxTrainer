@@ -16,6 +16,8 @@ void sendPingPacket(Aircraft& user);
 
 void sendUserMessage(Aircraft& user, int frequency, std::string to, std::string message);
 
+void sendTempData(Aircraft& user, std::string& assembly, const void*& data, ...);
+
 const int _AIRCRAFT_POS_UPDATE = 1,
 _UPDATE_TRANSPONDER = 2,
 CONTROLLER_POS_UPDATE = 3,
@@ -28,4 +30,5 @@ _DISCONNECT_PACKET = 9,
 _SEND_FLIGHT_PLAN = 10,
 _FLIGHT_PLAN_REQ = 11,
 _PRIVATE_MESSAGE = 12,
-_PRIMARY_FREQ = 13;
+_PRIMARY_FREQ = 13,
+_TEMP_DATA = 14;
