@@ -924,6 +924,8 @@ void DisplayAircraft() {
 		std::wstring spd = std::to_wstring((int)displayed->getSpeed());
 		SetWindowText(speed_hdl, spd.c_str());
 
+
+		//TODO fix error here (perhaps racing??)
 		displayed->onGround() ?
 			displayed->ground_cur ? SetWindowText(track_hdl, std::wstring(displayed->ground_cur->parent->name.begin(),
 				displayed->ground_cur->parent->name.end()).c_str())

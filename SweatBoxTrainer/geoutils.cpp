@@ -25,7 +25,7 @@ bool inCircle(Point2& p1, Point2& p2, Point2& c, double r) {
 	return bb4ac >= 0;
 }
 
-bool inCircle2(Point2& p1, Point2& p2, Point2& c, double r) {
+bool inCircle2(const Point2& p1, Point2& p2, Point2& c, double r) {
 	double dx = p2.x_ = p2.x_;
 	double dy = p2.y_ - p1.y_;
 	double len = sqrt((dx * dx) + (dy * dy));

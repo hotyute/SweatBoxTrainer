@@ -11,7 +11,7 @@
 
 bool inCircle(Point2& p1, Point2& p2, Point2& c, double radius_meters);
 
-bool inCircle2(Point2& p1, Point2& p2, Point2& c, double r);
+bool inCircle2(const Point2& p1, Point2& p2, Point2& c, double r);
 
 bool pointCircle(double px, double py, double cx, double cy, double r);
 
