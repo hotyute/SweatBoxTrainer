@@ -25,7 +25,7 @@ public:
 	Point2* getPrevPoint(Point2* to, Point2* next);
 	Point2* getNextPoint(Point2* last, Point2* p2);
 	void getPoints(Point2* p, Point2* p2, std::vector<Point2*>& points);
-	Point2* angleTest(Point2* orig, Point2* p, Point2* p2);
+	Point2* angleTest(const Point2 &orig, const Point2 &p, Point2 &p2);
 	Point2* getClosestPoint(double latitude, double longitude);
 	Point2* getClosest(TaxiPath* next);
 	Point2* intersect(Point2&);

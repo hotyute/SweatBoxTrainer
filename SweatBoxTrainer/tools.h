@@ -23,7 +23,7 @@ double NauticalMilesPerDegreeLon(double lat);
 
 Point2 getLocFromBearing(double latitude, double longitude, double distance, double bearing);
 
-double GetDistance(Point2* p1, Point2* p2);
+double GetDistance(const Point2& p1, const Point2& p2);
 
 double GetDistance(double lat, double lon, Point2* p);
 
@@ -31,7 +31,7 @@ double GetDistance(double lat1, double lat2, double lon1, double lon2);
 
 long double distanceTo(long double lat1, long double long1, long double lat2, long double long2);
 
-double GetHeading(Point2* p1, Point2* p2);
+double GetHeading(const Point2 &p1, const Point2 &p2);
 
 double GetHeading(double lat1, double lat2, double lon1, double lon2);
 
@@ -97,7 +97,7 @@ double pointToLineDistance(Point2& l1, Point2& l2, Point2& p);
 
 Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat, double $p2_lon, double $brng2);
 
-bool isHeavyAngle(Point2* o, Point2* p, Point2* p2);
+bool isHeavyAngle(const Point2 &o, const Point2 &p, const Point2 &p2);
 
 double TurnRadius(double speed, double turnRate);
 

@@ -131,9 +131,9 @@ Point2 calculatePointInDirection(const Point2& start, double bearing, double dis
 	return newPoint;
 }
 
-double GetDistance(Point2* p1, Point2* p2)
+double GetDistance(const Point2 &p1, const Point2 &p2)
 {
-	return GetDistance(p1->y_, p2->y_, p1->x_, p2->x_);
+	return GetDistance(p1.y_, p2.y_, p1.x_, p2.x_);
 }
 
 double GetDistance(double lat, double lon, Point2* p)
@@ -181,9 +181,9 @@ long double distanceTo(long double lat1, long double long1,
 	return ans;
 }
 
-double GetHeading(Point2* p1, Point2* p2)
+double GetHeading(const Point2 &p1, const Point2 &p2)
 {
-	return GetHeading(p1->y_, p2->y_, p1->x_, p2->x_);
+	return GetHeading(p1.y_, p2.y_, p1.x_, p2.x_);
 }
 
 double GetHeading(double lat1, double lat2, double lon1, double lon2)
@@ -556,10 +556,10 @@ Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat,
 	return new Point2(degrees(lon3), degrees(lat3));
 }
 
-bool isHeavyAngle(Point2* o, Point2* p, Point2* p2)
+bool isHeavyAngle(const Point2 &o, const Point2 &p, const Point2 &p2)
 {
-	double course = degrees(GetHeading(o->y_, p->y_, o->x_, p->x_));
-	double locBrg = hdg(degrees(GetHeading(p->y_, p2->y_, p->x_, p2->x_)));
+	double course = degrees(GetHeading(o.y_, p.y_, o.x_, p.x_));
+	double locBrg = hdg(degrees(GetHeading(p.y_, p2.y_, p.x_, p2.x_)));
 	return get_angle(locBrg, course) > 90;
 }
 

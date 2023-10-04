@@ -91,16 +91,16 @@ void TaxiPath::getPoints(Point2* p, Point2* p2, std::vector<Point2*>& point_stor
 	}
 }
 
-Point2* TaxiPath::angleTest(Point2* orig, Point2* p, Point2* p2)
+Point2* TaxiPath::angleTest(const Point2 &orig, const Point2 &p, Point2 &p2)
 {
-	Point2* f = p;
+	Point2 f = p;
 	while (isHeavyAngle(orig, f, p2))
 	{
 		if (f == p2)
 			break;
-		f = getNextPoint(f, p2);
+		f = *getNextPoint(&f, &p2);
 	}
-	return f;
+	return &f;
 }
 
 Point2* TaxiPath::getClosestPoint(double latitude, double longitude)

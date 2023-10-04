@@ -25,7 +25,7 @@ bool inCircle(Point2& p1, Point2& p2, Point2& c, double r) {
 	return bb4ac >= 0;
 }
 
-bool inCircle2(Point2& p1, Point2& p2, Point2& c, double r) {
+bool inCircle2(const Point2& p1, Point2& p2, Point2& c, double r) {
 	double dx = p2.x_ = p2.x_;
 	double dy = p2.y_ - p1.y_;
 	double len = sqrt((dx * dx) + (dy * dy));
@@ -93,5 +93,5 @@ bool linePoint(double x1, double y1, double x2, double y2, double px, double py)
 
 bool taxiIntersect(Point2& p, Point2& p2)
 {
-	return GetDistance(&p, &p2) <= (50 / KNOTS_FT);
+	return GetDistance(p, p2) <= (50 / KNOTS_FT);
 }

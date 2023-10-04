@@ -274,7 +274,7 @@ bool Aircraft::OnTrack()
 		{
 			double __unnamed000 = ground_cur->y_, __unnamed001 = ground_cur->x_;
 			double course = degrees(GetHeading(latitude, __unnamed000, longitude, __unnamed001));
-			double locBrg = degrees(GetHeading(ground_prev, ground_cur));//localizer heading
+			double locBrg = degrees(GetHeading(*ground_prev, *ground_cur));//localizer heading
 			double delta = get_angle_unsigned(locBrg, course);
 			double delta2 = get_angle_unsigned(locBrg, heading);
 			//printf("delta: [%f] [%f] [%f]\n", delta, course, locBrg);
@@ -470,7 +470,7 @@ void Aircraft::prepareRoute()
 						if (next_path)
 						{
 							Point2* np = path.getNextPoint(p, path.getClosest(next_path));
-							p = path.angleTest(&Point2(longitude, latitude), p, np);
+							p = path.angleTest(Point2(longitude, latitude), *p, *np);
 							init_crse_p = path.getPrevPoint(p, path.getNextPoint(p, path.getClosest(next_path)));
 						}
 
@@ -1059,9 +1059,9 @@ void Aircraft::CollisionDetection()
 		if (HoldingFor)
 		{
 			Aircraft& other = *HoldingFor;
-			double angle = get_angle(degrees(GetHeading(&Point2(longitude, latitude), &Point2(other.getLongitude(), other.getLatitude()))), heading);
-			if (angle > 90.0 || GetDistance(&Point2(other.getLongitude(), other.getLatitude()),
-				&Point2(longitude, latitude)) > (300 / KNOTS_FT))
+			double angle = get_angle(degrees(GetHeading(Point2(longitude, latitude), Point2(other.getLongitude(), other.getLatitude()))), heading);
+			if (angle > 90.0 || GetDistance(Point2(other.getLongitude(), other.getLatitude()),
+				Point2(longitude, latitude)) > (300 / KNOTS_FT))
 			{
 				HoldingFor = nullptr;
 				if (!HoldingAt && !HoldingDepart)
@@ -1082,11 +1082,11 @@ void Aircraft::CollisionDetection()
 					if (other.onGround() && (other.getAirport() == getAirport()))
 					{
 						double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
-						double cur_dist = GetDistance(&other.GetNextLoc(), &GetNextLoc());
+						double cur_dist = GetDistance(other.GetNextLoc(), GetNextLoc());
 						double dist = (300 / KNOTS_FT) + decel_distance0;
 						if (cur_dist <= dist)
 						{
-							double angle = get_angle(degrees(GetHeading(&GetNextLoc(), &other.GetNextLoc())), heading);
+							double angle = get_angle(degrees(GetHeading(GetNextLoc(), other.GetNextLoc())), heading);
 							if ((last_distance == 0.0 || cur_dist < last_distance) && angle <= 90.0)
 							{
 								if ((ground_prev && (other.ground_prev && taxiIntersect(*ground_prev, *other.ground_prev)))

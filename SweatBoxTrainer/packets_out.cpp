@@ -92,21 +92,22 @@ void sendPrimFreq(Aircraft& user) {
 	user.getConnection().sendMessage(&out);
 }
 
-void sendTempData(Aircraft& user, std::string &assembly, const void* &data, ...) {
+void sendTempData(Aircraft& user, std::string &assembly, const void* data, ...) {
 	BasicStream out = BasicStream(256);
 	out.create_frame_var_size_word(_TEMP_DATA);
 	out.write_string(assembly.c_str());
 	va_list args;
 	va_start(args, data);
 	int header = va_arg(args, int);
-	for (int i_11_ = assembly.length() - 1; i_11_ >= 0; i_11_--) {
+	for (int i_11_ = assembly.length() - 1; i_11_ >= 0; i_11_--) 
+	{
 		if (assembly.at(i_11_) == 's')
 			out.write_string(va_arg(args, std::string).c_str());
 		else if (assembly.at(i_11_) == 'l')
 			out.write_qword(va_arg(args, long long));
 		else
 			out.write_int(va_arg(args, int));
-	};
+	}
 	va_end(args);
 	out.write_int(header);
 	out.end_frame_var_size_word();
