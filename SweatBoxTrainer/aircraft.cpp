@@ -584,6 +584,24 @@ void Aircraft::reset_path()
 	}
 }
 
+void Aircraft::reset_holding()
+{
+	if (onGround() && holding())
+	{
+		if (!HoldingFor)
+		{
+			if (HoldingAt)
+			{
+				HoldingAt = nullptr;
+				if (!HoldingDepart)
+					set_taxing();
+			}
+			else if (!lineup && !queue_takeoff)
+				set_taxing();
+		}
+	}
+}
+
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude
 {
 	double num = (latitude - __unnamed000) * 60.0;

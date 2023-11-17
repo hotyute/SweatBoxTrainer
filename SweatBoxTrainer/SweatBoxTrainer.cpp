@@ -950,6 +950,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
+			aircraft.reset_holding();
 
 			std::string _command = command.substr(5, (command.length() - 1));
 
@@ -999,25 +1000,15 @@ int processCommands(Aircraft& aircraft, std::string command)
 	}
 	else if (boost::iequals(command, "res"))
 	{
-		if (aircraft.onGround() && aircraft.holding())
-		{
-			if (!aircraft.HoldingFor)
-			{
-				if (aircraft.HoldingAt)
-				{
-					aircraft.HoldingAt = nullptr;
-					if (!aircraft.HoldingDepart)
-						aircraft.set_taxing();
-				}
-				else if (!aircraft.lineup && !aircraft.queue_takeoff)
-					aircraft.set_taxing();
-			}
-		}
+		aircraft.reset_holding();
 	}
 	else if (boost::istarts_with(command, "tl "))
 	{
-
-		aircraft.reset_path();
+		if (aircraft.onGround())
+		{
+			aircraft.reset_path();
+			aircraft.reset_holding();
+		}
 
 		std::vector<std::string> array3 = split(command, " ");
 
@@ -1031,8 +1022,11 @@ int processCommands(Aircraft& aircraft, std::string command)
 	}
 	else if (boost::istarts_with(command, "tr "))
 	{
-
-		aircraft.reset_path();
+		if (aircraft.onGround())
+		{
+			aircraft.reset_path();
+			aircraft.reset_holding();
+		}
 
 		std::vector<std::string> array3 = split(command, " ");
 
@@ -1049,6 +1043,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
+			aircraft.reset_holding();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
