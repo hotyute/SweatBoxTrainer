@@ -1204,6 +1204,7 @@ void Aircraft::handle_takeoff_roll()
 void Aircraft::handle_takeoff_rotate()
 {
 	reset_path();
+	reset_holding();
 	assignedValues.asdg_gnd_turn_rate = 10;
 	assignedValues.asdg_speed = perfValues.climb;
 	assignedValues.asdg_altitude = perfValues.init_alt;
