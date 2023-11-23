@@ -142,6 +142,7 @@ public:
 	void set_holding() { state = ACF_STATE::HOLDING; }
 	bool holding() { return state == ACF_STATE::HOLDING; }
 	void set_taxing() { state = ACF_STATE::TAXING; }
+	void set_idle() { state = ACF_STATE::IDLE; }
 	bool taxing() { return state == ACF_STATE::TAXING; };
 	bool takeoff() { return state == ACF_STATE::TAKEOFF; };
 	bool idle() { return state == ACF_STATE::IDLE; };
@@ -181,7 +182,6 @@ public:
 	bool arrived(Point2* p2);
 	bool arrived(Point2* p1, Point2* p2);
 	void reset_path();
-	void reset_holding();
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	DefaultValues& getDefaultValues() { return defaultValues; }
 	PerfValues& getPerfValues() { return perfValues; }

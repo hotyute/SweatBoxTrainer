@@ -306,7 +306,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//Do your stuff
 		}
 		break;  //or return 0; if you don't want to pass it further to def proc
-	//If not your key, skip to default:
+		//If not your key, skip to default:
 		}
 	}
 	break;
@@ -496,7 +496,7 @@ void connect()
 	{
 		Aircraft& aircraft = *(it->second);
 		tcp_manager& tcp = aircraft.getConnection();
-		if (!aircraft.connected) 
+		if (!aircraft.connected)
 		{
 			//34.142.27.168
 			const std::string ip = "127.0.0.1";
@@ -692,7 +692,7 @@ void create_controls(HWND hwnd) {
 	SetMenu(hwnd, hMenuBar);
 
 	std::string freq = "Commands [" + frequency_to_string(command_freq) + "]:";
-	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", (LPCWSTR)std::wstring(freq.begin(), freq.end()).c_str() ,
+	HWND lbl_commands = CreateWindowEx(NULL, L"STATIC", (LPCWSTR)std::wstring(freq.begin(), freq.end()).c_str(),
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
 		35, 310, 150, 20,
 		hwnd, (HMENU)COMMANDS_LBL, NULL, NULL
@@ -950,7 +950,6 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
-			aircraft.reset_holding();
 
 			std::string _command = command.substr(5, (command.length() - 1));
 
@@ -1000,14 +999,26 @@ int processCommands(Aircraft& aircraft, std::string command)
 	}
 	else if (boost::iequals(command, "res"))
 	{
-		aircraft.reset_holding();
+		if (aircraft.onGround() && aircraft.holding())
+		{
+			if (!aircraft.HoldingFor)
+			{
+				if (aircraft.HoldingAt)
+				{
+					aircraft.HoldingAt = nullptr;
+					if (!aircraft.HoldingDepart)
+						aircraft.set_taxing();
+				}
+				else if (!aircraft.lineup && !aircraft.queue_takeoff)
+					aircraft.set_taxing();
+			}
+		}
 	}
 	else if (boost::istarts_with(command, "tl "))
 	{
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
-			aircraft.reset_holding();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1025,7 +1036,6 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
-			aircraft.reset_holding();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1043,7 +1053,6 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
-			aircraft.reset_holding();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1118,8 +1127,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 				Runway* runway = aircraft.runway_ctx;
 				Point2& cur = aircraft.ground_cur->parent->name == runway->name ? *aircraft.ground_cur :
 					(aircraft.ground_next && aircraft.ground_next->parent->name == runway->name) ? *aircraft.ground_next :
-					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next :
-					*aircraft.ground_cur;
+					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next : *aircraft.ground_cur;
 				if (cur.parent->name == runway->name)
 				{
 					aircraft.reset_path();
@@ -1143,8 +1151,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 				Runway* runway = aircraft.runway_ctx;
 				Point2& cur = aircraft.ground_cur->parent->name == runway->name ? *aircraft.ground_cur :
 					(aircraft.ground_next && aircraft.ground_next->parent->name == runway->name) ? *aircraft.ground_next :
-					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next :
-					*aircraft.ground_cur;
+					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next : *aircraft.ground_cur;
 				if (cur.parent->name == runway->name)
 				{
 					aircraft.reset_path();

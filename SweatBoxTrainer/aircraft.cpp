@@ -578,27 +578,13 @@ void Aircraft::reset_path()
 	checkRateReset(true);
 	queue_takeoff = false;
 	lineup = false;
+	HoldingDepart = nullptr;
+	HoldingAt = nullptr;
+	HoldingFor = nullptr;
+	runway_ctx = nullptr;
 	if (onGround() && !takeoff())
 	{
 		state = ACF_STATE::IDLE;
-	}
-}
-
-void Aircraft::reset_holding()
-{
-	if (onGround() && holding())
-	{
-		if (!HoldingFor)
-		{
-			if (HoldingAt)
-			{
-				HoldingAt = nullptr;
-				if (!HoldingDepart)
-					set_taxing();
-			}
-			else if (!lineup && !queue_takeoff)
-				set_taxing();
-		}
 	}
 }
 
@@ -1072,59 +1058,58 @@ void Aircraft::CheckFrameFlags()
 
 void Aircraft::CollisionDetection()
 {
-	if (onGround())
+	if (!onGround())
+		return;
+
+	auto nextLoc = GetNextLoc();
+	auto airport = getAirport();
+
+	if (HoldingFor)
 	{
-		if (HoldingFor)
+		Aircraft& other = *HoldingFor;
+		double angle = get_angle(degrees(GetHeading(Point2(longitude, latitude), Point2(other.getLongitude(), other.getLatitude()))), heading);
+		if (angle > 90.0 || GetDistance(Point2(other.getLongitude(), other.getLatitude()), Point2(longitude, latitude)) > (300 / KNOTS_FT))
 		{
-			Aircraft& other = *HoldingFor;
-			double angle = get_angle(degrees(GetHeading(Point2(longitude, latitude), Point2(other.getLongitude(), other.getLatitude()))), heading);
-			if (angle > 90.0 || GetDistance(Point2(other.getLongitude(), other.getLatitude()),
-				Point2(longitude, latitude)) > (300 / KNOTS_FT))
-			{
-				HoldingFor = nullptr;
-				if (!HoldingAt && !HoldingDepart)
-					set_taxing();
-			}
+			HoldingFor = nullptr;
+			if (!HoldingAt && !HoldingDepart)
+				set_taxing();
 		}
-		else if (AcfMap.size() > 0)
+	}
+	else if (!AcfMap.empty() && !holding())
+	{
+		Aircraft* hold_for = nullptr;
+		double last_distance = 0;
+		double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
+
+		for (auto& it : AcfMap)
 		{
-			if (holding())
-				return;
-			Aircraft* hold_for = nullptr;
-			double last_distance = 0;
-			for (auto& it : AcfMap)
+			Aircraft& other = *it.second;
+			if (&other != this && other.onGround() && other.getAirport() == airport)
 			{
-				if (it.second != this)
+				double cur_dist = GetDistance(other.GetNextLoc(), nextLoc);
+				double dist = (300 / KNOTS_FT) + decel_distance0;
+				if (cur_dist <= dist)
 				{
-					Aircraft& other = *it.second;
-					if (other.onGround() && (other.getAirport() == getAirport()))
+					double angle = get_angle(degrees(GetHeading(nextLoc, other.GetNextLoc())), heading);
+					if ((last_distance == 0.0 || cur_dist < last_distance) && angle <= 90.0)
 					{
-						double decel_distance0 = GetDecelerationDistance(speed, 0.0, assignedValues.asdg_gnd_braking);
-						double cur_dist = GetDistance(other.GetNextLoc(), GetNextLoc());
-						double dist = (300 / KNOTS_FT) + decel_distance0;
-						if (cur_dist <= dist)
+						if ((ground_prev && (other.ground_prev && taxiIntersect(*ground_prev, *other.ground_prev)))
+							|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev) ||
+								other.ground_cur && taxiIntersect(*ground_cur, *other.ground_cur))))
 						{
-							double angle = get_angle(degrees(GetHeading(GetNextLoc(), other.GetNextLoc())), heading);
-							if ((last_distance == 0.0 || cur_dist < last_distance) && angle <= 90.0)
-							{
-								if ((ground_prev && (other.ground_prev && taxiIntersect(*ground_prev, *other.ground_prev)))
-									|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev) ||
-										other.ground_cur && taxiIntersect(*ground_cur, *other.ground_cur))))
-								{
-									hold_for = it.second;
-									state = ACF_STATE::HOLDING;
-									last_distance = cur_dist;
-									printf("Holding For: %s\n", other.getCallSign().c_str());
-								}
-							}
+							hold_for = it.second;
+							state = ACF_STATE::HOLDING;
+							last_distance = cur_dist;
+							printf("Holding For: %s\n", other.getCallSign().c_str());
 						}
 					}
 				}
 			}
-			HoldingFor = hold_for;
 		}
+		HoldingFor = hold_for;
 	}
 }
+
 
 void Aircraft::checkPathHolds()
 {
