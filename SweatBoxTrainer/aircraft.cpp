@@ -578,14 +578,18 @@ void Aircraft::reset_path()
 	checkRateReset(true);
 	queue_takeoff = false;
 	lineup = false;
-	HoldingDepart = nullptr;
-	HoldingAt = nullptr;
-	HoldingFor = nullptr;
-	runway_ctx = nullptr;
 	if (onGround() && !takeoff())
 	{
 		state = ACF_STATE::IDLE;
 	}
+}
+
+void Aircraft::reset_holding()
+{
+	HoldingDepart = nullptr;
+	HoldingAt = nullptr;
+	HoldingFor = nullptr;
+	runway_ctx = nullptr;
 }
 
 double Aircraft::calculateGS(double __unnamed000, double __unnamed001, double gs_angle, double dest_altitude)//unamed 000 and 0001 dest latitude / longitude

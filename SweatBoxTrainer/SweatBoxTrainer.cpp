@@ -950,6 +950,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
+			aircraft.reset_holding();
 
 			std::string _command = command.substr(5, (command.length() - 1));
 
@@ -1019,6 +1020,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
+			aircraft.reset_holding();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1036,6 +1038,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
+			aircraft.reset_holding();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1053,6 +1056,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround())
 		{
 			aircraft.reset_path();
+			aircraft.reset_holding();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
