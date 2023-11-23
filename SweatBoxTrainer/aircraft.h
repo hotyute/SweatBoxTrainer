@@ -183,6 +183,7 @@ public:
 	bool arrived(Point2* p1, Point2* p2);
 	void reset_path();
 	void reset_holding();
+	void reset_context();
 	AssignedValues& getAssignedValues() { return assignedValues; }
 	DefaultValues& getDefaultValues() { return defaultValues; }
 	PerfValues& getPerfValues() { return perfValues; }

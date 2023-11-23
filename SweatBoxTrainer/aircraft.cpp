@@ -589,6 +589,10 @@ void Aircraft::reset_holding()
 	HoldingDepart = nullptr;
 	HoldingAt = nullptr;
 	HoldingFor = nullptr;
+}
+
+void Aircraft::reset_context()
+{
 	runway_ctx = nullptr;
 }
 
@@ -1205,6 +1209,7 @@ void Aircraft::handle_takeoff_rotate()
 {
 	reset_path();
 	reset_holding();
+	reset_context();
 	assignedValues.asdg_gnd_turn_rate = 10;
 	assignedValues.asdg_speed = perfValues.climb;
 	assignedValues.asdg_altitude = perfValues.init_alt;

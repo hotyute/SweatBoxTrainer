@@ -951,6 +951,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		{
 			aircraft.reset_path();
 			aircraft.reset_holding();
+			aircraft.reset_context();
 
 			std::string _command = command.substr(5, (command.length() - 1));
 
@@ -1021,6 +1022,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		{
 			aircraft.reset_path();
 			aircraft.reset_holding();
+			aircraft.reset_context();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1039,6 +1041,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		{
 			aircraft.reset_path();
 			aircraft.reset_holding();
+			aircraft.reset_context();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1057,6 +1060,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		{
 			aircraft.reset_path();
 			aircraft.reset_holding();
+			aircraft.reset_context();
 		}
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1124,6 +1128,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 			if (aircraft.queue_takeoff && aircraft.lineup && aircraft.holding())
 			{
 				aircraft.lineup = false;
+				aircraft.reset_holding();
 				aircraft.set_taxing();
 			}
 			else if (aircraft.runway_ctx && (aircraft.runway_ctx == aircraft.HoldingDepart) && aircraft.ground_cur)
@@ -1135,6 +1140,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 				if (cur.parent->name == runway->name)
 				{
 					aircraft.reset_path();
+					aircraft.reset_holding();
 					aircraft.ground_points.push_back(&cur);
 					runway->getPoints(&cur, runway->getEnd(), aircraft.ground_points);
 					aircraft.ground_points.push_back(runway->getEnd());
