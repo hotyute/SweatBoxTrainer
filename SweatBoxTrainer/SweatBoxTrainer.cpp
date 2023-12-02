@@ -531,7 +531,7 @@ void connect()
 					stream.write_byte(id.pilot_rating);
 					stream.write_string(aircraft.getAcfTitle().c_str());
 					stream.write_string(aircraft.getSquawkCode().c_str());
-					stream.write_byte(aircraft.getMode());
+					stream.write_byte(aircraft.getMode() << 4 | (aircraft.isHeavy() ? 1 : 0));
 					const long long infoHash = ((static_cast<long long>((int)((aircraft.getPitch() * 1024.0) / -360.0))) << 22)
 						+ ((static_cast<long long>(static_cast<int>((aircraft.getRoll() * 1024.0) / -360.0))) << 12)
 						+ ((static_cast<long long>(static_cast<int>((aircraft.getHeading() * 1024.0) / 360.0))) << 2);

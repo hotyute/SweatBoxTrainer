@@ -48,7 +48,7 @@ void sendFlightPlan(Aircraft& user) {
 void updateMode(Aircraft& user) {
 	BasicStream out = BasicStream(2);
 	out.create_frame(_UPDATE_MODE);
-	out.write_byte(user.getMode());
+	out.write_byte(user.getMode() << 4 | user.isHeavy());
 	user.getConnection().sendMessage(&out);
 }
 

@@ -101,12 +101,15 @@ int LoadAGC(std::string path) {
 					{
 						std::vector<std::string> args = split(line, ":");
 						std::string squawk_mode = args[7];
+						std::string weight = args[8];
 						int mode = squawk_mode[0] == 'C' ? 1 : squawk_mode[0] == 'I' ? 2 : 0;
+						bool heavy = weight[0] == 'H' ? 1 : 0;
 						curAircraft = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
-							(int)atodd(args[5]), (int)atodd(args[6]), mode, args[8]);
+							(int)atodd(args[5]), (int)atodd(args[6]), mode, args[9]);
 						curAircraft->getDefaultValues().speed = atodd(args[4]);
+						curAircraft->setHeavy(heavy);
 						//curAircraft->getDefaultValues().turn_rate = atodd(args[4]);
-						curAircraft->apt_icao = args[9];
+						curAircraft->apt_icao = args[10];
 						processed_lines++;
 					}
 					else if (processed_lines == 1)
