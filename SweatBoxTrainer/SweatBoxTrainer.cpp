@@ -710,7 +710,7 @@ void create_controls(HWND hwnd) {
 	SendMessage(command_text, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 	SendMessage(command_text, EM_LIMITTEXT, 128, 0L);
 
-	lpCommandWndProc = (WNDPROC)SetWindowLongPtr(command_text, GWL_WNDPROC, (LONG_PTR)&CommandCallBckProcedure);
+	lpCommandWndProc = (WNDPROC)SetWindowLongPtr(command_text, GWLP_WNDPROC, (LONG_PTR)&CommandCallBckProcedure);
 
 	console_text = CreateWindowEx(WS_EX_CLIENTEDGE, L"STATIC", L"",
 		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT | ES_READONLY,
