@@ -11,6 +11,11 @@
 #include <filesystem>
 #include <cstdio>
 #include <thread>
+#include <locale>
+#include <codecvt>
+#include <algorithm>
+
+#define NOMINMAX
 
 #include "basic_stream.h"
 #include "calc_cycles.h"
@@ -19,6 +24,8 @@
 #include "tools.h"
 #include "usermanager.h"
 #include "resource.h"
+#include "save.h"
+#include "guidialogue.h"
 
 #ifdef _DEBUG
 #include "guicon.h"
@@ -203,18 +210,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
 		CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
 
+		read_info();
+
 		userStorage1.resize(MAX_AIRCRAFT_SIZE);
 
-		SetWindowText(console_text, L"\n\n\n\n\n[00:00:00] Hello.");
+		if (!LAST_APRT_DIR.empty()) {
 
-		std::string path = "../data/airports/";
-
-		if (std::filesystem::exists(path) && std::filesystem::is_directory(path))
-		{
-			for (const auto& entry : std::filesystem::directory_iterator(path))
+			if (std::filesystem::exists(LAST_APRT_DIR) && std::filesystem::is_directory(LAST_APRT_DIR))
 			{
-				if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".aprt")
-					LoadAPT(entry.path().string());
+				for (const auto& entry : std::filesystem::directory_iterator(LAST_APRT_DIR))
+				{
+					if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".aprt")
+						LoadAPT(entry.path().string());
+				}
 			}
 		}
 
@@ -433,6 +441,9 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 		}
 	}
 	break;
+	case ID_FILE_SAVE:
+		save_info();
+		break;
 	case ACF_LISTBOX:
 	{
 		int notification = HIWORD(wParam);
@@ -684,6 +695,7 @@ void create_controls(HWND hwnd) {
 
 	AppendMenu(hFile, MF_STRING, ID_FILE_CONNECT, L"&Connect to Sever...");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_AGC, L"&Open Aircraft File...");
+	AppendMenu(hFile, MF_STRING, ID_FILE_SAVE, L"&Save Data");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_SCT, L"&Open SCT File...");
 	AppendMenu(hFile, MF_STRING, ID_FILE_OPEN_APRT, L"&Open APT File...");
 
@@ -1185,3 +1197,4 @@ int processCommands(Aircraft& aircraft, std::string command)
 	}
 	return 0;
 }
+

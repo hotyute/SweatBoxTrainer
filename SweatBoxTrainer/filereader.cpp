@@ -9,6 +9,8 @@
 #include "usermanager.h"
 #include "airport.h"
 
+std::string LAST_AGC_PATH, LAST_APRT_DIR, LAST_SCT_PATH;
+
 std::vector<std::string> HEADERS = { "[VOR]", "[NDB]", "[AIRPORT]", "[FIXES]" };
 int headerId = -1;
 Aircraft* curAircraft = nullptr;
@@ -17,6 +19,8 @@ TaxiPath* curPoint = nullptr;
 ApproachPath* curApproach = nullptr;
 
 void processRunways(Airport* airport);
+
+std::string get_directory(const std::string& filepath);
 
 
 int LoadSCT(std::string path) {
@@ -171,6 +175,7 @@ int LoadAPT(std::string path)
 	std::ifstream myfile(path);
 	if (myfile.is_open())
 	{
+		LAST_APRT_DIR = get_directory(path);
 		std::string commentStart = ";";
 		std::string icaoStart = "icao=";
 		std::string fieldElevStart = "field elevation=";
@@ -431,4 +436,9 @@ void processRunways(Airport* airport)
 
 		++it;
 	}
+}
+
+std::string get_directory(const std::string& filepath) {
+	size_t found = filepath.find_last_of("/\\");
+	return filepath.substr(0, found);
 }

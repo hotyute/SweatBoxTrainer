@@ -159,10 +159,12 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="geoutils.h" />
     <ClInclude Include="guicon.h" />
+    <ClInclude Include="guidialogue.h" />
     <ClInclude Include="later.h" />
     <ClInclude Include="packets_out.h" />
     <ClInclude Include="point2d.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="save.h" />
     <ClInclude Include="SweatBoxTrainer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tools.h" />
@@ -180,9 +182,11 @@
     <ClCompile Include="filereader.cpp" />
     <ClCompile Include="geoutils.cpp" />
     <ClCompile Include="guicon.cpp" />
+    <ClCompile Include="guidialogue.cpp" />
     <ClCompile Include="later.cpp" />
     <ClCompile Include="packets_out.cpp" />
     <ClCompile Include="point2d.cpp" />
+    <ClCompile Include="save.cpp" />
     <ClCompile Include="SweatBoxTrainer.cpp" />
     <ClCompile Include="tools.cpp" />
     <ClCompile Include="usermanager.cpp" />

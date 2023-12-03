@@ -1,5 +1,4 @@
-#ifndef FILEREADER_H
-#define FILEREADER_H
+#pragma once
 
 #include <iostream>
 
@@ -13,4 +12,4 @@ void handleNDBLine(std::string line);
 void handleAIRPORTLine(std::string line);
 void handleFIXESLine(std::string line);
 
-#endif
+extern std::string LAST_AGC_PATH, LAST_APRT_DIR, LAST_SCT_PATH;
