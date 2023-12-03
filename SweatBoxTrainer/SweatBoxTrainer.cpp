@@ -392,7 +392,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 		ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
 		ofn.hwndOwner = hWnd;
-		ofn.lpstrFilter = L"Aircraft File (*.agc)\0*.agc\0All Files (*.*)\0*.*\0";
+		ofn.lpstrFilter = L"Aircraft Scenario File (*.agc)\0*.agc\0All Files (*.*)\0*.*\0";
 		ofn.lpstrFile = szFileName;
 		ofn.nMaxFile = MAX_PATH;
 		ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
@@ -417,7 +417,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 		ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
 		ofn.hwndOwner = hWnd;
-		ofn.lpstrFilter = L"Aircraft File (*.aprt)\0*.aprt\0All Files (*.*)\0*.*\0";
+		ofn.lpstrFilter = L"Airport File (*.aprt)\0*.aprt\0All Files (*.*)\0*.*\0";
 		ofn.lpstrFile = szFileName;
 		ofn.nMaxFile = MAX_PATH;
 		ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
