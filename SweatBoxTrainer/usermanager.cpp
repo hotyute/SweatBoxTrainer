@@ -1,5 +1,7 @@
 #include "usermanager.h"
 
+#include <any>
+
 #include "SweatBoxTrainer.h"
 #include "tools.h"
 #include "packets_out.h"
@@ -119,7 +121,8 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream& stream)
 	if (opCode == 16)
 	{
 		int index = stream.read_unsigned_short();
-		int mode = stream.read_unsigned_byte();
+		int i = stream.read_unsigned_byte();
+		int mode = i << 4, heavy = i & 0xF;;
 	}
 	if (opCode == 17)
 	{//update flight plan packet
@@ -167,6 +170,28 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream& stream)
 		int index = stream.read_unsigned_short();
 		int flags = stream.read_unsigned_byte();
 		int freq = stream.read_unsigned_int();
+	}
+	if (opCode == 22)
+	{
+		int index = stream.read_unsigned_short();
+		int script_idx = stream.read_unsigned_short();
+		std::string assembly = stream.read_string();
+		std::vector<std::any> objects(assembly.length() + 1);
+		for (int i_11_ = assembly.length() - 1; i_11_ >= 0; i_11_--)
+		{
+			if (assembly.at(i_11_) == 's')
+				objects[i_11_ + 1] = stream.read_string();
+			else if (assembly.at(i_11_) == 'l')
+				objects[i_11_ + 1] = stream.readQWord();
+			else
+				objects[i_11_ + 1] = (int)stream.read_unsigned_int();
+		}
+		objects[0] = (int)stream.read_unsigned_int();
+	}
+	if (opCode == 23)
+	{
+		int index = stream.read_unsigned_short();
+		int script_idx = stream.read_unsigned_short();
 	}
 }
 
