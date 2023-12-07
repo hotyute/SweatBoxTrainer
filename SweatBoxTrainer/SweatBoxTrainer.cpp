@@ -1009,6 +1009,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		if (aircraft.onGround() && aircraft.taxing())
 		{
 			aircraft.set_holding();
+			AppendTextToConsole(s2ws(aircraft.getCallSign()) + L", holding.");
 		}
 	}
 	else if (boost::iequals(command, "res"))

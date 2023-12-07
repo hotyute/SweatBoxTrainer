@@ -97,5 +97,5 @@ void read_info()
 		return;
 	}
 
-	printf("Failed to load Data.");
+	AppendTextToConsole(L"Failed to load Data.");
 }

@@ -4,6 +4,7 @@
 
 #include "tools.h"
 #include "geoutils.h"
+#include "guidialogue.h"
 
 std::unordered_map<std::string, Aircraft*>AcfMap;
 
@@ -1108,7 +1109,7 @@ void Aircraft::CollisionDetection()
 							hold_for = it.second;
 							state = ACF_STATE::HOLDING;
 							last_distance = cur_dist;
-							printf("Holding For: %s\n", other.getCallSign().c_str());
+							AppendTextToConsole(s2ws(getCallSign() + ", holding for: " + other.getCallSign()));
 						}
 					}
 				}
@@ -1146,7 +1147,7 @@ void Aircraft::checkPathHolds()
 						//GetDistance(&Point2(longitude, latitude), p)
 						if (p->parent)
 						{
-							printf("Holding at: %s\n", p->parent->name.c_str());
+							AppendTextToConsole(s2ws(getCallSign() + ", holding at: " + p->parent->name));
 							if (runway_ctx && runway_ctx == p->parent)
 							{
 								HoldingDepart = p->parent;
