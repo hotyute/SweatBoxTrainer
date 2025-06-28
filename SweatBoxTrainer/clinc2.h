@@ -8,6 +8,7 @@
 #include <WinSock2.h>
 
 #include "basic_stream.h"
+#include "tools/timed_task.h"
 class Aircraft;
 
 class tcp_manager {
@@ -16,7 +17,7 @@ public:
 	Aircraft* aircraft;
 	SOCKET sConnect;
 	tcp_manager(Aircraft* aircraft);
-	DWORD run();
+	DWORD poll_socket();
 	void sendMessage(BasicStream* stream);
 	static void send_data(SOCKET clientSocket, const std::vector<char>& buffer);
 	void init_set();
@@ -34,6 +35,21 @@ public:
 	fd_set rfds{};
 	int retval{};
 	bool closed = true;
+};
+
+// clinc2.h
+#pragma once
+#include "tools/timed_task.h"
+// ...
+
+class SocketPollingTask : public TimedTask {
+public:
+	// Run very frequently to be responsive
+	SocketPollingTask(ThreadPool& pool)
+		: TimedTask(pool, std::chrono::milliseconds(5), true) {}
+
+protected:
+	void execute() override;
 };
 
 void decodePackets(Aircraft* aircraft, BasicStream& in, int nBytesReceived);

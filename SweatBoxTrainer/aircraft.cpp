@@ -49,7 +49,10 @@ double Aircraft::getLatitude() {
 }
 
 void Aircraft::setLatitude(double value) {
-	Aircraft::latitude = value;
+	if (Aircraft::latitude != value) {
+		Aircraft::latitude = value;
+		MarkDirty(AircraftDirtyFlags::LATITUDE);
+	}
 }
 
 double Aircraft::getLongitude() {
@@ -57,7 +60,10 @@ double Aircraft::getLongitude() {
 }
 
 void Aircraft::setLongitude(double value) {
-	Aircraft::longitude = value;
+	if (Aircraft::longitude != value) {
+		Aircraft::longitude = value;
+		MarkDirty(AircraftDirtyFlags::LONGITUDE);
+	}
 }
 
 double Aircraft::getAltitude() {
@@ -65,7 +71,10 @@ double Aircraft::getAltitude() {
 }
 
 void Aircraft::setAltitude(double val) {
-	Aircraft::altitude = val;
+	if (Aircraft::altitude != val) {
+		Aircraft::altitude = val;
+		MarkDirty(AircraftDirtyFlags::ALTITUDE);
+	}
 }
 
 double Aircraft::getSpeed() {
@@ -73,7 +82,10 @@ double Aircraft::getSpeed() {
 }
 
 void Aircraft::setSpeed(double value) {
-	Aircraft::speed = value;
+	if (Aircraft::speed != value) {
+		Aircraft::speed = value;
+		MarkDirty(AircraftDirtyFlags::SPEED);
+	}
 }
 
 double Aircraft::getHeading() {
@@ -81,7 +93,10 @@ double Aircraft::getHeading() {
 }
 
 void Aircraft::setHeading(double value) {
-	Aircraft::heading = value;
+	if (Aircraft::heading != value) {
+		Aircraft::heading = value;
+		MarkDirty(AircraftDirtyFlags::HEADING);
+	}
 }
 
 double Aircraft::getPitch() {
@@ -89,7 +104,10 @@ double Aircraft::getPitch() {
 }
 
 void Aircraft::setPitch(double val) {
-	Aircraft::pitch = val;
+	if (Aircraft::pitch != val) {
+		Aircraft::pitch = val;
+		MarkDirty(AircraftDirtyFlags::PITCH | AircraftDirtyFlags::DATA);
+	}
 }
 
 double Aircraft::getRoll() {
@@ -97,7 +115,10 @@ double Aircraft::getRoll() {
 }
 
 void Aircraft::setRoll(double val) {
-	Aircraft::roll = val;
+	if (Aircraft::roll != val) {
+		Aircraft::roll = val;
+		MarkDirty(AircraftDirtyFlags::ROLL | AircraftDirtyFlags::DATA);
+	}
 }
 
 HANDLE Aircraft::getMutex() {
@@ -140,15 +161,25 @@ int Aircraft::getMode() {
 	return Aircraft::mode;
 }
 
-void Aircraft::setMode(int mode) {
-	Aircraft::mode = mode;
+void Aircraft::setMode(int newMode) {
+	if (Aircraft::mode != newMode) {
+		Aircraft::mode = newMode;
+		MarkDirty(AircraftDirtyFlags::MODE);
+	}
+}
+
+void Aircraft::setVerticalSpeed(double vs) {
+	if (verticalSpeed != vs) {
+		verticalSpeed = vs;
+		MarkDirty(AircraftDirtyFlags::VSPEED);
+	}
 }
 
 void Aircraft::updateSpeed()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[2];
-	speed = getNextSpeed((double)interval);
+	setSpeed(getNextSpeed((double)interval));
 	last_time[2] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -156,7 +187,7 @@ void Aircraft::updateRoll()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[4];
-	roll = getNextRoll(static_cast<double>(interval));
+	setRoll(getNextRoll(static_cast<double>(interval)));
 	last_time[4] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -164,7 +195,7 @@ void Aircraft::updatePitch()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[5];
-	pitch = getNextPitch(static_cast<double>(interval));
+	setPitch(getNextPitch(static_cast<double>(interval)));
 	last_time[5] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -172,10 +203,11 @@ void Aircraft::updateHeading()
 {
 	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 	long long interval = now - last_time[1];
-	heading = getNextHeading((double)interval);
+	setHeading(getNextHeading((double)interval));
 	if ((heading == assignedValues.asgd_heading) && roll != 0)
 	{
-		assignedValues.asdg_roll = roll = 0;
+		assignedValues.asdg_roll = 0;
+		setRoll(0);
 	}
 	last_time[1] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
@@ -190,8 +222,8 @@ void Aircraft::updateMovement()
 	{
 		//other moved set flags here
 	}
-	latitude = p.y_;
-	longitude = p.x_;
+	setLatitude(p.y_);
+	setLongitude(p.x_);
 	last_time[0] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -201,9 +233,10 @@ void Aircraft::updateAltitude()
 	long long interval = now - last_time[3];
 	if ((altitude == assignedValues.asdg_altitude) && pitch != 0)
 	{
-		assignedValues.asdg_pitch = pitch = 0;
+		assignedValues.asdg_pitch = 0;
+		setPitch(0);
 	}
-	altitude = getNextAltitude((double)interval);
+	setAltitude(getNextAltitude((double)interval));
 	last_time[3] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
 }
 
@@ -296,6 +329,7 @@ double Aircraft::getNextPoint()
 			{
 				if (ground_cur)
 				{
+					MarkDirty(AircraftDirtyFlags::TRACK | AircraftDirtyFlags::DATA);
 					std::cout << "[Arrived at : " << ground_cur->parent->name << " : " << ground_cur->index << "]" << std::endl;
 					while (ground_route.size() > 0 && (ground_cur->parent->name != ground_route.front()))
 						ground_route.erase(ground_route.begin());
@@ -382,10 +416,13 @@ void Aircraft::checkRateReset(bool no_track)
 	{//if not turning
 		if (no_track || OnTrack())
 		{
-			if (assignedValues.asdg_gnd_turn_rate != DEFAULT_TURN_RATE)
+			if (assignedValues.asdg_gnd_turn_rate != DEFAULT_TURN_RATE) {
 				assignedValues.asdg_gnd_turn_rate = DEFAULT_TURN_RATE;
-			if (assignedValues.asdg_speed != defaultValues.speed)
+				MarkDirty(AircraftDirtyFlags::DATA);
+			}
+			if (assignedValues.asdg_speed != defaultValues.speed) {
 				assignedValues.asdg_speed = defaultValues.speed;
+			}
 			locked_rate = false;
 		}
 	}
@@ -405,6 +442,7 @@ void Aircraft::pollRoute()
 				ground_cur ? ground_prev = ground_cur : ground_prev = nullptr;
 
 				ground_cur = ground_points.front();
+				MarkDirty(AircraftDirtyFlags::TRACK);
 
 				auto next = ground_points.erase(ground_points.begin());
 
@@ -558,8 +596,12 @@ bool Aircraft::arrived(Point2* p1, Point2* p2)
 	{
 		if (onGround())
 		{
-			assignedValues.asdg_gnd_turn_rate = GetTrackTurnData();
-			assignedValues.asdg_speed = speed = GetTrackSpeedData();
+			double new_turn_rate = GetTrackTurnData();
+			if (assignedValues.asdg_gnd_turn_rate != new_turn_rate) {
+				assignedValues.asdg_gnd_turn_rate = new_turn_rate;
+				MarkDirty(AircraftDirtyFlags::DATA);
+			}
+			assignedValues.asdg_speed = GetTrackSpeedData();
 			locked_rate = true;
 			return true;
 		}
@@ -583,6 +625,7 @@ void Aircraft::reset_path()
 	{
 		state = ACF_STATE::IDLE;
 	}
+	MarkDirty(AircraftDirtyFlags::TRACK);
 }
 
 void Aircraft::reset_holding()
@@ -631,10 +674,10 @@ double Aircraft::getNextSpeed(double interval_ms)
 		if (spd_delta != 0)
 		{
 			if (spd_delta < 0) {
-				if ((speed + -amount) <= a_spd)
+				if ((speed - amount) <= a_spd)
 					next_speed = a_spd;
 				else
-					next_speed += -amount;
+					next_speed -= amount;
 			}
 			else if (spd_delta > 0)
 			{
@@ -670,18 +713,18 @@ double Aircraft::getNextHeading(double interval_ms)
 				}
 				else if (new_hdg < 0)
 				{
-					if (get_angle_unsigned(a_hdg, hdg((heading + -amount))) >= 0)
+					if (get_angle_unsigned(a_hdg, hdg((heading - amount))) >= 0)
 						next_hdg = a_hdg;
 					else
-						next_hdg = hdg(heading + -amount);
+						next_hdg = hdg(heading - amount);
 				}
 			}
 			else if (turnOrientation == 0)//left turn
 			{
-				if (get_angle_unsigned(a_hdg, hdg((heading + -amount))) >= 0)
+				if (get_angle_unsigned(a_hdg, hdg((heading - amount))) >= 0)
 					next_hdg = a_hdg;
 				else
-					next_hdg = hdg(heading + -amount);
+					next_hdg = hdg(heading - amount);
 			}
 			else // right turn
 			{
@@ -1224,4 +1267,25 @@ void Aircraft::pass_standard_pitch(double init_alt)
 		assignedValues.asdg_pitch = perfValues.max_pitch_up;
 	else if (init_alt < assignedValues.asdg_altitude)
 		assignedValues.asdg_pitch = perfValues.max_pitch_down;
+}
+
+const double MAX_INIT_SPEED = 10.0;
+
+double Aircraft::calcSpeedForInitTurn(double turnAngle) {
+	// This function determines the speed based on the turn angle.
+	// The sharper the turn, the slower the speed.
+	// You can adjust the logic as per your requirements.
+
+	if (turnAngle < 10) {
+		return MAX_INIT_SPEED; // Some constant max speed value
+	}
+	else if (turnAngle < 45) {
+		return 0.75 * MAX_INIT_SPEED;
+	}
+	else if (turnAngle < 90) {
+		return 0.5 * MAX_INIT_SPEED;
+	}
+	else {
+		return 0.25 * MAX_INIT_SPEED;
+	}
 }

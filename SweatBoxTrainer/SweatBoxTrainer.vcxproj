@@ -150,7 +150,6 @@
     <ClInclude Include="airport.h" />
     <ClInclude Include="basic_stream.h" />
     <ClInclude Include="calc_cycles.h" />
-    <ClInclude Include="clinc.h" />
     <ClInclude Include="clinc2.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="constants.h" />
@@ -168,6 +167,8 @@
     <ClInclude Include="SweatBoxTrainer.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tools.h" />
+    <ClInclude Include="tools\thread_pool.h" />
+    <ClInclude Include="tools\timed_task.h" />
     <ClInclude Include="usermanager.h" />
   </ItemGroup>
   <ItemGroup>
@@ -175,7 +176,6 @@
     <ClCompile Include="airport.cpp" />
     <ClCompile Include="basic_stream.cpp" />
     <ClCompile Include="calc_cycles.cpp" />
-    <ClCompile Include="clinc.cpp" />
     <ClCompile Include="clinc2.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="events.cpp" />
@@ -189,6 +189,8 @@
     <ClCompile Include="save.cpp" />
     <ClCompile Include="SweatBoxTrainer.cpp" />
     <ClCompile Include="tools.cpp" />
+    <ClCompile Include="tools\thread_pool.cpp" />
+    <ClCompile Include="tools\timed_task.cpp" />
     <ClCompile Include="usermanager.cpp" />
   </ItemGroup>
   <ItemGroup>

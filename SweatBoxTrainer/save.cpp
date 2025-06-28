@@ -50,6 +50,8 @@ void read_info()
 		ifs.read(buf.data + buf.index, size);
 		ifs.close();
 
+		buf.readable += size;
+
 		while (buf.available() != 0)
 		{
 			int opcode = buf.read_unsigned_byte();

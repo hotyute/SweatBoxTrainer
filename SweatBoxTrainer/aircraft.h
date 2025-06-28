@@ -5,11 +5,35 @@
 #include <unordered_map>
 #include <vector>
 #include <Windows.h>
+#include <cstdint> // Required for uint32_t
 
 #include "airport.h"
 #include "constants.h"
 #include "events.h"
 #include "clinc2.h"
+
+// Enum for tracking which properties have changed
+enum class AircraftDirtyFlags : uint32_t {
+	NONE           = 0,
+	ALTITUDE       = 1 << 0,
+	HEADING        = 1 << 1,
+	VSPEED         = 1 << 2,
+	LATITUDE       = 1 << 3,
+	LONGITUDE      = 1 << 4,
+	SPEED          = 1 << 5,
+	TRACK          = 1 << 6,
+	DATA           = 1 << 7,
+	PITCH          = 1 << 8,
+	ROLL           = 1 << 9,
+	MODE           = 1 << 10,
+	// Combine flags for convenience
+	POSITION       = LATITUDE | LONGITUDE,
+	ALL            = ~0u // Represents all flags
+};
+
+inline AircraftDirtyFlags operator|(AircraftDirtyFlags a, AircraftDirtyFlags b) {
+	return static_cast<AircraftDirtyFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+}
 
 struct DefaultValues {
 	double speed = 15;
@@ -90,6 +114,7 @@ private:
 	unsigned short visibility = 300;
 	long long last_time[6];
 	AV_CLIENT type = AV_CLIENT::PILOT;
+	uint32_t m_dirtyFlags = static_cast<uint32_t>(AircraftDirtyFlags::ALL); // Start dirty for initial display
 public:
 	int frequency[2];
 	Aircraft* HoldingFor = nullptr;
@@ -162,7 +187,7 @@ public:
 	AV_CLIENT getType() { return type; }
 	void setType(AV_CLIENT t) { type = t; }
 	double getVerticalSpeed() { return verticalSpeed; }
-	void setVerticalSpeed(double vs) { verticalSpeed = vs; }
+	void setVerticalSpeed(double vs);
 	Airport* getAirport();
 	bool onGround();
 	double GetTrackTurnData();
@@ -208,6 +233,12 @@ public:
 	void pass_standard_pitch(double altitude);
 	bool holding_for_takeoff() { return runway_ctx && HoldingDepart && runway_ctx == HoldingDepart; }
 	double calcSpeedForInitTurn(double turnAngle);
+	
+	// Dirty flag management
+	void MarkDirty(AircraftDirtyFlags flags) { m_dirtyFlags |= static_cast<uint32_t>(flags); }
+	bool IsDirty(AircraftDirtyFlags flags) const { return (m_dirtyFlags & static_cast<uint32_t>(flags)) != 0; }
+	void ClearDirtyFlags() { m_dirtyFlags = static_cast<uint32_t>(AircraftDirtyFlags::NONE); }
+	void MarkAllDirty() { m_dirtyFlags = static_cast<uint32_t>(AircraftDirtyFlags::ALL); }
 };
 
 

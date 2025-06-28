@@ -1,11 +1,11 @@
 #include "basic_stream.h"
 
 BasicStream::BasicStream(std::size_t preallocateSize)
-	: data(nullptr), index(0), data_size(0), mark(SIZE_MAX), bit_position(0) {
+	: data(nullptr), index(0), readable(0), capacity(0), mark(SIZE_MAX), bit_position(0) {
 
 	if (preallocateSize > 0) {
 		data = new char[preallocateSize];
-		data_size = preallocateSize;
+		capacity = preallocateSize;
 	}
 
 	for (int i = 0; i < 32; ++i) {
@@ -23,39 +23,50 @@ int BasicStream::add_data(SOCKET clientSocket)
 	u_long bytes_available = 0;
 	const int result = ioctlsocket(clientSocket, FIONREAD, &bytes_available);
 
-	if (result == SOCKET_ERROR) {
-		std::cerr << "ioctlsocket failed with error: " << WSAGetLastError() << std::endl;
+	if (result == SOCKET_ERROR || bytes_available == 0) {
+		if (result == SOCKET_ERROR) {
+			std::cerr << "ioctlsocket failed with error: " << WSAGetLastError() << std::endl;
+		}
 		return result;
 	}
 
-	const auto new_data = new char[data_size + bytes_available];
-	const int bytes_read = recv(clientSocket, new_data + data_size, bytes_available, 0);
+	// Check if we have enough capacity. If not, grow the buffer.
+	if (readable + bytes_available > capacity) {
+		// Grow by doubling, or by the required amount if that's larger.
+		std::size_t new_capacity = std::max(capacity * 2, readable + bytes_available);
+		char* new_data = new char[new_capacity];
+
+		if (data) {
+			memcpy(new_data, data, readable);
+			delete[] data;
+		}
+
+		data = new_data;
+		capacity = new_capacity;
+	}
+
+	// Receive new data at the end of the existing content.
+	const int bytes_read = recv(clientSocket, data + readable, bytes_available, 0);
 
 	if (bytes_read == SOCKET_ERROR) {
 		std::cerr << "recv failed with error: " << WSAGetLastError() << std::endl;
-		delete[] new_data;
 		return bytes_read;
 	}
 
-	if (data) {
-		memcpy(new_data, data, data_size);
-		delete[] data;
-	}
-
-	data = new_data;
-	data_size += bytes_read;
+	// Increase the content size by the number of bytes read.
+	readable += bytes_read;
 
 	return bytes_read;
 }
 
 std::size_t BasicStream::available() const
 {
-	return (index < data_size) ? data_size - index : 0;
+	return (index < readable) ? readable - index : 0;
 }
 
 char BasicStream::read()
 {
-	if (index < data_size) {
+	if (index < readable) {
 		return data[index++];
 	}
 	else {
@@ -65,7 +76,7 @@ char BasicStream::read()
 
 uint8_t BasicStream::read_unsigned_byte()
 {
-	if (index < data_size) {
+	if (index < readable) {
 		return static_cast<uint8_t>(data[index++]);
 	}
 	else {
@@ -75,7 +86,7 @@ uint8_t BasicStream::read_unsigned_byte()
 
 uint16_t BasicStream::read_unsigned_short()
 {
-	if (index + 1 < data_size) {
+	if (index + 1 < readable) {
 		const uint16_t value = (static_cast<uint8_t>(data[index]) << 8) |
 			static_cast<uint8_t>(data[index + 1]);
 		index += 2;
@@ -88,7 +99,7 @@ uint16_t BasicStream::read_unsigned_short()
 
 uint32_t BasicStream::read3Byte()
 {
-	if (index + 2 < data_size) {
+	if (index + 2 < readable) {
 		uint32_t value = (static_cast<uint8_t>(data[index]) << 16) |
 			(static_cast<uint8_t>(data[index + 1]) << 8) |
 			static_cast<uint8_t>(data[index + 2]);
@@ -105,7 +116,7 @@ uint32_t BasicStream::read3Byte()
 
 uint32_t BasicStream::read_unsigned_int()
 {
-	if (index + 3 < data_size) {
+	if (index + 3 < readable) {
 		const uint32_t value = (static_cast<uint8_t>(data[index]) << 24) |
 			(static_cast<uint8_t>(data[index + 1]) << 16) |
 			(static_cast<uint8_t>(data[index + 2]) << 8) |
@@ -120,7 +131,7 @@ uint32_t BasicStream::read_unsigned_int()
 
 long long BasicStream::readQWord()
 {
-	if (index + 7 < data_size) {
+	if (index + 7 < readable) {
 		const __int64 value = (static_cast<__int64>(static_cast<uint8_t>(data[index])) << 56) |
 			(static_cast<__int64>(static_cast<uint8_t>(data[index + 1])) << 48) |
 			(static_cast<__int64>(static_cast<uint8_t>(data[index + 2])) << 40) |
@@ -150,12 +161,12 @@ void BasicStream::readString(char* output)
 
 std::string BasicStream::read_std_string()
 {
-	if (index < data_size) {
+	if (index < readable) {
 		std::string result;
-		while (index < data_size && data[index] != '\0' && data[index] != 0) {
+		while (index < readable && data[index] != '\0' && data[index] != 0) {
 			result += data[index++];
 		}
-		if (index < data_size) {
+		if (index < readable) {
 			index++; // Skip the null terminator
 		}
 		return result;
@@ -167,12 +178,12 @@ std::string BasicStream::read_std_string()
 
 const char* BasicStream::read_string()
 {
-	if (index < data_size) {
+	if (index < readable) {
 		const char* result = data + index;
-		while (index < data_size && data[index] != '\0' && data[index] != 0) {
+		while (index < readable && data[index] != '\0' && data[index] != 0) {
 			index++;
 		}
-		if (index < data_size) {
+		if (index < readable) {
 			index++; // Skip the null terminator
 		}
 		return result;
@@ -191,7 +202,6 @@ void BasicStream::write_byte(uint8_t byte)
 void BasicStream::write_short(uint16_t value)
 {
 	ensure_capacity(2);
-
 	data[index++] = static_cast<char>(value >> 8);
 	data[index++] = static_cast<char>(value & 0xFF);
 }
@@ -227,28 +237,32 @@ void BasicStream::write_qword(long long value)
 }
 
 void BasicStream::write_string(const char* s) {
-	memcpy(data + index, s, strlen(s));
-	index += strlen(s);
+	size_t len = strlen(s);
+	ensure_capacity(len + 1);
+	memcpy(data + index, s, len);
+	index += len;
 	data[index++] = 0;
 }
 
 void BasicStream::ensure_capacity(std::size_t additional_bytes)
 {
-	if (index + additional_bytes <= data_size) {
+	if (index + additional_bytes <= capacity) {
 		return;
 	}
 
-	const std::size_t new_data_size = data_size + additional_bytes;
-	const auto new_data = new char[new_data_size];
+	// Grow by doubling, or by the required amount if that's larger.
+	const std::size_t new_capacity = std::max(capacity * 2, index + additional_bytes);
+	const auto new_data = new char[new_capacity];
 	if (data) {
-		memcpy(new_data, data, data_size);
+		memcpy(new_data, data, readable);
 		delete[] data;
 	}
 	data = new_data;
-	data_size = new_data_size;
+	capacity = new_capacity;
 }
 
 void BasicStream::create_frame(int id) {
+	ensure_capacity(1);
 	data[index++] = static_cast<char>(id);
 }
 
@@ -312,6 +326,8 @@ void BasicStream::init_bit_access()
 
 void BasicStream::write_bits(int num_bits, int value)
 {
+	// Make sure we have enough capacity for the bitwise operations
+	ensure_capacity((bit_position + num_bits + 7) / 8 - index);
 	int byte_pos = bit_position >> 3;
 	int bit_offset = 8 - (bit_position & 7);
 	bit_position += num_bits;
@@ -338,7 +354,7 @@ void BasicStream::finish_bit_access()
 
 void BasicStream::skip_bytes(std::size_t bytes_to_skip)
 {
-	if (index + bytes_to_skip <= data_size) {
+	if (index + bytes_to_skip <= readable) {
 		index += bytes_to_skip;
 	}
 	else {
@@ -365,9 +381,9 @@ void BasicStream::reset()
 void BasicStream::delete_marked_block()
 {
 	if (mark != SIZE_MAX) {
-		const std::size_t bytes_to_move = data_size - index;
-		data_size -= (index - mark);
+		const std::size_t bytes_to_move = readable - index;
 		memmove(data + mark, data + index, bytes_to_move);
+		readable -= (index - mark);
 		index = mark;
 		mark = SIZE_MAX;
 	}
@@ -379,15 +395,15 @@ void BasicStream::delete_marked_block()
 void BasicStream::delete_bytes_from_mark(const std::size_t bytes_to_delete)
 {
 	if (mark != SIZE_MAX) {
-		const std::size_t bytes_to_move = data_size - index;
-		data_size -= (index - mark);
+		const std::size_t bytes_to_move = readable - index;
 
 		if (bytes_to_delete > bytes_to_move) {
 			throw std::runtime_error("Cannot delete more bytes than available from mark position");
 		}
 
 		memmove(data + mark, data + index + bytes_to_delete, bytes_to_move - bytes_to_delete);
-		data_size -= bytes_to_delete;
+		readable -= (index - mark);
+		readable -= bytes_to_delete;
 		index = mark;
 		mark = SIZE_MAX;
 	}
@@ -398,20 +414,20 @@ void BasicStream::delete_bytes_from_mark(const std::size_t bytes_to_delete)
 
 void BasicStream::delete_bytes_from_index(std::size_t bytes_to_delete)
 {
-	const std::size_t bytes_to_copy = data_size - index;
+	const std::size_t bytes_to_copy = readable - index;
 	if (bytes_to_delete > bytes_to_copy) {
 		throw std::runtime_error("Cannot delete more bytes than available from current position");
 	}
 	else {
 		memmove(data + index, data + index + bytes_to_delete, bytes_to_copy - bytes_to_delete);
-		data_size -= bytes_to_delete;
+		readable -= bytes_to_delete;
 	}
 }
 
 void BasicStream::clear() {
-	if (data != nullptr)
-		std::memset(data, 0, data_size);
-	data_size = 0;
+	// Don't deallocate the buffer, just reset the pointers.
+	// This makes reusing the stream for writing much faster.
+	readable = 0;
 	index = 0;
 	mark = SIZE_MAX;
 	bit_position = 0;

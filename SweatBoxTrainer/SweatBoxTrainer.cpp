@@ -26,6 +26,7 @@
 #include "resource.h"
 #include "save.h"
 #include "guidialogue.h"
+#include "tools/thread_pool.h"
 
 #ifdef _DEBUG
 #include "guicon.h"
@@ -78,6 +79,14 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
+// Global thread pool and tasks (could be wrapped in an "Application" class later)
+std::unique_ptr<ThreadPool> g_threadPool;
+std::unique_ptr<SimulationTask> g_simulationTask;
+std::unique_ptr<GuiUpdateTask> g_guiUpdateTask;
+std::unique_ptr<SocketPollingTask> g_socketPollingTask; // From clinc2.h
+// Add a global mutex for your shared data
+std::mutex g_acfMapMutex;
+
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR    lpCmdLine,
@@ -92,9 +101,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	RedirectIOToConsole();
 #endif
 
-	printf("tan(angle): %f\n", get_radius_of_turn(170.0, 0.034));
-
 	// TODO: Place code here.
+
+	// --- Initialize Thread Pool and Scheduler ---
+	g_threadPool = std::make_unique<ThreadPool>();
+	TimedTask::startSchedulerThread(); // Start the scheduler once.
+
+	// Initialize tasks
+	g_simulationTask = std::make_unique<SimulationTask>(*g_threadPool);
+	g_guiUpdateTask = std::make_unique<GuiUpdateTask>(*g_threadPool);
+	g_socketPollingTask = std::make_unique<SocketPollingTask>(*g_threadPool);
 
 	// Initialize global strings
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -122,6 +138,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			DispatchMessage(&msg);
 		}
 	}
+
+	// --- Application Shutdown ---
+	TimedTask::stopSchedulerThread(); // Stop scheduler before thread pool
+	g_threadPool->~ThreadPool(); // Explicitly destroy the thread pool.
+	// Smart pointers will clean up the task objects.
 
 	return (int)msg.wParam;
 }
@@ -202,19 +223,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		create_controls(hWnd);
 
-		Event* display_updates = new GraphicsUIUpdates();
-		display_updates->eAction.setTicks(0);
-		event_manager1->addEvent(display_updates);
+		//Event* display_updates = new GraphicsUIUpdates();
+		//display_updates->eAction.setTicks(0);
+		//event_manager1->addEvent(display_updates);
 
-		CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
-		CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
-		CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
+		//CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
+		//CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
+		//CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
+
+		// --- START NEW SYSTEM ---
+		g_simulationTask->start();
+		g_guiUpdateTask->start();
+		g_socketPollingTask->start();
 
 		read_info();
 
 		userStorage1.resize(MAX_AIRCRAFT_SIZE);
 
-		if (!LAST_APRT_DIR.empty()) {
+		/*if (!LAST_APRT_DIR.empty()) {
 
 			if (std::filesystem::exists(LAST_APRT_DIR) && std::filesystem::is_directory(LAST_APRT_DIR))
 			{
@@ -224,7 +250,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						LoadAPT(entry.path().string());
 				}
 			}
-		}
+		}*/
 
 	}
 	break;
@@ -243,6 +269,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	break;
 	case WM_DESTROY:
 	{
+		if (g_simulationTask) g_simulationTask->stop();
+		if (g_guiUpdateTask) g_guiUpdateTask->stop();
+		if (g_socketPollingTask) g_socketPollingTask->stop();
 		done = true;
 		PostQuitMessage(0);
 	}
@@ -555,101 +584,6 @@ void connect()
 	}
 }
 
-DWORD WINAPI EventThread1(LPVOID lpParameter) {
-	boost::posix_time::ptime start;
-	boost::posix_time::ptime end;
-	while (!done) {
-		start = boost::posix_time::microsec_clock::local_time();
-		event_manager1->update();
-		end = boost::posix_time::microsec_clock::local_time();
-		boost::posix_time::time_duration time2 = end - start;
-		long long time1 = 30L;
-		long long time = time1 - time2.total_milliseconds();
-		if (time < 1) {
-			time = 1;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(time));
-	}
-	return 0;
-}
-
-DWORD WINAPI SocketThread1(LPVOID lpParameter) {
-	boost::posix_time::ptime start;
-	boost::posix_time::ptime end;
-	while (!done)
-	{
-		start = boost::posix_time::microsec_clock::local_time();
-
-		for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)//TODO possible make this thread awake when there is any data in any aircraft socket?
-		{
-			Aircraft& aircraft = *(it->second);
-			if (!aircraft.getConnection().closed)
-				aircraft.getConnection().run();
-		}
-
-		end = boost::posix_time::microsec_clock::local_time();
-
-		boost::posix_time::time_duration time2 = end - start;
-		long long time1 = 5L;
-		long long time = time1 - time2.total_milliseconds();
-		if (time < 1) {
-			time = 1;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(time));
-	}
-	return 0;
-}
-
-/*---Initializes the Thread responsible for computations---
-  ---		This can span from Aircraft Movements		---*/
-
-DWORD WINAPI CalcThread1(LPVOID)
-{
-	boost::posix_time::ptime start;
-	boost::posix_time::ptime end;
-	boost::posix_time::time_duration time;
-
-	boost::posix_time::ptime curTime1 = boost::posix_time::microsec_clock::local_time();
-
-	while (true)
-	{
-		start = boost::posix_time::microsec_clock::local_time();
-
-		if (boost::posix_time::time_duration(boost::posix_time::microsec_clock::local_time()
-			- curTime1).total_milliseconds() >= 10000)
-		{
-			if (AcfMap.size() > 0)
-			{
-				for (auto iter = AcfMap.begin(); iter != AcfMap.end(); ++iter)
-				{
-					Aircraft* acf1 = iter->second;
-					if (acf1) {
-						Aircraft& aircraft = *acf1;
-						sendPingPacket(aircraft);
-					}
-				}
-			}
-			curTime1 = boost::posix_time::microsec_clock::local_time();
-		}
-
-		//code here
-		update();
-		CalculateMovements();
-
-		end = boost::posix_time::microsec_clock::local_time();
-
-		time = (end - start);
-		long long time1 = CALC_TIME;
-		long long time2 = time1 - time.total_milliseconds();
-		if (time2 < 1) {
-			time2 = 1;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(time2));
-
-	}
-	return 0;
-}
-
 /*--- Handles Command Callback ---*/
 
 LRESULT CALLBACK CommandCallBckProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -911,6 +845,8 @@ void HandleSelectedLB(DWORD iSelected)
 	if (acf && displayed != acf)
 	{
 		displayed = acf;
+		// Mark all fields as dirty to force a full UI refresh for the new aircraft
+		displayed->MarkAllDirty();
 		DisplayAircraft();
 	}
 }
@@ -918,39 +854,59 @@ void HandleSelectedLB(DWORD iSelected)
 void DisplayAircraft() {
 	if (displayed)
 	{
-		std::wstring alt = std::to_wstring((int)displayed->getAltitude());
-		SetWindowText(altitude, alt.c_str());
+		// Only update controls if the corresponding data is dirty
+		if (displayed->IsDirty(AircraftDirtyFlags::ALTITUDE)) {
+			std::wstring alt = std::to_wstring((int)displayed->getAltitude());
+			SetWindowText(altitude, alt.c_str());
+		}
 
-		std::wstring hdg = std::to_wstring((int)displayed->getHeading());
-		SetWindowText(heading, hdg.c_str());
+		if (displayed->IsDirty(AircraftDirtyFlags::HEADING)) {
+			std::wstring hdg = std::to_wstring((int)displayed->getHeading());
+			SetWindowText(heading, hdg.c_str());
+		}
 
-		std::wstring vs = std::to_wstring((int)displayed->getVerticalSpeed());
-		SetWindowText(vs_hdl, vs.c_str());
+		if (displayed->IsDirty(AircraftDirtyFlags::VSPEED)) {
+			std::wstring vs = std::to_wstring((int)displayed->getVerticalSpeed());
+			SetWindowText(vs_hdl, vs.c_str());
+		}
 
-		std::wstring lat = std::to_wstring(displayed->getLatitude());
-		SetWindowText(latitude_hdl, lat.c_str());
+		if (displayed->IsDirty(AircraftDirtyFlags::LATITUDE)) {
+			std::wstring lat = std::to_wstring(displayed->getLatitude());
+			SetWindowText(latitude_hdl, lat.c_str());
+		}
 
-		std::wstring lon = std::to_wstring(displayed->getLongitude());
-		SetWindowText(longitude_hdl, lon.c_str());
+		if (displayed->IsDirty(AircraftDirtyFlags::LONGITUDE)) {
+			std::wstring lon = std::to_wstring(displayed->getLongitude());
+			SetWindowText(longitude_hdl, lon.c_str());
+		}
 
-		std::wstring spd = std::to_wstring((int)displayed->getSpeed());
-		SetWindowText(speed_hdl, spd.c_str());
+		if (displayed->IsDirty(AircraftDirtyFlags::SPEED)) {
+			std::wstring spd = std::to_wstring((int)displayed->getSpeed());
+			SetWindowText(speed_hdl, spd.c_str());
+		}
 
+		if (displayed->IsDirty(AircraftDirtyFlags::TRACK)) {
+			if (displayed->onGround() && displayed->ground_cur && displayed->ground_cur->parent) {
+				SetWindowText(track_hdl, std::wstring(displayed->ground_cur->parent->name.begin(), displayed->ground_cur->parent->name.end()).c_str());
+			}
+			else {
+				SetWindowText(track_hdl, L"None");
+			}
+		}
 
-		//TODO fix error here (perhaps racing??)
-		displayed->onGround() ?
-			displayed->ground_cur ? SetWindowText(track_hdl, std::wstring(displayed->ground_cur->parent->name.begin(),
-				displayed->ground_cur->parent->name.end()).c_str())
-			: SetWindowText(track_hdl, L"None") :
-			SetWindowText(track_hdl, L"None");
+		if (displayed->IsDirty(AircraftDirtyFlags::DATA)) {
+			char data1[20];
+			int length = sprintf_s(data1, "[%d]", (int)displayed->getAssignedValues().asdg_gnd_turn_rate);
+			std::wstring rates(&data1[0], &data1[length]);
+			SetWindowText(data_hdl, rates.c_str());
+		}
 
-		char data1[20];
-		int length = sprintf_s(data1, "[%d]", (int)displayed->getAssignedValues().asdg_gnd_turn_rate);
+		if (displayed->IsDirty(AircraftDirtyFlags::MODE)) {
+			displayed->getMode() == 0 ? SetWindowText(mode_button, L"SQUAWK: S") : SetWindowText(mode_button, L"SQUAWK: C");
+		}
 
-		std::wstring rates(&data1[0], &data1[length]);
-		SetWindowText(data_hdl, rates.c_str());
-
-		displayed->getMode() == 0 ? SetWindowText(mode_button, L"SQUAWK: S") : SetWindowText(mode_button, L"SQUAWK: C");
+		// After updating the UI, clear all dirty flags for this aircraft
+		displayed->ClearDirtyFlags();
 	}
 }
 
@@ -1197,5 +1153,10 @@ int processCommands(Aircraft& aircraft, std::string command)
 		return 1;
 	}
 	return 0;
+}
+
+void GuiUpdateTask::execute() {
+	// This replaces the old GraphicsUIUpdates event
+	DisplayAircraft();
 }
 

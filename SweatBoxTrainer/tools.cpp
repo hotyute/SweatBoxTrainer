@@ -610,27 +610,6 @@ double CalcTaxiSpeed(double turnAngle, double maxSpeed)
 	return turnSpeed;
 }
 
-double MAX_INIT_SPEED = 10.0;
-
-double Aircraft::calcSpeedForInitTurn(double turnAngle) {
-	// This function determines the speed based on the turn angle.
-	// The sharper the turn, the slower the speed.
-	// You can adjust the logic as per your requirements.
-
-	if (turnAngle < 10) {
-		return MAX_INIT_SPEED; // Some constant max speed value
-	}
-	else if (turnAngle < 45) {
-		return 0.75 * MAX_INIT_SPEED;
-	}
-	else if (turnAngle < 90) {
-		return 0.5 * MAX_INIT_SPEED;
-	}
-	else {
-		return 0.25 * MAX_INIT_SPEED;
-	}
-}
-
 
 std::string FormatAltitude(std::string altitude)
 {

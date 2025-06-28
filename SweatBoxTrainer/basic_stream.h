@@ -1,8 +1,11 @@
 #pragma once
 
+#define NOMINMAX
+
 #include <iostream>
 #include <cstdint>
 #include <winsock2.h>
+#include <algorithm> // Required for std::max
 
 class BasicStream {
 public:
@@ -12,7 +15,8 @@ public:
 
 	char* data;
 	std::size_t index;
-	std::size_t data_size;
+	std::size_t readable; // Represents the number of valid bytes in the buffer
+	std::size_t capacity;  // Represents the allocated size of the buffer
 
 	int add_data(SOCKET clientSocket);
 

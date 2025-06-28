@@ -44,7 +44,7 @@ tcp_manager::tcp_manager(Aircraft* aircraft) {
 	sConnect = INVALID_SOCKET;
 }
 
-DWORD tcp_manager::run() {
+DWORD tcp_manager::poll_socket() {
 
 	FD_ZERO(&rfds);
 	FD_SET(sConnect, &rfds);
@@ -402,4 +402,21 @@ bool send_initial_packets(Aircraft& aircraft)
 {
 	sendFlightPlan(aircraft);
 	return true;
+}
+
+void SocketPollingTask::execute() {
+	// This replaces the SocketThread1 loop body.
+	// We need to iterate over all connected aircraft and poll their sockets.
+
+	// PROTECT THIS LOOP WITH A MUTEX!
+	// std::lock_guard<std::mutex> lock(g_acfMapMutex); // You'll need to create a global mutex for AcfMap
+	for (auto const& [key, val] : AcfMap) {
+		Aircraft& aircraft = *val;
+		// The tcp_manager::poll_socket() logic needs to be refactored slightly.
+		// It should perform a single, non-blocking poll, not an infinite loop.
+		// Your current implementation already uses select with a timeout, which is good.
+		if (aircraft.connected && !aircraft.getConnection().closed) {
+			aircraft.getConnection().poll_socket(); // Create a new method for one-shot polling
+		}
+	}
 }
