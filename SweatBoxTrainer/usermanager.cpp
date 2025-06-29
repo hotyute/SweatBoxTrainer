@@ -1,7 +1,6 @@
 #include "usermanager.h"
-
 #include <any>
-
+#include <memory>
 #include "SweatBoxTrainer.h"
 #include "tools.h"
 #include "packets_out.h"
@@ -195,9 +194,9 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream& stream)
 	}
 }
 
-Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
+std::unique_ptr<Aircraft> createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode) {
-	Aircraft* cur = new Aircraft();
+	auto cur = std::make_unique<Aircraft>();
 	cur->frequency[0] = command_freq;
 	cur->frequency[1] = msg_freq;
 	AssignedValues& av = cur->getAssignedValues();
@@ -222,14 +221,14 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 
 	cur->getConnection().init_set();
 
-	AcfMap[cur->getIdentity()->callsign] = cur;
-
-	addUserToLB(cur);
+	// The caller is now responsible for adding the returned unique_ptr to AcfMap
 	return cur;
 }
 
 void disconnect(Aircraft* aircraft, bool queue)
 {
+	// NOTE: This does NOT remove the aircraft from the AcfMap, which will be a memory leak
+	// until a proper removal mechanism is added.
 	closesocket(aircraft->getConnection().sConnect);
 	sendDisconnect(*aircraft);
 	aircraft->getConnection().disconnect_socket();

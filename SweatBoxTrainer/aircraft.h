@@ -1,11 +1,11 @@
 #pragma once
 
 #include <boost/date_time/posix_time/posix_time.hpp>
-
 #include <unordered_map>
 #include <vector>
 #include <Windows.h>
 #include <cstdint> // Required for uint32_t
+#include <memory>  // For std::unique_ptr
 
 #include "airport.h"
 #include "constants.h"
@@ -14,21 +14,21 @@
 
 // Enum for tracking which properties have changed
 enum class AircraftDirtyFlags : uint32_t {
-	NONE           = 0,
-	ALTITUDE       = 1 << 0,
-	HEADING        = 1 << 1,
-	VSPEED         = 1 << 2,
-	LATITUDE       = 1 << 3,
-	LONGITUDE      = 1 << 4,
-	SPEED          = 1 << 5,
-	TRACK          = 1 << 6,
-	DATA           = 1 << 7,
-	PITCH          = 1 << 8,
-	ROLL           = 1 << 9,
-	MODE           = 1 << 10,
+	NONE = 0,
+	ALTITUDE = 1 << 0,
+	HEADING = 1 << 1,
+	VSPEED = 1 << 2,
+	LATITUDE = 1 << 3,
+	LONGITUDE = 1 << 4,
+	SPEED = 1 << 5,
+	TRACK = 1 << 6,
+	DATA = 1 << 7,
+	PITCH = 1 << 8,
+	ROLL = 1 << 9,
+	MODE = 1 << 10,
 	// Combine flags for convenience
-	POSITION       = LATITUDE | LONGITUDE,
-	ALL            = ~0u // Represents all flags
+	POSITION = LATITUDE | LONGITUDE,
+	ALL = ~0u // Represents all flags
 };
 
 inline AircraftDirtyFlags operator|(AircraftDirtyFlags a, AircraftDirtyFlags b) {
@@ -101,7 +101,7 @@ private:
 	double heading, pitch = 0, roll = 0;
 	double initialTurnAngle = -1.0;
 	double altitude = 0, verticalSpeed = 1000;
-	std::vector<History*> historyCount;
+	std::vector<History*> historyCount; // NOTE: This still uses raw pointers, assuming they are non-owning or need separate fixing.
 	FlightPlan flight_plan;
 	tcp_manager tcp_ = tcp_manager(this);
 	Identity identity;
@@ -122,7 +122,7 @@ public:
 	Runway* runway_ctx = nullptr;
 	int turnOri = -1;
 	std::string apt_icao = "";
-	Event* position_updates = new PositionUpdates(this);
+	std::unique_ptr<Event> position_updates;
 	ACF_STATE state = ACF_STATE::IDLE;
 	bool connected = false, point_skip = false, locked_rate = false, queue_takeoff = false, lineup = false;
 	std::vector<std::string> ground_route;
@@ -233,7 +233,7 @@ public:
 	void pass_standard_pitch(double altitude);
 	bool holding_for_takeoff() { return runway_ctx && HoldingDepart && runway_ctx == HoldingDepart; }
 	double calcSpeedForInitTurn(double turnAngle);
-	
+
 	// Dirty flag management
 	void MarkDirty(AircraftDirtyFlags flags) { m_dirtyFlags |= static_cast<uint32_t>(flags); }
 	bool IsDirty(AircraftDirtyFlags flags) const { return (m_dirtyFlags & static_cast<uint32_t>(flags)) != 0; }
@@ -242,7 +242,7 @@ public:
 };
 
 
-extern std::unordered_map<std::string, Aircraft*> AcfMap;
+extern std::unordered_map<std::string, std::unique_ptr<Aircraft>> AcfMap;
 
 extern Aircraft* getAircraftByIndex(int);
 
