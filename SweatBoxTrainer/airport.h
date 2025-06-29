@@ -1,4 +1,5 @@
-#pragma once
+#ifndef AIRPORT_H
+#define AIRPORT_H
 
 #include <iostream>
 #include <vector>
@@ -94,3 +95,5 @@ public:
 };
 
 extern std::unordered_map<std::string, Airport*> airports;
+
+#endif

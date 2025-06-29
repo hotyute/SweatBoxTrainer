@@ -4,7 +4,6 @@
 #include <winsock.h>
 #include <iostream>
 #include <tchar.h>
-#include <memory>
 
 #include "events.h"
 #include "usermanager.h"
@@ -37,9 +36,8 @@ constexpr int packet_sizes[256] =
 -3,
 };
 
-tcp_manager::tcp_manager(Aircraft* aircraft) :
-	in_stream(std::make_unique<BasicStream>())
-{
+tcp_manager::tcp_manager(Aircraft* aircraft) {
+	this->in_stream = new BasicStream();
 	this->aircraft = aircraft;
 	timeout1.tv_sec = TimeoutSec1;
 	timeout1.tv_usec = 0;
@@ -113,7 +111,7 @@ DWORD tcp_manager::poll_socket() {
 							else
 							{
 								aircraft->position_updates->eAction.setTicks(0);
-								event_manager1->addEvent(aircraft->position_updates.get());
+								event_manager1->addEvent(aircraft->position_updates);
 							}
 							hand_shake = false;
 							current_op = -1;
@@ -238,11 +236,11 @@ void tcp_manager::sendMessage(BasicStream* stream) {
 	if (this->aircraft && !this->aircraft->connected)
 		return;
 
-	if (stream->index == 0) {
+	if (stream->get_index() == 0) {
 		MessageBox(hWnd, L"Can't flush empty stream o.O", L"Notice", MB_OK | MB_ICONINFORMATION);
 		return;
 	}
-	send_data(tcp_manager::sConnect, std::vector<char>(stream->get_data(), stream->get_data() + stream->index));
+	send_data(tcp_manager::sConnect, std::vector<char>(stream->data, stream->data + stream->index));
 	stream->clear();
 }
 

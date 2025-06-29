@@ -4,7 +4,6 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <memory>
 
 #include "tools.h"
 #include "usermanager.h"
@@ -14,7 +13,7 @@ std::string LAST_AGC_PATH, LAST_APRT_DIR, LAST_SCT_PATH;
 
 std::vector<std::string> HEADERS = { "[VOR]", "[NDB]", "[AIRPORT]", "[FIXES]" };
 int headerId = -1;
-Aircraft* curAircraft = nullptr; // This is now a NON-OWNING pointer.
+Aircraft* curAircraft = nullptr;
 Airport* curAirport = nullptr;
 TaxiPath* curPoint = nullptr;
 ApproachPath* curApproach = nullptr;
@@ -109,23 +108,12 @@ int LoadAGC(std::string path) {
 						std::string weight = args[8];
 						int mode = squawk_mode[0] == 'C' ? 1 : squawk_mode[0] == 'I' ? 2 : 0;
 						bool heavy = weight[0] == 'H' ? 1 : 0;
-
-						// Create the aircraft and get ownership via unique_ptr
-						auto new_aircraft_ptr = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
+						curAircraft = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
 							(int)atodd(args[5]), (int)atodd(args[6]), mode, args[9]);
-
-						// Use .get() to get a raw pointer for temporary use
-						curAircraft = new_aircraft_ptr.get();
-
 						curAircraft->getDefaultValues().speed = atodd(args[4]);
 						curAircraft->setHeavy(heavy);
+						//curAircraft->getDefaultValues().turn_rate = atodd(args[4]);
 						curAircraft->apt_icao = args[10];
-
-						// Move ownership into the global map
-						AcfMap[curAircraft->getIdentity()->callsign] = std::move(new_aircraft_ptr);
-
-						addUserToLB(curAircraft); // Pass the non-owning pointer to the GUI
-
 						processed_lines++;
 					}
 					else if (processed_lines == 1)
@@ -224,7 +212,7 @@ int LoadAPT(std::string path)
 								capitalize(name);
 								if (header[0] == "PARKING")
 								{
-									curPoint = new Parking(); // These should also be unique_ptr eventually
+									curPoint = new Parking();
 									curPoint->name = name;
 								}
 								else if (header[0] == "RUNWAY")
@@ -252,22 +240,23 @@ int LoadAPT(std::string path)
 					}
 					else if (curAirport && curPoint)
 					{
-						// NOTE: This section has its own memory leaks with `new Point2`
-						// that will need to be fixed in a similar fashion.
-						// For now, focusing on the main Aircraft leak.
 						if (curPoint->type == PATHTYPE::PARKING)
 						{
 							std::vector<std::string> args = split(line, " ");
+
 							Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
 							p->index = pushBack(curPoint->points, p);
+
 							curAirport->parking.push_back((Parking*)curPoint);
 						}
 						else if (curPoint->type == PATHTYPE::TAXIWAY)
 						{
 							std::vector<std::string> args = split(line, " ");
+
 							Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
 							p->index = pushBack(curPoint->points, p);
 							p->parent = curPoint;
+
 							curAirport->taxiway.push_back((Taxiway*)curPoint);
 						}
 						else if (curPoint->type == PATHTYPE::RUNWAY)
@@ -288,11 +277,14 @@ int LoadAPT(std::string path)
 							else
 							{
 								std::vector<std::string> args = split(line, " ");
+
 								Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
 								p->index = pushBack(curPoint->points, p);
 								p->parent = curPoint;
 							}
+							//curAirport->runways.push_back((Runway*)curPoint);
 						}
+
 						curAirport->all.emplace(curPoint->name, curPoint);
 					}
 					else if (curAirport && curApproach)
@@ -336,7 +328,7 @@ int LoadAPT(std::string path)
 							delete it->second;
 							it = airports.erase(it);
 						}
-						curAirport = new Airport(icao); // Another memory leak here
+						curAirport = new Airport(icao);
 						airports.emplace(icao, curAirport);
 						curAirport->icao = icao;
 					}
@@ -413,7 +405,6 @@ void handleFIXESLine(std::string line) {
 
 void processRunways(Airport* airport)
 {
-	if (!airport) return;
 	auto it = airport->all.begin();
 
 	while (it != airport->all.end())
@@ -425,7 +416,7 @@ void processRunways(Airport* airport)
 
 			if (names.size() > 1)
 			{
-				TaxiPath* other = new TaxiPath(*path); // Another leak here
+				TaxiPath* other = new TaxiPath(*path);
 
 				path->name = names[0];
 				other->name = names[1];
@@ -436,7 +427,7 @@ void processRunways(Airport* airport)
 
 				airport->runways.push_back((Runway*)other);
 				airport->runways.push_back((Runway*)path);
-				it = airport->all.insert(it, { names[0], path });
+				airport->all.insert(it, { names[0], path });
 				airport->all.insert(it, { names[1], other });
 
 				continue;

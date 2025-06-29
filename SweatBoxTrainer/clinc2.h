@@ -6,7 +6,6 @@
 #include <vector>
 #include <windows.h>
 #include <WinSock2.h>
-#include <memory> // For std::unique_ptr
 
 #include "basic_stream.h"
 #include "tools/timed_task.h"
@@ -15,7 +14,7 @@ class Aircraft;
 class tcp_manager {
 public:
 	std::mutex writeMutex;
-	Aircraft* aircraft; // Non-owning pointer back to parent
+	Aircraft* aircraft;
 	SOCKET sConnect;
 	tcp_manager(Aircraft* aircraft);
 	DWORD poll_socket();
@@ -25,7 +24,7 @@ public:
 	int disconnect_socket();
 	int connectNew(std::string, unsigned short);
 
-	std::unique_ptr<BasicStream> in_stream;
+	BasicStream* in_stream;
 	bool hand_shake{};
 	int current_op = -1;
 
@@ -37,6 +36,11 @@ public:
 	int retval{};
 	bool closed = true;
 };
+
+// clinc2.h
+#pragma once
+#include "tools/timed_task.h"
+// ...
 
 class SocketPollingTask : public TimedTask {
 public:

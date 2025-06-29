@@ -1,4 +1,5 @@
-#pragma once
+#ifndef EVENTS_H
+#define EVENTS_H
 
 #include "later.h"
 
@@ -14,3 +15,5 @@ public:
 	void execute();
 	void stop();
 };
+
+#endif

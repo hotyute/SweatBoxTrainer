@@ -30,7 +30,7 @@ void save_info()
 	const auto full_path = boost::dll::program_location().parent_path();
 
 	std::fstream myFile(full_path.string() + "\\data.bin", std::ios::out | std::ios::binary);
-	myFile.write(buf.data.get(), buf.index);
+	myFile.write(buf.data, buf.index);
 	myFile.close();
 }
 
@@ -47,7 +47,7 @@ void read_info()
 		BasicStream buf = BasicStream(size);
 
 		ifs.seekg(0, std::ios::beg);
-		ifs.read(buf.data.get() + buf.index, size);
+		ifs.read(buf.data + buf.index, size);
 		ifs.close();
 
 		buf.readable += size;

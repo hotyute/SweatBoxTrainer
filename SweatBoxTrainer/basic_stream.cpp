@@ -4,7 +4,7 @@ BasicStream::BasicStream(std::size_t preallocateSize)
 	: data(nullptr), index(0), readable(0), capacity(0), mark(SIZE_MAX), bit_position(0) {
 
 	if (preallocateSize > 0) {
-		data = std::make_unique<char[]>(preallocateSize);
+		data = new char[preallocateSize];
 		capacity = preallocateSize;
 	}
 
@@ -15,7 +15,7 @@ BasicStream::BasicStream(std::size_t preallocateSize)
 
 BasicStream::~BasicStream()
 {
-	// The unique_ptr automatically deletes the buffer. No code needed.
+	delete[] data;
 }
 
 int BasicStream::add_data(SOCKET clientSocket)
@@ -34,18 +34,19 @@ int BasicStream::add_data(SOCKET clientSocket)
 	if (readable + bytes_available > capacity) {
 		// Grow by doubling, or by the required amount if that's larger.
 		std::size_t new_capacity = std::max(capacity * 2, readable + bytes_available);
-		auto new_data = std::make_unique<char[]>(new_capacity);
+		char* new_data = new char[new_capacity];
 
 		if (data) {
-			memcpy(new_data.get(), data.get(), readable);
+			memcpy(new_data, data, readable);
+			delete[] data;
 		}
 
-		data = std::move(new_data);
+		data = new_data;
 		capacity = new_capacity;
 	}
 
 	// Receive new data at the end of the existing content.
-	const int bytes_read = recv(clientSocket, data.get() + readable, bytes_available, 0);
+	const int bytes_read = recv(clientSocket, data + readable, bytes_available, 0);
 
 	if (bytes_read == SOCKET_ERROR) {
 		std::cerr << "recv failed with error: " << WSAGetLastError() << std::endl;
@@ -178,7 +179,7 @@ std::string BasicStream::read_std_string()
 const char* BasicStream::read_string()
 {
 	if (index < readable) {
-		const char* result = data.get() + index;
+		const char* result = data + index;
 		while (index < readable && data[index] != '\0' && data[index] != 0) {
 			index++;
 		}
@@ -238,7 +239,7 @@ void BasicStream::write_qword(long long value)
 void BasicStream::write_string(const char* s) {
 	size_t len = strlen(s);
 	ensure_capacity(len + 1);
-	memcpy(data.get() + index, s, len);
+	memcpy(data + index, s, len);
 	index += len;
 	data[index++] = 0;
 }
@@ -251,11 +252,12 @@ void BasicStream::ensure_capacity(std::size_t additional_bytes)
 
 	// Grow by doubling, or by the required amount if that's larger.
 	const std::size_t new_capacity = std::max(capacity * 2, index + additional_bytes);
-	auto new_data = std::make_unique<char[]>(new_capacity);
+	const auto new_data = new char[new_capacity];
 	if (data) {
-		memcpy(new_data.get(), data.get(), readable);
+		memcpy(new_data, data, readable);
+		delete[] data;
 	}
-	data = std::move(new_data);
+	data = new_data;
 	capacity = new_capacity;
 }
 
@@ -380,7 +382,7 @@ void BasicStream::delete_marked_block()
 {
 	if (mark != SIZE_MAX) {
 		const std::size_t bytes_to_move = readable - index;
-		memmove(data.get() + mark, data.get() + index, bytes_to_move);
+		memmove(data + mark, data + index, bytes_to_move);
 		readable -= (index - mark);
 		index = mark;
 		mark = SIZE_MAX;
@@ -399,7 +401,7 @@ void BasicStream::delete_bytes_from_mark(const std::size_t bytes_to_delete)
 			throw std::runtime_error("Cannot delete more bytes than available from mark position");
 		}
 
-		memmove(data.get() + mark, data.get() + index + bytes_to_delete, bytes_to_move - bytes_to_delete);
+		memmove(data + mark, data + index + bytes_to_delete, bytes_to_move - bytes_to_delete);
 		readable -= (index - mark);
 		readable -= bytes_to_delete;
 		index = mark;
@@ -417,7 +419,7 @@ void BasicStream::delete_bytes_from_index(std::size_t bytes_to_delete)
 		throw std::runtime_error("Cannot delete more bytes than available from current position");
 	}
 	else {
-		memmove(data.get() + index, data.get() + index + bytes_to_delete, bytes_to_copy - bytes_to_delete);
+		memmove(data + index, data + index + bytes_to_delete, bytes_to_copy - bytes_to_delete);
 		readable -= bytes_to_delete;
 	}
 }

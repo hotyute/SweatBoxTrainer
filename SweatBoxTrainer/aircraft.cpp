@@ -6,11 +6,9 @@
 #include "geoutils.h"
 #include "guidialogue.h"
 
-std::unordered_map<std::string, std::unique_ptr<Aircraft>> AcfMap;
+std::unordered_map<std::string, Aircraft*>AcfMap;
 
-Aircraft::Aircraft() :
-	position_updates(std::make_unique<PositionUpdates>(this))
-{
+Aircraft::Aircraft() {
 	aMutex = CreateMutex(NULL, FALSE, L"Aircraft Mutex");
 	created = false;
 	que_delete = false;
@@ -27,15 +25,9 @@ Aircraft::Aircraft() :
 
 Aircraft::~Aircraft()
 {
-	// unique_ptr members (like position_updates) are cleaned up automatically.
-	// You might need to release the mutex handle.
-	CloseHandle(aMutex);
+
 }
 
-// ... the rest of the file remains the same ...
-// ... a lot of code ...
-// ... keep everything from getIndex() to the end of the file.
-// (The content is too large to paste here, but no other changes are needed in this file for this step)
 int Aircraft::getIndex() {
 	return Aircraft::index;
 }
@@ -142,15 +134,6 @@ void Aircraft::unlock() {
 }
 
 Aircraft* getAircraftByIndex(int index) {
-	// This function needs a proper implementation or should be removed.
-	// For now, let's assume it's not critical.
-	// A proper implementation would need to iterate AcfMap, which is slow.
-	// Consider using a different data structure if you need fast index-based lookup.
-	for (const auto& pair : AcfMap) {
-		if (pair.second->getUserIndex() == index) {
-			return pair.second.get();
-		}
-	}
 	return NULL;
 }
 
@@ -461,23 +444,12 @@ void Aircraft::pollRoute()
 				ground_cur = ground_points.front();
 				MarkDirty(AircraftDirtyFlags::TRACK);
 
-				auto next_it = ground_points.erase(ground_points.begin());
+				auto next = ground_points.erase(ground_points.begin());
 
-				if (next_it != ground_points.end()) {
-					ground_next = *next_it;
-					auto next_next_it = next_it;
-					++next_next_it;
-					if (next_next_it != ground_points.end()) {
-						ground_next_next = *next_next_it;
-					}
-					else {
-						ground_next_next = nullptr;
-					}
-				}
-				else {
-					ground_next = nullptr;
-					ground_next_next = nullptr;
-				}
+				next != ground_points.end() ? ground_next = *next : ground_next = nullptr;
+
+				(next != ground_points.end() && ((next + 1) != ground_points.end()))
+					? ground_next_next = *(next + 1) : ground_next_next = nullptr;
 
 				if (!takeoff())
 					set_taxing();
@@ -502,23 +474,12 @@ void Aircraft::refreshRoute()
 		{
 			if (!ground_next && ground_cur && ground_points.size() >= 2)
 			{
-				// This logic seems a bit off, as ground_points would have been modified.
-				// For now, let's assume it's correct for the simulation.
-				// A safer way would be to find the current point's iterator.
-				auto it = std::find(ground_points.begin(), ground_points.end(), ground_cur);
-				if (it != ground_points.end()) {
-					auto next_it = it + 1;
-					if (next_it != ground_points.end()) {
-						ground_next = *next_it;
-						auto next_next_it = next_it + 1;
-						if (next_next_it != ground_points.end()) {
-							ground_next_next = *next_next_it;
-						}
-						else {
-							ground_next_next = nullptr;
-						}
-					}
-				}
+				auto next = (ground_points.begin() + 1);
+
+				next != ground_points.end() ? ground_next = *next : ground_next = nullptr;
+
+				(next != ground_points.end() && ((next + 1) != ground_points.end()))
+					? ground_next_next = *(next + 1) : ground_next_next = nullptr;
 			}
 		}
 	}
@@ -547,14 +508,9 @@ void Aircraft::prepareRoute()
 
 						if (next_path)
 						{
-							Point2* closest_to_next = path.getClosest(next_path);
-							if (p && closest_to_next) {
-								Point2* np = path.getNextPoint(p, closest_to_next);
-								if (np) {
-									p = path.angleTest(Point2(longitude, latitude), *p, *np);
-									init_crse_p = path.getPrevPoint(p, np);
-								}
-							}
+							Point2* np = path.getNextPoint(p, path.getClosest(next_path));
+							p = path.angleTest(Point2(longitude, latitude), *p, *np);
+							init_crse_p = path.getPrevPoint(p, path.getNextPoint(p, path.getClosest(next_path)));
 						}
 
 						ground_points.push_back(p);
@@ -569,7 +525,7 @@ void Aircraft::prepareRoute()
 						{
 							path.getPoints(last, _end, ground_points);
 							Point2* next_point = next_path->getClosestPoint(_end->y_, _end->x_);
-							if (next_point && !taxiIntersect(*_end, *next_point))
+							if (!taxiIntersect(*_end, *next_point))
 							{
 								ground_points.push_back(_end);
 							}
@@ -1096,9 +1052,31 @@ bool Aircraft::doPointSkip()
 {
 	if (ground_next && ground_next_next)
 	{
-		auto it = std::remove(ground_points.begin(), ground_points.end(), ground_next);
-		ground_points.erase(it, ground_points.end());
+		/*double turn_rate = onGround() ? assignedValues.asdg_gnd_turn_rate : get_rot(roll, speed, 1000);
 
+		double next_speed = getNextSpeed(CALC_TIME);
+		double interval_dist = get_distance(next_speed, CALC_TIME);
+
+		Point2 n = getLocFromBearing(latitude, longitude, interval_dist, heading);
+
+		double course = degrees(GetHeading(ground_next->y_, ground_next_next->y_, ground_next->y_, ground_next_next->x_));
+		double angle = get_angle(course, heading);
+		double time_sec = angle / turn_rate;
+		double distance = next_speed * (time_sec / 3600.0);
+
+		double dist_pt = GetDistance(latitude, ground_cur->y_, longitude, ground_cur->x_);
+
+		double turnRadius = TurnRadius(speed, turn_rate);
+		double leadDistance = tan(radians(angle / 2.0)) * turnRadius;
+
+		printf("dist: %f, %f: angle(%f)\n", dist_pt, leadDistance, angle);
+
+		if (dist_pt <= leadDistance)
+		{
+			return true;
+		}
+		return false;*/
+		ground_points.erase(std::remove(ground_points.begin(), ground_points.end(), ground_next), ground_points.end());
 		ground_next = nullptr;
 		refreshRoute();
 		return true;
@@ -1171,7 +1149,7 @@ void Aircraft::CollisionDetection()
 							|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev) ||
 								other.ground_cur && taxiIntersect(*ground_cur, *other.ground_cur))))
 						{
-							hold_for = &other;
+							hold_for = it.second;
 							state = ACF_STATE::HOLDING;
 							last_distance = cur_dist;
 							AppendTextToConsole(s2ws(getCallSign() + ", holding for: " + other.getCallSign()));
