@@ -924,14 +924,6 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 	if ((dist_pt - leadDistance) <= GetDecelerationDistance(speed, track_speed, assignedValues.asdg_gnd_braking))
 		assignedValues.asdg_speed = track_speed;
 
-	/*if (dist_pt <= leadDistance)
-	{
-#ifdef _DEBUG
-		printf("Turning at distance: %f, %f. angle: %f\n", dist_pt, leadDistance, angle);
-#endif
-		return true;
-	}*/
-
 	if (circularDistance(p, ((leadDistance * KNOTS_KM)) * 1000.0))
 	{
 #ifdef _DEBUG
@@ -939,17 +931,6 @@ bool Aircraft::isTurnReady(Point2* p, Point2* p2)
 #endif
 		return true;
 	}
-
-	//calculate radius
-	/*double num2 = (v.y_ - p->y_) / 60.0;
-	double num3 = (v.x_ - p->x_) / NauticalMilesPerDegreeLon(p->y_);// prev 45.0 for boston
-
-	double radius = sqrt((num3 * num3) + (num2 * num2));
-
-	if (inCircle(Point2(longitude, latitude), n, *p, radius))
-	{
-		return true;
-	}*/
 
 	return false;
 }
