@@ -5,8 +5,6 @@
 #include "framework.h"
 #include "packets_out.h"
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-
 #include <commdlg.h>
 #include <filesystem>
 #include <cstdio>

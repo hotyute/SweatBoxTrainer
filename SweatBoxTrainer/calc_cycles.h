@@ -1,8 +1,5 @@
 #pragma once
 
-#include <boost/algorithm/string.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-
 #include "tools/timed_task.h"
 
 void update();

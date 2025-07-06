@@ -1,7 +1,5 @@
 #include "aircraft.h"
 
-#include <boost/algorithm/string.hpp>
-
 #include "tools.h"
 #include "geoutils.h"
 #include "guidialogue.h"
