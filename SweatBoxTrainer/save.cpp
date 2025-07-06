@@ -1,8 +1,8 @@
 #include "save.h"
 
 #include <fstream>
-#include <boost/dll.hpp>
 #include <filesystem>
+#include <Windows.h>
 
 #include "usermanager.h"
 #include "basic_stream.h"
@@ -27,7 +27,9 @@ void save_info()
 	buf.write_string(LAST_SCT_PATH.c_str());
 	buf.end_frame_var_size_word();
 
-	const auto full_path = boost::dll::program_location().parent_path();
+	WCHAR path[MAX_PATH];
+	GetModuleFileNameW(NULL, path, MAX_PATH);
+	const auto full_path = std::filesystem::path(path).parent_path();
 
 	std::fstream myFile(full_path.string() + "\\data.bin", std::ios::out | std::ios::binary);
 	myFile.write(buf.data, buf.index);
@@ -36,7 +38,9 @@ void save_info()
 
 void read_info()
 {
-	auto full_path = boost::dll::program_location().parent_path();
+	WCHAR path[MAX_PATH];
+	GetModuleFileNameW(NULL, path, MAX_PATH);
+	auto full_path = std::filesystem::path(path).parent_path();
 
 	std::fstream ifs(full_path.string() + "\\data.bin", std::ios::in | std::ios::binary | std::ios::ate);
 

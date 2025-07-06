@@ -19,12 +19,12 @@ void EventManager::update() {
 
 			if (!_event->eAction.paused)
 			{
-				boost::posix_time::ptime mst1 = boost::posix_time::microsec_clock::local_time();
-				boost::posix_time::time_duration last_duration = mst1 - _event->eAction.getLastEvent();
-				long long mills = last_duration.total_milliseconds();
+				auto now = std::chrono::steady_clock::now();
+				auto duration_since_last = now - _event->eAction.getLastEvent();
+				long long mills = std::chrono::duration_cast<std::chrono::milliseconds>(duration_since_last).count();
 				if (mills >= _event->eAction.getTicks()) {
 					_event->execute();
-					_event->eAction.setLastEvent(boost::posix_time::microsec_clock::local_time());
+					_event->eAction.setLastEvent(std::chrono::steady_clock::now());
 				}
 			}
 		}

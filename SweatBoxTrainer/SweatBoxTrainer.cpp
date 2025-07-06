@@ -912,7 +912,7 @@ void DisplayAircraft() {
 
 int processCommands(Aircraft& aircraft, std::string command)
 {
-	if (boost::istarts_with(command, "taxi "))
+	if (ci_string_starts_with(command, "taxi "))
 	{
 
 		if (aircraft.onGround())
@@ -960,7 +960,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 
 		return 1;
 	}
-	else if (boost::iequals(command, "hold"))
+	else if (ci_string_equal(command, "hold"))
 	{
 		if (aircraft.onGround() && aircraft.taxing())
 		{
@@ -968,7 +968,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 			AppendTextToConsole(s2ws(aircraft.getCallSign()) + L", holding.");
 		}
 	}
-	else if (boost::iequals(command, "res"))
+	else if (ci_string_equal(command, "res"))
 	{
 		if (aircraft.onGround() && aircraft.holding())
 		{
@@ -985,7 +985,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 			}
 		}
 	}
-	else if (boost::istarts_with(command, "tl "))
+	else if (ci_string_starts_with(command, "tl "))
 	{
 		if (aircraft.onGround())
 		{
@@ -1004,7 +1004,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 
 		return 1;
 	}
-	else if (boost::istarts_with(command, "tr "))
+	else if (ci_string_starts_with(command, "tr "))
 	{
 		if (aircraft.onGround())
 		{
@@ -1023,7 +1023,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 
 		return 1;
 	}
-	else if (boost::istarts_with(command, "fh "))
+	else if (ci_string_starts_with(command, "fh "))
 	{
 		if (aircraft.onGround())
 		{
@@ -1043,7 +1043,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 
 		return 1;
 	}
-	else if (boost::istarts_with(command, "spd "))
+	else if (ci_string_starts_with(command, "spd "))
 	{
 
 		std::vector<std::string> array3 = split(command, " ");
@@ -1057,7 +1057,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 
 		return 1;
 	}
-	else if (boost::istarts_with(command, "hs "))
+	else if (ci_string_starts_with(command, "hs "))
 	{
 		for (std::string s : split(command.substr(3, command.length() - 1), " "))
 		{
@@ -1066,7 +1066,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		}
 		return 1;
 	}
-	else if (boost::istarts_with(command, "sq "))
+	else if (ci_string_starts_with(command, "sq "))
 	{
 		std::string squawk = command.substr(3, command.length() - 1);
 		if (squawk.size() == 4 && is_digits(squawk))
@@ -1076,21 +1076,21 @@ int processCommands(Aircraft& aircraft, std::string command)
 		}
 		return 1;
 	}
-	else if (boost::iequals(command, "sn"))
+	else if (ci_string_equal(command, "sn"))
 	{
 		aircraft.setMode(1);
 		SetWindowText(mode_button, L"SQUAWK: C");
 		updateMode(aircraft);
 		return 1;
 	}
-	else if (boost::iequals(command, "ss"))
+	else if (ci_string_equal(command, "ss"))
 	{
 		aircraft.setMode(0);
 		SetWindowText(mode_button, L"SQUAWK: S");
 		updateMode(aircraft);
 		return 1;
 	}
-	else if (boost::iequals(command, "cto"))
+	else if (ci_string_equal(command, "cto"))
 	{
 		if (aircraft.onGround() && aircraft.holding() && aircraft.HoldingDepart)
 		{
@@ -1121,7 +1121,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		}
 		return 1;
 	}
-	else if (boost::iequals(command, "ph") || boost::iequals(command, "lw"))
+	else if (ci_string_equal(command, "ph") || ci_string_equal(command, "lw"))
 	{
 		if (aircraft.onGround() && aircraft.holding() && aircraft.HoldingDepart)
 		{
@@ -1146,7 +1146,7 @@ int processCommands(Aircraft& aircraft, std::string command)
 		}
 		return 1;
 	}
-	else if (boost::istarts_with(command, "msg "))
+	else if (ci_string_starts_with(command, "msg "))
 	{
 		std::string msg = command.substr(4);
 		sendUserMessage(aircraft, msg_freq, "", msg);

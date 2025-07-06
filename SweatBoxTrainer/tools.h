@@ -1,5 +1,4 @@
-#ifndef __TOOLS_H
-#define __TOOLS_H
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -10,11 +9,9 @@
 #include "point2d.h"
 
 std::vector<std::string> split(const std::string&, const std::string&, int times);
-
 std::vector<std::string> split(const std::string& s, const std::string& delim);
 
 char* s2ca1(const std::string& s);
-
 int random(int start, int end);
 
 long long doubleToRawBits(double x);
@@ -125,4 +122,8 @@ int pushBack(std::vector<T>& v, T val)
 	return r;
 }
 
-#endif
+// New helper functions for case-insensitive string comparison
+bool ci_string_equal(const std::string& s1, const std::string& s2);
+bool ci_string_starts_with(const std::string& str, const std::string& prefix);
+bool ci_string_ends_with(const std::string& str, const std::string& suffix);
+bool ci_string_contains(const std::string& str, const std::string& substr);

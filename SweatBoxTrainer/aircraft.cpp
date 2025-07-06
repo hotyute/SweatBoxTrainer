@@ -18,14 +18,14 @@ Aircraft::Aircraft() {
 	longitude = 0;
 	heading = 0;
 	roll = 0;
-	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	std::fill_n(last_time, sizeof(last_time) / sizeof(last_time[0]), now);
 	std::fill_n(frequency, sizeof(frequency) / sizeof(frequency[0]), 99998);
 }
 
 Aircraft::~Aircraft()
 {
-
+	delete position_updates;
 }
 
 int Aircraft::getIndex() {
@@ -177,44 +177,44 @@ void Aircraft::setVerticalSpeed(double vs) {
 
 void Aircraft::updateSpeed()
 {
-	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	long long interval = now - last_time[2];
 	setSpeed(getNextSpeed((double)interval));
-	last_time[2] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	last_time[2] = now;
 }
 
 void Aircraft::updateRoll()
 {
-	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	long long interval = now - last_time[4];
 	setRoll(getNextRoll(static_cast<double>(interval)));
-	last_time[4] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	last_time[4] = now;
 }
 
 void Aircraft::updatePitch()
 {
-	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	long long interval = now - last_time[5];
 	setPitch(getNextPitch(static_cast<double>(interval)));
-	last_time[5] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	last_time[5] = now;
 }
 
 void Aircraft::updateHeading()
 {
-	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	long long interval = now - last_time[1];
-	setHeading(getNextHeading((double)interval));
+	setHeading(getNextHeading(static_cast<double>(interval)));
 	if ((heading == assignedValues.asgd_heading) && roll != 0)
 	{
 		assignedValues.asdg_roll = 0;
 		setRoll(0);
 	}
-	last_time[1] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	last_time[1] = now;
 }
 
 void Aircraft::updateMovement()
 {
-	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	long long interval = now - last_time[0];
 	double dist = get_distance(speed, interval);
 	Point2 p = getLocFromBearing(latitude, longitude, dist, heading);
@@ -224,27 +224,27 @@ void Aircraft::updateMovement()
 	}
 	setLatitude(p.y_);
 	setLongitude(p.x_);
-	last_time[0] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	last_time[0] = now;
 }
 
 void Aircraft::updateAltitude()
 {
-	long long now = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	long long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 	long long interval = now - last_time[3];
 	if ((altitude == assignedValues.asdg_altitude) && pitch != 0)
 	{
 		assignedValues.asdg_pitch = 0;
 		setPitch(0);
 	}
-	setAltitude(getNextAltitude((double)interval));
-	last_time[3] = boost::posix_time::microsec_clock::local_time().time_of_day().total_milliseconds();
+	setAltitude(getNextAltitude(static_cast<double>(interval)));
+	last_time[3] = now;
 }
 
 Airport* Aircraft::getAirport()
 {
 	if (!empty(apt_icao))
 	{
-		if (!airport || !boost::iequals(airport->icao, apt_icao))
+		if (!airport || !ci_string_equal(airport->icao, apt_icao))
 		{
 			auto it = airports.find(apt_icao);
 			if (it != airports.end()) {

@@ -652,3 +652,43 @@ std::string frequency_to_string(int frequency)
 
 	return raw;
 }
+
+// Helper for comparing single characters case-insensitively
+static bool ci_char_equal(char c1, char c2) {
+	return std::tolower(static_cast<unsigned char>(c1)) ==
+		std::tolower(static_cast<unsigned char>(c2));
+}
+
+// Implementation for case-insensitive string equality
+bool ci_string_equal(const std::string& s1, const std::string& s2) {
+	if (s1.length() != s2.length()) {
+		return false;
+	}
+	return std::equal(s1.begin(), s1.end(), s2.begin(), ci_char_equal);
+}
+
+// Implementation for case-insensitive starts_with
+bool ci_string_starts_with(const std::string& str, const std::string& prefix) {
+	if (str.length() < prefix.length()) {
+		return false;
+	}
+	return std::equal(prefix.begin(), prefix.end(), str.begin(), ci_char_equal);
+}
+
+// Implementation for case-insensitive ends_with
+bool ci_string_ends_with(const std::string& str, const std::string& suffix) {
+	if (str.length() < suffix.length()) {
+		return false;
+	}
+	return std::equal(suffix.begin(), suffix.end(), str.end() - suffix.length(), ci_char_equal);
+}
+
+// Implementation for case-insensitive contains (substring search)
+bool ci_string_contains(const std::string& str, const std::string& substr) {
+	auto it = std::search(
+		str.begin(), str.end(),
+		substr.begin(), substr.end(),
+		ci_char_equal
+	);
+	return (it != str.end());
+}
