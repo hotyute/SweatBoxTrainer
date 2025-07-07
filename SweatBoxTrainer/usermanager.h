@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 #include "aircraft.h"
 #include "basic_stream.h"
@@ -23,6 +24,9 @@ void disconnect(Aircraft* aircraft, bool queue);
 extern std::vector<Aircraft*> userStorage1;
 
 void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream &stream);
+
+// The new initializer function we will call once at startup.
+void initializePacketHandlers();
 
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode);

@@ -98,6 +98,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// TODO: Place code here.
 
+	// --- Initialize Packet Handlers ---
+	initializePacketHandlers(); 
+
 	// --- Initialize Thread Pool and Scheduler ---
 	g_threadPool = std::make_unique<ThreadPool>();
 	TimedTask::startSchedulerThread(); // Start the scheduler once.
