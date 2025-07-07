@@ -1,5 +1,9 @@
-#ifndef USERMANAGER_H
-#define USERMANAGER_H
+#pragma once
+
+#include <vector>
+
+#include "aircraft.h"
+#include "basic_stream.h"
 
 const int PILOT_CLIENT_UPDATE_PACKET = 1,
 CLIENT_TRANSPONDER_PACKET = 2,
@@ -14,11 +18,6 @@ FLIGHT_PLAN_UPDATE_PACKET = 10,
 REQUEST_FLIGHT_PLAN_PACKET = 11,
 PRIVATE_MESSAGE_PACKET = 12;
 
-#include <vector>
-
-#include "aircraft.h"
-#include "basic_stream.h"
-
 void disconnect(Aircraft* aircraft, bool queue);
 
 extern std::vector<Aircraft*> userStorage1;
@@ -31,5 +30,3 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 const int command_freq = 18300, msg_freq = 99998;
 
 int processCommands(Aircraft& aircraft, std::string text);
-
-#endif

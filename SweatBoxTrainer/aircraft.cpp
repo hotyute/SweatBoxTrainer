@@ -4,7 +4,7 @@
 #include "geoutils.h"
 #include "guidialogue.h"
 
-std::unordered_map<std::string, Aircraft*>AcfMap;
+std::unordered_map<std::string, std::unique_ptr<Aircraft>>AcfMap;
 
 Aircraft::Aircraft() {
 	aMutex = CreateMutex(NULL, FALSE, L"Aircraft Mutex");
@@ -23,7 +23,6 @@ Aircraft::Aircraft() {
 
 Aircraft::~Aircraft()
 {
-	delete position_updates;
 }
 
 int Aircraft::getIndex() {
@@ -1128,7 +1127,7 @@ void Aircraft::CollisionDetection()
 							|| (ground_cur && (other.ground_prev && taxiIntersect(*ground_cur, *other.ground_prev) ||
 								other.ground_cur && taxiIntersect(*ground_cur, *other.ground_cur))))
 						{
-							hold_for = it.second;
+							hold_for = it.second.get();
 							state = ACF_STATE::HOLDING;
 							last_distance = cur_dist;
 							AppendTextToConsole(s2ws(getCallSign() + ", holding for: " + other.getCallSign()));

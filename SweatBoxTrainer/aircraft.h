@@ -7,7 +7,6 @@
 
 #include "airport.h"
 #include "constants.h"
-#include "events.h"
 #include "clinc2.h"
 
 // Enum for tracking which properties have changed
@@ -120,7 +119,6 @@ public:
 	Runway* runway_ctx = nullptr;
 	int turnOri = -1;
 	std::string apt_icao = "";
-	Event* position_updates = new PositionUpdates(this);
 	ACF_STATE state = ACF_STATE::IDLE;
 	bool connected = false, point_skip = false, locked_rate = false, queue_takeoff = false, lineup = false;
 	std::vector<std::string> ground_route;
@@ -240,7 +238,7 @@ public:
 };
 
 
-extern std::unordered_map<std::string, Aircraft*> AcfMap;
+extern std::unordered_map<std::string, std::unique_ptr<Aircraft>> AcfMap;
 
 extern Aircraft* getAircraftByIndex(int);
 

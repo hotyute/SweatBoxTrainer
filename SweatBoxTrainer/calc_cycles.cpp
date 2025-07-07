@@ -6,6 +6,7 @@
 #include "usermanager.h"
 #include "packets_out.h"
 #include "tools.h"
+#include "globals.h"
 
 void update()
 {
@@ -22,6 +23,7 @@ void SimulationTask::execute() {
 
 void CalculateMovements()
 {
+	std::lock_guard<std::mutex> lock(g_acfMapMutex); // Lock the mutex
 	if (AcfMap.size() > 0) {
 		for (auto const& [key, acf_ptr] : AcfMap)
 		{

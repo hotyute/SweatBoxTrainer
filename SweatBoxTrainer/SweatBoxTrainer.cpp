@@ -17,7 +17,6 @@
 
 #include "basic_stream.h"
 #include "calc_cycles.h"
-#include "events.h"
 #include "filereader.h"
 #include "tools.h"
 #include "usermanager.h"
@@ -82,8 +81,6 @@ std::unique_ptr<ThreadPool> g_threadPool;
 std::unique_ptr<SimulationTask> g_simulationTask;
 std::unique_ptr<GuiUpdateTask> g_guiUpdateTask;
 std::unique_ptr<SocketPollingTask> g_socketPollingTask; // From clinc2.h
-// Add a global mutex for your shared data
-std::mutex g_acfMapMutex;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,

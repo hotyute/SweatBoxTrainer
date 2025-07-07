@@ -5,10 +5,10 @@
 #include <iostream>
 #include <tchar.h>
 
-#include "events.h"
 #include "usermanager.h"
 #include "packets_out.h"
 #include "SweatBoxTrainer.h"
+#include "globals.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -103,16 +103,6 @@ DWORD tcp_manager::poll_socket() {
 							aircraft->setUserIndex(index);
 							userStorage1[index] = aircraft;
 							aircraft->setUpdateTime(updateTimeInMillis);
-							if (aircraft->position_updates->eAction.paused)
-							{
-								aircraft->position_updates->eAction.setTicks(0);
-								aircraft->position_updates->toggle_pause();
-							}
-							else
-							{
-								aircraft->position_updates->eAction.setTicks(0);
-								event_manager1->addEvent(aircraft->position_updates);
-							}
 							hand_shake = false;
 							current_op = -1;
 							in.delete_marked_block();
@@ -409,7 +399,7 @@ void SocketPollingTask::execute() {
 	// We need to iterate over all connected aircraft and poll their sockets.
 
 	// PROTECT THIS LOOP WITH A MUTEX!
-	// std::lock_guard<std::mutex> lock(g_acfMapMutex); // You'll need to create a global mutex for AcfMap
+	std::lock_guard<std::mutex> lock(g_acfMapMutex); // You'll need to create a global mutex for AcfMap
 	for (auto const& [key, val] : AcfMap) {
 		Aircraft& aircraft = *val;
 		// The tcp_manager::poll_socket() logic needs to be refactored slightly.

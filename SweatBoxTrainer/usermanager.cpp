@@ -5,6 +5,7 @@
 #include "SweatBoxTrainer.h"
 #include "tools.h"
 #include "packets_out.h"
+#include "globals.h"
 
 std::vector<Aircraft*> userStorage1;
 
@@ -197,7 +198,7 @@ void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream& stream)
 
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode) {
-	Aircraft* cur = new Aircraft();
+	auto cur = std::make_unique<Aircraft>();
 	cur->frequency[0] = command_freq;
 	cur->frequency[1] = msg_freq;
 	AssignedValues& av = cur->getAssignedValues();
@@ -222,10 +223,15 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 
 	cur->getConnection().init_set();
 
-	AcfMap[cur->getIdentity()->callsign] = cur;
+	Aircraft* raw_ptr = cur.get();
 
-	addUserToLB(cur);
-	return cur;
+	{
+		std::lock_guard<std::mutex> lock(g_acfMapMutex);
+		AcfMap[callsign] = std::move(cur); // Move ownership into the map
+	}
+
+	addUserToLB(raw_ptr);
+	return raw_ptr;
 }
 
 void disconnect(Aircraft* aircraft, bool queue)
@@ -233,6 +239,5 @@ void disconnect(Aircraft* aircraft, bool queue)
 	closesocket(aircraft->getConnection().sConnect);
 	sendDisconnect(*aircraft);
 	aircraft->getConnection().disconnect_socket();
-	aircraft->position_updates->toggle_pause();
 	aircraft->connected = false;
 }
