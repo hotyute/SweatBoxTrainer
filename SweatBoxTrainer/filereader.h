@@ -18,9 +18,6 @@ public:
 
     std::vector<std::unique_ptr<Aircraft>> loadAgc(const std::string& path);
     std::unique_ptr<Airport> loadApt(const std::string& path);
-
-    // Parses a sector file (.sct) and returns all the contained data.
-    // Returns nullptr if the file is invalid or cannot be opened.
     std::unique_ptr<SectorData> loadSct(const std::string& path);
 
 private:
