@@ -115,9 +115,9 @@ int string_to_frequency(std::string frequency);
 std::string frequency_to_string(int frequency);
 
 template<typename T>
-int pushBack(std::vector<T>& v, T val)
+size_t pushBack(std::vector<T>& v, T val)
 {
-	int r = v.size();
+	size_t r = v.size();
 	v.push_back(val);
 	return r;
 }

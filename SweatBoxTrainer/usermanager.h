@@ -3,8 +3,10 @@
 #include <vector>
 #include <memory>
 
-#include "aircraft.h"
+#include "aircraft/aircraft.h"
 #include "basic_stream.h"
+
+class Aircraft;
 
 const int PILOT_CLIENT_UPDATE_PACKET = 1,
 CLIENT_TRANSPONDER_PACKET = 2,
@@ -19,18 +21,9 @@ FLIGHT_PLAN_UPDATE_PACKET = 10,
 REQUEST_FLIGHT_PLAN_PACKET = 11,
 PRIVATE_MESSAGE_PACKET = 12;
 
-void disconnect(Aircraft* aircraft, bool queue);
-
 extern std::vector<Aircraft*> userStorage1;
-
-void processIncomingPackets(Aircraft* aircraft, int opCode, BasicStream &stream);
-
-// The new initializer function we will call once at startup.
-void initializePacketHandlers();
 
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode);
 
 const int command_freq = 18300, msg_freq = 99998;
-
-int processCommands(Aircraft& aircraft, std::string text);

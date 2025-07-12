@@ -8,6 +8,7 @@
 #include "usermanager.h"
 #include "packets_out.h"
 #include "SweatBoxTrainer.h"
+#include "packets_in.h"
 #include "globals.h"
 
 #pragma comment(lib, "ws2_32.lib")
@@ -66,7 +67,7 @@ DWORD tcp_manager::poll_socket() {
 			if (error == WSAECONNABORTED || error == WSAENOTSOCK
 				|| error == WSAECONNRESET || error == WSAETIMEDOUT)
 			{
-				disconnect(aircraft, false);
+				aircraft->disconnect(false);
 				in_stream->clear();
 				closed = true;
 				if (error == WSAETIMEDOUT)
@@ -100,9 +101,16 @@ DWORD tcp_manager::poll_socket() {
 						{
 							const int index = in.read_unsigned_short();
 							const long long updateTimeInMillis = in.readQWord();
+
+							printf("update_time: %lld\n", updateTimeInMillis);
 							aircraft->setUserIndex(index);
 							userStorage1[index] = aircraft;
 							aircraft->setUpdateTime(updateTimeInMillis);
+
+							if (g_threadPool) { // Safety check
+								aircraft->startPositionUpdates(*g_threadPool);
+							}
+
 							hand_shake = false;
 							current_op = -1;
 							in.delete_marked_block();
@@ -198,13 +206,13 @@ void decodePackets(Aircraft* aircraft, BasicStream& in, int nBytesReceived) {
 			{
 #ifdef _DEBUG
 				printf("%s [UNHANDLED] Packet_Id!! : %d, Packet_Size: %d, Bytes_Ava: %d nBytes: %d\n",
-					aircraft->getIdentity()->callsign.c_str(), opCode, length, in.available(), nBytesReceived);
+					aircraft->getIdentity()->callsign.c_str(), opCode, length, (int)in.available(), nBytesReceived);
 #endif
-				length = in.available();
+				length = static_cast<int>(in.available());
 			}
 #ifdef _DEBUG
 			//printf("%s Packet_Id: %d, Packet_Size: %d, Bytes_Ava: %d nBytes: %d\n", 
-			//	aircraft->getIdentity()->callsign.c_str(), opCode, length, in.available(), nBytesRecieved);
+			//	aircraft->getIdentity()->callsign.c_str(), opCode, length, in.available(), nBytesReceived);
 #endif
 			if (in.available() >= length)
 			{
@@ -245,7 +253,7 @@ void tcp_manager::send_data(SOCKET clientSocket, const std::vector<char>& buffer
 			break;
 		}
 
-		printf("sent: %d\n", sent);
+		//printf("sent: %d\n", sent);
 
 		totalSent += sent;
 		remaining -= sent;

@@ -53,7 +53,7 @@ int LoadSCT(std::string path) {
 					if (found != std::string::npos)
 					{
 						first_line = true;
-						headerId = i;
+						headerId = (int)i;
 						process_count++;
 						break;
 					}
@@ -113,7 +113,8 @@ int LoadAGC(std::string path) {
 						curAircraft->getDefaultValues().speed = atodd(args[4]);
 						curAircraft->setHeavy(heavy);
 						//curAircraft->getDefaultValues().turn_rate = atodd(args[4]);
-						curAircraft->apt_icao = args[10];
+						curAircraft->setAptIcao(args[10]);
+						curAircraft->getAirport();
 						processed_lines++;
 					}
 					else if (processed_lines == 1)
@@ -245,7 +246,7 @@ int LoadAPT(std::string path)
 							std::vector<std::string> args = split(line, " ");
 
 							Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
-							p->index = pushBack(curPoint->points, p);
+							p->index = static_cast<int>(pushBack(curPoint->points, p));
 
 							curAirport->parking.push_back((Parking*)curPoint);
 						}
@@ -254,7 +255,7 @@ int LoadAPT(std::string path)
 							std::vector<std::string> args = split(line, " ");
 
 							Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
-							p->index = pushBack(curPoint->points, p);
+							p->index = static_cast<int>(pushBack(curPoint->points, p));
 							p->parent = curPoint;
 
 							curAirport->taxiway.push_back((Taxiway*)curPoint);
@@ -266,12 +267,12 @@ int LoadAPT(std::string path)
 							size_t displaced_tag = line.find(displacedStart);
 							if (turnoff_tag != std::string::npos)
 							{
-								int start = (turnoff_tag + turnoffStart.length());
+								int start = (int)(turnoff_tag + turnoffStart.length());
 								runway.turnoff = line.substr(start);
 							}
 							else if (displaced_tag != std::string::npos)
 							{
-								int start = (displaced_tag + displacedStart.length());
+								int start = (int)(displaced_tag + displacedStart.length());
 								runway.displacement = line.substr(start);
 							}
 							else
@@ -279,7 +280,7 @@ int LoadAPT(std::string path)
 								std::vector<std::string> args = split(line, " ");
 
 								Point2* p = new Point2(atodd(args[1].c_str()), atodd(args[0].c_str()));
-								p->index = pushBack(curPoint->points, p);
+								p->index = static_cast<int>(pushBack(curPoint->points, p));
 								p->parent = curPoint;
 							}
 							//curAirport->runways.push_back((Runway*)curPoint);
@@ -292,7 +293,7 @@ int LoadAPT(std::string path)
 						size_t apprhdg_tag = line.find(apprhdgStart);
 						if (apprhdg_tag != std::string::npos)
 						{
-							int start = (apprhdg_tag + apprhdgStart.length());
+							int start = (int)(apprhdg_tag + apprhdgStart.length());
 							curApproach->h_degrees = atodd(line.substr(start));
 						}
 						else if (curApproach->type == APPRTYPE::ILS)
@@ -300,7 +301,7 @@ int LoadAPT(std::string path)
 							size_t gs_tag = line.find(gsStart);
 							if (gs_tag != std::string::npos)
 							{
-								int start = (gs_tag + turnoffStart.length());
+								int start = (int)(gs_tag + turnoffStart.length());
 								curApproach->v_degrees = atodd(line.substr(start));
 							}
 							else
@@ -320,7 +321,7 @@ int LoadAPT(std::string path)
 
 					if (icao_tag != std::string::npos)
 					{
-						int start = (icao_tag + icaoStart.length());
+						int start = (int)(icao_tag + icaoStart.length());
 						std::string icao = line.substr(start);
 						auto it = airports.find(icao);
 						if (it != airports.end())
@@ -334,7 +335,7 @@ int LoadAPT(std::string path)
 					}
 					else if (field_elev != std::string::npos)
 					{
-						int start = (field_elev + fieldElevStart.length());
+						int start = (int)(field_elev + fieldElevStart.length());
 						std::string fieldelev = line.substr(start);
 						if (curAirport)
 							curAirport->elevation = atodd(fieldelev);

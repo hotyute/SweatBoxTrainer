@@ -5,22 +5,49 @@
 #include "basic_stream.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include "aircraft/Aircraft.h"
+
+AircraftPositionUpdateTask::AircraftPositionUpdateTask(ThreadPool& pool, Aircraft& aircraft)
+	: TimedTask(pool, std::chrono::milliseconds(aircraft.getUpdateTime()), true), // Use the aircraft's specific interval
+	m_aircraft(aircraft)
+{
+}
+
+void AircraftPositionUpdateTask::stop()
+{
+	TimedTask::stop(); // Call the base class stop
+	m_shouldDelete = true; // Mark this object for deletion
+}
+
+void AircraftPositionUpdateTask::execute()
+{
+	// If the task was stopped and should be deleted, do nothing more.
+	if (m_shouldDelete) {
+		return;
+	}
+
+	// Since this task only runs when its interval is up, we just send the update.
+	if (m_aircraft.connected) {
+		sendPositionUpdates(m_aircraft);
+	}
+}
 
 void sendPositionUpdates(Aircraft& user) {
 	BasicStream out = BasicStream(40);
+	const AircraftState& state = user.getState();
 	out.create_frame_var_size(_AIRCRAFT_POS_UPDATE);
-	double lat = user.getLatitude();
-	double lon = user.getLongitude();
+	double lat = state.latitude;
+	double lon = state.longitude;
 	const long long latitude = *reinterpret_cast<long long*>(&lat);
 	const long long longitude = *reinterpret_cast<long long*>(&lon);
 	out.write_qword(latitude);
 	out.write_qword(longitude);
-	const long long infoHash = ((static_cast<long long>(static_cast<int>((user.getPitch() * 1024.0) / -360.0))) << 22)
-		+ ((static_cast<long long>(static_cast<int>((user.getRoll() * 1024.0) / -360.0))) << 12)
-		+ ((static_cast<long long>(static_cast<int>((user.getHeading() * 1024.0) / 360.0))) << 2);
+	const long long infoHash = ((static_cast<long long>(static_cast<int>((state.pitch * 1024.0) / -360.0))) << 22)
+		+ ((static_cast<long long>(static_cast<int>((state.roll * 1024.0) / -360.0))) << 12)
+		+ ((static_cast<long long>(static_cast<int>((state.heading * 1024.0) / 360.0))) << 2);
 	out.write_qword(infoHash);
-	out.write_short(static_cast<int>(user.getSpeed()));
-	out.write_qword(static_cast<long long>(user.getAltitude()));
+	out.write_short(static_cast<int>(state.speed));
+	out.write_qword(static_cast<long long>(state.altitude));
 	out.end_frame_var_size();
 	user.getConnection().sendMessage(&out);
 }
@@ -48,7 +75,7 @@ void sendFlightPlan(Aircraft& user) {
 void updateMode(Aircraft& user) {
 	BasicStream out = BasicStream(2);
 	out.create_frame(_UPDATE_MODE);
-	out.write_byte(user.getMode() << 4 | user.isHeavy());
+	out.write_byte(user.getMode() << 4 | (user.isHeavy() ? 1 : 0));
 	user.getConnection().sendMessage(&out);
 }
 
@@ -99,7 +126,7 @@ void sendTempData(Aircraft& user, std::string &assembly, const void* data, ...) 
 	va_list args;
 	va_start(args, data);
 	int header = va_arg(args, int);
-	for (int i_11_ = assembly.length() - 1; i_11_ >= 0; i_11_--) 
+	for (int i_11_ = static_cast<int>(assembly.length()) - 1; i_11_ >= 0; i_11_--)
 	{
 		if (assembly.at(i_11_) == 's')
 			out.write_string(va_arg(args, std::string).c_str());

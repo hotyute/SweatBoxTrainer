@@ -1,6 +1,8 @@
 // SweatBoxTrainer.cpp : Defines the entry point for the application.
 //
 
+#define NOMINMAX
+
 #include "SweatBoxTrainer.h"
 #include "framework.h"
 #include "packets_out.h"
@@ -13,8 +15,6 @@
 #include <codecvt>
 #include <algorithm>
 
-#define NOMINMAX
-
 #include "basic_stream.h"
 #include "calc_cycles.h"
 #include "filereader.h"
@@ -24,6 +24,10 @@
 #include "save.h"
 #include "guidialogue.h"
 #include "tools/thread_pool.h"
+#include "packets_in.h"
+#include "aircraft/Aircraft.h"
+#include "aircraft/command_handler.h"
+#include "globals.h"
 
 #ifdef _DEBUG
 #include "guicon.h"
@@ -77,7 +81,6 @@ LRESULT CALLBACK	HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 // Global thread pool and tasks (could be wrapped in an "Application" class later)
-std::unique_ptr<ThreadPool> g_threadPool;
 std::unique_ptr<SimulationTask> g_simulationTask;
 std::unique_ptr<GuiUpdateTask> g_guiUpdateTask;
 std::unique_ptr<SocketPollingTask> g_socketPollingTask; // From clinc2.h
@@ -99,7 +102,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// TODO: Place code here.
 
 	// --- Initialize Packet Handlers ---
-	initializePacketHandlers(); 
+	initializePacketHandlers();
+
+	// --- Initialize Command Handlers ---
+	CommandHandlers::initialize();
 
 	// --- Initialize Thread Pool and Scheduler ---
 	g_threadPool = std::make_unique<ThreadPool>();
@@ -483,7 +489,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			//check to make sure things line up
 			if (ctrl == aircraftList)
 			{
-				DWORD dwSel = SendMessage(aircraftList, LB_GETCURSEL, 0, 0);
+				DWORD dwSel = (DWORD)SendMessage(aircraftList, LB_GETCURSEL, 0, 0);
 				HandleSelectedLB(dwSel);
 			}
 		}
@@ -533,6 +539,7 @@ void connect()
 	for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)
 	{
 		Aircraft& aircraft = *(it->second);
+		const AircraftState& state = aircraft.getState();
 		tcp_manager& tcp = aircraft.getConnection();
 		if (!aircraft.connected)
 		{
@@ -553,8 +560,8 @@ void connect()
 				stream.write_string(id.username.c_str());
 				stream.write_string(id.password.c_str());
 				stream.write_qword(1000);//request time
-				stream.write_qword(doubleToRawBits(aircraft.getLatitude()));
-				stream.write_qword(doubleToRawBits(aircraft.getLongitude()));
+				stream.write_qword(doubleToRawBits(state.latitude));
+				stream.write_qword(doubleToRawBits(state.longitude));
 				stream.write_short(aircraft.getVisibility());
 				stream.write_byte(static_cast<int>(type));
 				stream.write_3byte(aircraft.frequency[0]);
@@ -570,9 +577,9 @@ void connect()
 					stream.write_string(aircraft.getAcfTitle().c_str());
 					stream.write_string(aircraft.getSquawkCode().c_str());
 					stream.write_byte(aircraft.getMode() << 4 | (aircraft.isHeavy() ? 1 : 0));
-					const long long infoHash = ((static_cast<long long>((int)((aircraft.getPitch() * 1024.0) / -360.0))) << 22)
-						+ ((static_cast<long long>(static_cast<int>((aircraft.getRoll() * 1024.0) / -360.0))) << 12)
-						+ ((static_cast<long long>(static_cast<int>((aircraft.getHeading() * 1024.0) / 360.0))) << 2);
+					const long long infoHash = ((static_cast<long long>((int)((state.pitch * 1024.0) / -360.0))) << 22)
+						+ ((static_cast<long long>(static_cast<int>((state.roll * 1024.0) / -360.0))) << 12)
+						+ ((static_cast<long long>(static_cast<int>((state.heading * 1024.0) / 360.0))) << 2);
 					stream.write_qword(infoHash);
 				}
 				stream.end_frame_var_size_word();
@@ -603,8 +610,9 @@ LRESULT CALLBACK CommandCallBckProcedure(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 			std::wstring test(&c_text[0]); //convert to wstring
 			std::string text = ws2s(test); //and convert to string.
 
-			if (displayed && processCommands(*displayed, text))
+			if (displayed)
 			{
+				CommandHandlers::processCommand(*displayed, text);
 			}
 			SendMessage(command_text, WM_SETTEXT, 0, (LPARAM)L"");
 			return 0;
@@ -656,14 +664,17 @@ void create_controls(HWND hwnd) {
 
 	lpCommandWndProc = (WNDPROC)SetWindowLongPtr(command_text, GWLP_WNDPROC, (LONG_PTR)&CommandCallBckProcedure);
 
-	console_text = CreateWindowEx(WS_EX_CLIENTEDGE, L"STATIC", L"",
-		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_LEFT | ES_READONLY,
+	console_text = CreateWindowEx(
+		WS_EX_CLIENTEDGE, L"STATIC", L"",
+		WS_CHILD | WS_VISIBLE | WS_VSCROLL | ES_AUTOVSCROLL | ES_READONLY | ES_WANTRETURN,
 		190, 200, 685, 100,
 		hwnd, (HMENU)CONSOLE_TEXT, NULL, NULL
 	);
 
 	SendMessage(console_text, WM_SETFONT, (WPARAM)hFont2, MAKELPARAM(TRUE, 0));
 	SendMessage(console_text, EM_LIMITTEXT, 0, 0L);
+
+	g_consoleLogger.Init(console_text);
 
 	HWND lbl_altitude = CreateWindowEx(NULL, L"STATIC", L"Altitude:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
@@ -823,7 +834,7 @@ void create_controls(HWND hwnd) {
 		10, 17,
 		170, 300,
 		hwnd, (HMENU)ACF_LISTBOX,
-		(HINSTANCE)GetWindowLong(hwnd, GWLP_HINSTANCE),
+		(HINSTANCE)GetWindowLongPtr(hwnd, GWLP_HINSTANCE),
 		NULL);
 
 	SendMessage(aircraftList, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
@@ -843,8 +854,9 @@ void HandleSelectedLB(DWORD iSelected)
 	if (acf && displayed != acf)
 	{
 		displayed = acf;
+		AircraftState& state = displayed->getState();
 		// Mark all fields as dirty to force a full UI refresh for the new aircraft
-		displayed->MarkAllDirty();
+		state.MarkAllDirty();
 		DisplayAircraft();
 	}
 }
@@ -852,309 +864,68 @@ void HandleSelectedLB(DWORD iSelected)
 void DisplayAircraft() {
 	if (displayed)
 	{
+		const AircraftState& state = displayed->getState();
 		// Only update controls if the corresponding data is dirty
-		if (displayed->IsDirty(AircraftDirtyFlags::ALTITUDE)) {
-			std::wstring alt = std::to_wstring((int)displayed->getAltitude());
+		if (state.IsDirty(AircraftDirtyFlags::ALTITUDE)) {
+			std::wstring alt = std::to_wstring((int)state.altitude);
 			SetWindowText(altitude, alt.c_str());
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::HEADING)) {
-			std::wstring hdg = std::to_wstring((int)displayed->getHeading());
+		if (state.IsDirty(AircraftDirtyFlags::HEADING)) {
+			std::wstring hdg = std::to_wstring((int)state.heading);
 			SetWindowText(heading, hdg.c_str());
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::VSPEED)) {
-			std::wstring vs = std::to_wstring((int)displayed->getVerticalSpeed());
+		if (state.IsDirty(AircraftDirtyFlags::VSPEED)) {
+			std::wstring vs = std::to_wstring((int)state.verticalSpeed);
 			SetWindowText(vs_hdl, vs.c_str());
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::LATITUDE)) {
-			std::wstring lat = std::to_wstring(displayed->getLatitude());
+		if (state.IsDirty(AircraftDirtyFlags::LATITUDE)) {
+			std::wstring lat = std::to_wstring(state.latitude);
 			SetWindowText(latitude_hdl, lat.c_str());
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::LONGITUDE)) {
-			std::wstring lon = std::to_wstring(displayed->getLongitude());
+		if (state.IsDirty(AircraftDirtyFlags::LONGITUDE)) {
+			std::wstring lon = std::to_wstring(state.longitude);
 			SetWindowText(longitude_hdl, lon.c_str());
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::SPEED)) {
-			std::wstring spd = std::to_wstring((int)displayed->getSpeed());
+		if (state.IsDirty(AircraftDirtyFlags::SPEED)) {
+			std::wstring spd = std::to_wstring((int)state.speed);
 			SetWindowText(speed_hdl, spd.c_str());
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::TRACK)) {
-			if (displayed->onGround() && displayed->ground_cur && displayed->ground_cur->parent) {
-				SetWindowText(track_hdl, std::wstring(displayed->ground_cur->parent->name.begin(), displayed->ground_cur->parent->name.end()).c_str());
+		if (state.IsDirty(AircraftDirtyFlags::TRACK)) {
+			// Access route manager for track info
+			const RouteManager& rm = displayed->getRouteManager();
+			if (displayed->onGround() && rm.ground_cur && rm.ground_cur->parent) {
+				SetWindowText(track_hdl, std::wstring(rm.ground_cur->parent->name.begin(), rm.ground_cur->parent->name.end()).c_str());
 			}
 			else {
 				SetWindowText(track_hdl, L"None");
 			}
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::DATA)) {
+		if (state.IsDirty(AircraftDirtyFlags::DATA)) {
 			char data1[20];
 			int length = sprintf_s(data1, "[%d]", (int)displayed->getAssignedValues().asdg_gnd_turn_rate);
 			std::wstring rates(&data1[0], &data1[length]);
 			SetWindowText(data_hdl, rates.c_str());
 		}
 
-		if (displayed->IsDirty(AircraftDirtyFlags::MODE)) {
+		if (state.IsDirty(AircraftDirtyFlags::MODE)) {
 			displayed->getMode() == 0 ? SetWindowText(mode_button, L"SQUAWK: S") : SetWindowText(mode_button, L"SQUAWK: C");
 		}
 
 		// After updating the UI, clear all dirty flags for this aircraft
-		displayed->ClearDirtyFlags();
+		displayed->getState().ClearDirtyFlags();
 	}
-}
-
-int processCommands(Aircraft& aircraft, std::string command)
-{
-	if (ci_string_starts_with(command, "taxi "))
-	{
-
-		if (aircraft.onGround())
-		{
-			aircraft.reset_path();
-			aircraft.reset_holding();
-			aircraft.reset_context();
-
-			std::string _command = command.substr(5, (command.length() - 1));
-
-			size_t pos = _command.find("hs ");
-
-			if (pos != std::string::npos)
-			{
-				for (std::string s : split(_command.substr(0, pos), " "))
-				{
-					capitalize(s);
-					aircraft.ground_route.push_back(trim(s));
-				}
-			}
-			else
-			{
-				for (std::string s : split(_command, " "))
-				{
-					capitalize(s);
-					aircraft.ground_route.push_back(trim(s));
-				}
-			}
-			//aircraft.locked_rate = true;
-			aircraft.prepareRoute();
-			aircraft.pollRoute();
-
-			if (pos != std::string::npos)
-			{
-				std::string hs = _command.substr(pos);
-
-				for (std::string s : split(hs.substr(3, hs.length() - 1), " "))
-				{
-					capitalize(s);
-					aircraft.HoldAt(s);
-				}
-			}
-
-		}
-
-		return 1;
-	}
-	else if (ci_string_equal(command, "hold"))
-	{
-		if (aircraft.onGround() && aircraft.taxing())
-		{
-			aircraft.set_holding();
-			AppendTextToConsole(s2ws(aircraft.getCallSign()) + L", holding.");
-		}
-	}
-	else if (ci_string_equal(command, "res"))
-	{
-		if (aircraft.onGround() && aircraft.holding())
-		{
-			if (!aircraft.HoldingFor)
-			{
-				if (aircraft.HoldingAt)
-				{
-					aircraft.HoldingAt = nullptr;
-					if (!aircraft.HoldingDepart)
-						aircraft.set_taxing();
-				}
-				else if (!aircraft.lineup && !aircraft.queue_takeoff)
-					aircraft.set_taxing();
-			}
-		}
-	}
-	else if (ci_string_starts_with(command, "tl "))
-	{
-		if (aircraft.onGround())
-		{
-			aircraft.reset_path();
-			aircraft.reset_holding();
-			aircraft.reset_context();
-		}
-
-		std::vector<std::string> array3 = split(command, " ");
-
-		if (array3.size() == 2)
-		{
-			aircraft.turnOri = 0;
-			aircraft.getAssignedValues().asgd_heading = hdg(atodd(array3[1]));
-		}
-
-		return 1;
-	}
-	else if (ci_string_starts_with(command, "tr "))
-	{
-		if (aircraft.onGround())
-		{
-			aircraft.reset_path();
-			aircraft.reset_holding();
-			aircraft.reset_context();
-		}
-
-		std::vector<std::string> array3 = split(command, " ");
-
-		if (array3.size() == 2)
-		{
-			aircraft.turnOri = 1;
-			aircraft.getAssignedValues().asgd_heading = hdg(atodd(array3[1]));
-		}
-
-		return 1;
-	}
-	else if (ci_string_starts_with(command, "fh "))
-	{
-		if (aircraft.onGround())
-		{
-			aircraft.reset_path();
-			aircraft.reset_holding();
-			aircraft.reset_context();
-		}
-
-		std::vector<std::string> array3 = split(command, " ");
-
-		if (array3.size() == 2)
-		{
-			aircraft.turnOri = -1;
-			aircraft.getAssignedValues().asdg_roll = aircraft.getPerfValues().max_roll;
-			aircraft.getAssignedValues().asgd_heading = hdg(atodd(array3[1]));
-		}
-
-		return 1;
-	}
-	else if (ci_string_starts_with(command, "spd "))
-	{
-
-		std::vector<std::string> array3 = split(command, " ");
-
-		if (array3.size() >= 2)
-		{
-			aircraft.turnOri = -1;
-			if (!aircraft.locked_rate)
-				aircraft.getDefaultValues().speed = aircraft.getAssignedValues().asdg_speed = atodd(array3[1]);
-		}
-
-		return 1;
-	}
-	else if (ci_string_starts_with(command, "hs "))
-	{
-		for (std::string s : split(command.substr(3, command.length() - 1), " "))
-		{
-			capitalize(s);
-			aircraft.HoldAt(s);
-		}
-		return 1;
-	}
-	else if (ci_string_starts_with(command, "sq "))
-	{
-		std::string squawk = command.substr(3, command.length() - 1);
-		if (squawk.size() == 4 && is_digits(squawk))
-		{
-			aircraft.setSquawkCode(squawk);
-			updateSquawk(aircraft);
-		}
-		return 1;
-	}
-	else if (ci_string_equal(command, "sn"))
-	{
-		aircraft.setMode(1);
-		SetWindowText(mode_button, L"SQUAWK: C");
-		updateMode(aircraft);
-		return 1;
-	}
-	else if (ci_string_equal(command, "ss"))
-	{
-		aircraft.setMode(0);
-		SetWindowText(mode_button, L"SQUAWK: S");
-		updateMode(aircraft);
-		return 1;
-	}
-	else if (ci_string_equal(command, "cto"))
-	{
-		if (aircraft.onGround() && aircraft.holding() && aircraft.HoldingDepart)
-		{
-			if (aircraft.queue_takeoff && aircraft.lineup && aircraft.holding())
-			{
-				aircraft.lineup = false;
-				aircraft.reset_holding();
-				aircraft.set_taxing();
-			}
-			else if (aircraft.runway_ctx && (aircraft.runway_ctx == aircraft.HoldingDepart) && aircraft.ground_cur)
-			{
-				Runway* runway = aircraft.runway_ctx;
-				Point2& cur = aircraft.ground_cur->parent->name == runway->name ? *aircraft.ground_cur :
-					(aircraft.ground_next && aircraft.ground_next->parent->name == runway->name) ? *aircraft.ground_next :
-					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next : *aircraft.ground_cur;
-				if (cur.parent->name == runway->name)
-				{
-					aircraft.reset_path();
-					aircraft.reset_holding();
-					aircraft.ground_points.push_back(&cur);
-					runway->getPoints(&cur, runway->getEnd(), aircraft.ground_points);
-					aircraft.ground_points.push_back(runway->getEnd());
-					aircraft.pollRoute();
-					aircraft.queue_takeoff = true;
-					aircraft.set_taxing();
-				}
-			}
-		}
-		return 1;
-	}
-	else if (ci_string_equal(command, "ph") || ci_string_equal(command, "lw"))
-	{
-		if (aircraft.onGround() && aircraft.holding() && aircraft.HoldingDepart)
-		{
-			if (aircraft.runway_ctx && (aircraft.runway_ctx == aircraft.HoldingDepart) && aircraft.ground_cur)
-			{
-				Runway* runway = aircraft.runway_ctx;
-				Point2& cur = aircraft.ground_cur->parent->name == runway->name ? *aircraft.ground_cur :
-					(aircraft.ground_next && aircraft.ground_next->parent->name == runway->name) ? *aircraft.ground_next :
-					(aircraft.ground_next_next && aircraft.ground_next_next->parent->name == runway->name) ? *aircraft.ground_next_next : *aircraft.ground_cur;
-				if (cur.parent->name == runway->name)
-				{
-					aircraft.reset_path();
-					aircraft.ground_points.push_back(&cur);
-					runway->getPoints(&cur, runway->getEnd(), aircraft.ground_points);
-					aircraft.ground_points.push_back(runway->getEnd());
-					aircraft.pollRoute();
-					aircraft.queue_takeoff = true;
-					aircraft.lineup = true;
-					aircraft.set_taxing();
-				}
-			}
-		}
-		return 1;
-	}
-	else if (ci_string_starts_with(command, "msg "))
-	{
-		std::string msg = command.substr(4);
-		sendUserMessage(aircraft, msg_freq, "", msg);
-		return 1;
-	}
-	return 0;
 }
 
 void GuiUpdateTask::execute() {
 	// This replaces the old GraphicsUIUpdates event
 	DisplayAircraft();
+	g_consoleLogger.FlushToConsole(); 
 }
 

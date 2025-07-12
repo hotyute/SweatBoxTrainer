@@ -146,7 +146,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="aircraft.h" />
+    <ClInclude Include="aircraft\aircraft.h" />
+    <ClInclude Include="aircraft\AircraftState.h" />
+    <ClInclude Include="aircraft\command_handler.h" />
+    <ClInclude Include="aircraft\FlightModel.h" />
+    <ClInclude Include="aircraft\RouteManager.h" />
     <ClInclude Include="airport.h" />
     <ClInclude Include="basic_stream.h" />
     <ClInclude Include="calc_cycles.h" />
@@ -159,6 +163,7 @@
     <ClInclude Include="globals.h" />
     <ClInclude Include="guicon.h" />
     <ClInclude Include="guidialogue.h" />
+    <ClInclude Include="packets_in.h" />
     <ClInclude Include="packets_out.h" />
     <ClInclude Include="point2d.h" />
     <ClInclude Include="Resource.h" />
@@ -171,7 +176,10 @@
     <ClInclude Include="usermanager.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="aircraft.cpp" />
+    <ClCompile Include="aircraft\aircraft.cpp" />
+    <ClCompile Include="aircraft\command_handler.cpp" />
+    <ClCompile Include="aircraft\FlightModel.cpp" />
+    <ClCompile Include="aircraft\RouteManager.cpp" />
     <ClCompile Include="airport.cpp" />
     <ClCompile Include="basic_stream.cpp" />
     <ClCompile Include="calc_cycles.cpp" />
@@ -182,6 +190,7 @@
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="guicon.cpp" />
     <ClCompile Include="guidialogue.cpp" />
+    <ClCompile Include="packets_in.cpp" />
     <ClCompile Include="packets_out.cpp" />
     <ClCompile Include="point2d.cpp" />
     <ClCompile Include="save.cpp" />

@@ -1,5 +1,7 @@
 #include "thread_pool.h"
 
+#include <iostream>
+
 ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
     if (numThreads == 0) numThreads = 1; // Ensure at least one worker
     for (size_t i = 0; i < numThreads; ++i) {
@@ -56,11 +58,11 @@ void ThreadPool::workerLoop() { // FIX: Renamed from worker
         }
         catch (const std::exception& e) {
             // Log exception or handle it appropriately
-            // std::cerr << "Exception in thread pool worker: " << e.what() << std::endl;
+            std::cerr << "Exception in thread pool worker: " << e.what() << std::endl;
         }
         catch (...) {
             // Handle other types of exceptions
-            // std::cerr << "Unknown exception in thread pool worker." << std::endl;
+            std::cerr << "Unknown exception in thread pool worker." << std::endl;
         }
     }
 }

@@ -321,7 +321,7 @@ void BasicStream::end_frame_var_size_word()
 
 void BasicStream::init_bit_access()
 {
-	bit_position = index * 8;
+	bit_position = static_cast<int>(index) * 8;
 }
 
 void BasicStream::write_bits(int num_bits, int value)

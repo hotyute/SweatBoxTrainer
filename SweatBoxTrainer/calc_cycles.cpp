@@ -7,6 +7,7 @@
 #include "packets_out.h"
 #include "tools.h"
 #include "globals.h"
+#include "aircraft/Aircraft.h"
 
 void update()
 {
@@ -14,7 +15,6 @@ void update()
 
 void SimulationTask::execute() {
 	// The core simulation logic goes here.
-	// This replaces the old CalcThread1 loop body.
 	CalculateMovements();
 
 	// The ping logic needs to be adapted. It shouldn't be tied to a wall-clock check inside the loop.
@@ -30,30 +30,13 @@ void CalculateMovements()
 			if (acf_ptr) {
 				Aircraft& aircraft = *acf_ptr;
 
-
-
-				AssignedValues& av = aircraft.getAssignedValues();
-
-				aircraft.CollisionDetection();
-				aircraft.CheckFrameFlags();
-
-				aircraft.updateSpeed();
-				aircraft.updateRoll();
-				aircraft.updatePitch();
-				aircraft.updateHeading();
-				aircraft.updateMovement();
-				aircraft.updateAltitude();
-				// V-Speed is not updated in a dedicated method, so we set it here if needed
-				// For now, let's assume V-Speed is constant or changed by commands.
-
-				if (aircraft.getSpeed() > 0 && (!aircraft.holding() && !aircraft.idle()))
-					aircraft.getNextPoint();
+				aircraft.update();
 
 				// --- MERGED LOGIC FROM PositionUpdates ---
 				// After all calculations are done for this aircraft, send its update.
-				if (aircraft.connected) {
-					sendPositionUpdates(aircraft);
-				}
+				//if (aircraft.connected) {
+				//	sendPositionUpdates(aircraft);
+				//}
 
 			}
 		}

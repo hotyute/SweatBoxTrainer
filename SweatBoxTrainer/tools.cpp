@@ -10,7 +10,7 @@
 #include <sstream>
 
 #include "constants.h"
-#include "aircraft.h"
+#include "aircraft/aircraft.h"
 
 const double EARTH_RADIUS_KM = 6378.14; //KM
 const double EARTH_RADIUS_NM = 3437.670013352;
@@ -637,7 +637,7 @@ int string_to_frequency(std::string frequency)
 		frequency.erase(frequency.begin());
 		frequency.erase(frequency.begin() + 2);
 
-		return atodd(frequency);
+		return (int)atodd(frequency);
 	}
 
 	return 99998;

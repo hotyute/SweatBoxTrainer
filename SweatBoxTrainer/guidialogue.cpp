@@ -1,158 +1,102 @@
+#define NOMINMAX
+#include "windows.h"
+
 #include "guidialogue.h"
-
-#include <vector>
-#include "SweatBoxTrainer.h"
-#include "tools.h"
-
-#include <string>
 #include <chrono>
 #include <iomanip>
+#include <sstream>
+#include <algorithm> // For std::min
 
-std::vector<std::string> EstimateWrappedLines(const std::wstring& text, int maxWidth) {
-	std::vector<std::string> wrappedLines;
-	int currentLineWidth = 0;
-	std::string currentLine;
+// Define the global instance
+ConsoleLogger g_consoleLogger;
 
-	HDC hdc = GetDC(console_text);
-	HFONT hFont = (HFONT)SendMessage(console_text, WM_GETFONT, 0, 0);
-	HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
-
-	for (const wchar_t& character : text) {
-		// Get character width using the selected font
-		SIZE size;
-		GetTextExtentPoint32(hdc, &character, 1, &size);
-		int charWidth = size.cx;
-
-		if (character == L'\n') {
-			// Handle explicit line breaks
-			wrappedLines.push_back(currentLine);
-			currentLine.clear();
-			currentLineWidth = 0;
-		}
-		else {
-			currentLineWidth += charWidth;
-
-			if (currentLineWidth > maxWidth) {
-				// Wrap to the next line
-				wrappedLines.push_back(currentLine);
-				currentLine.clear();
-				currentLineWidth = charWidth;
-			}
-		}
-
-		// Append the character to the current line
-		currentLine.push_back(static_cast<char>(character));
-	}
-
-	// Add the last line if there is any content
-	if (!currentLine.empty()) {
-		wrappedLines.push_back(currentLine);
-	}
-
-	// Cleanup
-	SelectObject(hdc, hOldFont);
-	ReleaseDC(console_text, hdc);
-
-	return wrappedLines;
+void ConsoleLogger::Init(HWND hConsole) {
+    m_hConsole = hConsole;
+    m_hFont = (HFONT)SendMessage(m_hConsole, WM_GETFONT, 0, 0);
 }
 
+void ConsoleLogger::Log(const std::wstring& message) {
+    auto now = std::chrono::system_clock::now();
+    auto timePoint = std::chrono::system_clock::to_time_t(now);
+    std::tm tm;
+    localtime_s(&tm, &timePoint);
+    std::wstringstream timestream;
+    timestream << std::put_time(&tm, L"[%H:%M:%S] ");
 
-int GetControlWidth(HWND control) {
-	RECT clientRect;
-	GetClientRect(control, &clientRect);
-	return clientRect.right - clientRect.left;
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+    m_consoleHistory.push_back(timestream.str() + message);
 }
 
-std::vector<std::wstring> consoleHistory;
+void ConsoleLogger::FlushToConsole() {
+    if (!m_hConsole) return;
 
-int CalculateMaxVisibleLines(HWND console_text) {
-	RECT clientRect;
-	GetClientRect(console_text, &clientRect);
+    bool needsUpdate = false;
+    {
+        std::lock_guard<std::mutex> lock(m_queueMutex);
+        if (!m_consoleHistory.empty()) { // Check the main history now
+            // Move queued messages into the main history
+            for (const auto& msg : m_messageQueue) {
+                m_consoleHistory.push_back(msg);
+            }
+            m_messageQueue.clear();
+            needsUpdate = true;
+        }
+    }
 
-	// Assuming you've already set the font using SendMessage(console_text, WM_SETFONT, ...)
-	HDC hdc = GetDC(console_text);
-	HFONT hFont = (HFONT)SendMessage(console_text, WM_GETFONT, 0, 0);
-	HFONT hFontOld = (HFONT)SelectObject(hdc, hFont);
+    if (!needsUpdate) {
+        return;
+    }
 
-	// Calculate the height of a single line in the current font
-	TEXTMETRIC tm;
-	GetTextMetrics(hdc, &tm);
-	int lineHeight = tm.tmHeight;
+    if (m_consoleHistory.size() > MAX_HISTORY_LINES) {
+        m_consoleHistory.erase(m_consoleHistory.begin(), m_consoleHistory.begin() + (m_consoleHistory.size() - MAX_HISTORY_LINES));
+    }
 
-	// Calculate the maximum visible lines based on the control's height
-	int maxVisibleLines = clientRect.bottom / lineHeight;
+    int visibleLines = CalculateMaxVisibleLines();
+    if (visibleLines <= 0) return;
 
-	// Cleanup
-	SelectObject(hdc, hFontOld);
-	ReleaseDC(console_text, hdc);
+    std::wstringstream textBuffer;
+    int linesToShow = std::min((int)m_consoleHistory.size(), visibleLines);
+    int paddingLines = visibleLines - linesToShow;
 
-	return maxVisibleLines;
+    // Add padding with newlines at the TOP
+    for (int i = 0; i < paddingLines; ++i) {
+        textBuffer << L"\r\n";
+    }
+
+    // Add the most recent lines, avoiding a trailing newline
+    int historyStartIndex = (int)m_consoleHistory.size() - linesToShow;
+    for (int i = 0; i < linesToShow; ++i) {
+        textBuffer << m_consoleHistory[historyStartIndex + i];
+        if (i < linesToShow - 1) {
+            textBuffer << L"\r\n";
+        }
+    }
+
+    // Set the entire text at once
+    SetWindowText(m_hConsole, textBuffer.str().c_str());
 }
 
-template <typename T>
-const T& custom_max(const T& a, const T& b) {
-	return (a < b) ? b : a;
+int ConsoleLogger::CalculateMaxVisibleLines() {
+    if (!m_hConsole || !m_hFont) return 0;
+
+    RECT clientRect;
+    GetClientRect(m_hConsole, &clientRect);
+
+    HDC hdc = GetDC(m_hConsole);
+    HFONT hOldFont = (HFONT)SelectObject(hdc, m_hFont);
+
+    TEXTMETRIC tm;
+    GetTextMetrics(hdc, &tm);
+
+    SelectObject(hdc, hOldFont);
+    ReleaseDC(m_hConsole, hdc);
+
+    int lineHeight = tm.tmHeight + tm.tmExternalLeading;
+    if (lineHeight <= 0) return 0;
+
+    return (clientRect.bottom - clientRect.top) / lineHeight;
 }
 
-template <typename T>
-const T& custom_min(const T& a, const T& b) {
-	return (a > b) ? b : a;
-}
-
-
-// Function to update the static control
-// Function to update the static control
-void UpdateConsole(HWND console_text) {
-	// Combine the last N lines into a single string with line breaks
-	std::wstring combinedText;
-	const int MaxLines = CalculateMaxVisibleLines(console_text);
-
-	int startIdx = custom_max(0, static_cast<int>(consoleHistory.size()) - MaxLines);
-	std::vector<std::wstring> lines;
-	int estimatedLines = 0;
-
-	for (int i = (consoleHistory.size() - 1); i >= startIdx && estimatedLines < MaxLines; --i) {
-		auto wrappedLines = EstimateWrappedLines(consoleHistory[i], GetControlWidth(console_text));
-		for (auto lineIt = wrappedLines.rbegin(); lineIt != wrappedLines.rend(); ++lineIt) {
-			auto& line = *lineIt;
-			lines.insert(lines.begin(), s2ws(line));
-			estimatedLines++;
-		}
-	}
-
-	int remainingLines = MaxLines - estimatedLines;
-
-	// Append new lines up to the remainingLines count
-	for (int i = 0; i < remainingLines; ++i) {
-		combinedText += L"\n"; // No explicit line break needed
-	}
-
-	for (int i = 0; i < lines.size(); ++i) {
-		combinedText += lines[i] + L"\n";
-	}
-
-	// Set the combined text to the static control
-	SetWindowText(console_text, combinedText.c_str());
-}
-
-
-
-// Function to append text to the console control and update the history
 void AppendTextToConsole(const std::wstring& text) {
-	// Get the current time
-	auto now = std::chrono::system_clock::now();
-	auto timePoint = std::chrono::system_clock::to_time_t(now);
-
-	// Format the current time as HH:MM:SS
-	std::tm tm;
-	localtime_s(&tm, &timePoint);
-	std::wstringstream timeStream;
-	timeStream << std::put_time(&tm, L"[%H:%M:%S]");
-
-	// Append the text with the current time to the history vector
-	std::wstring messageWithTime = timeStream.str() + L" " + text;
-	consoleHistory.push_back(messageWithTime);
-
-	// Update the static control
-	UpdateConsole(console_text);
+    g_consoleLogger.Log(text);
 }
