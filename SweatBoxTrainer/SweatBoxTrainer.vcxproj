@@ -163,6 +163,7 @@
     <ClInclude Include="globals.h" />
     <ClInclude Include="guicon.h" />
     <ClInclude Include="guidialogue.h" />
+    <ClInclude Include="nav\navaids.h" />
     <ClInclude Include="packets_in.h" />
     <ClInclude Include="packets_out.h" />
     <ClInclude Include="point2d.h" />

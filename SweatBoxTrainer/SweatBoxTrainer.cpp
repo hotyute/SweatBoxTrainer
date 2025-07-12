@@ -416,10 +416,20 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 		if (GetOpenFileName(&ofn))
 		{
-			std::wstring wide(szFileName);
-			std::string final1 = ws2s(wide);
-			if (LoadSCT(final1)) {
+			std::string path = ws2s(std::wstring(szFileName));
 
+			FileReader reader;
+			auto sector_data = reader.loadSct(path);
+
+			if (sector_data) {
+				std::wstring msg = L"Successfully loaded " + std::to_wstring(sector_data->fixes.size()) + L" fixes, "
+					+ std::to_wstring(sector_data->vors.size()) + L" VORs, and "
+					+ std::to_wstring(sector_data->ndbs.size()) + L" NDBs.";
+				MessageBox(hWnd, msg.c_str(), L"SCT Load Success", MB_OK | MB_ICONINFORMATION);
+			}
+			else
+			{
+				MessageBoxA(hWnd, "Failed to load or parse SCT file.", "SCT Load Error", MB_OK | MB_ICONERROR);
 			}
 		}
 	}
@@ -428,10 +438,8 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	{
 		OPENFILENAME ofn;
 		TCHAR szFileName[MAX_PATH] = L"";
-
 		ZeroMemory(&ofn, sizeof(ofn));
-
-		ofn.lStructSize = sizeof(ofn); // SEE NOTE BELOW
+		ofn.lStructSize = sizeof(ofn);
 		ofn.hwndOwner = hWnd;
 		ofn.lpstrFilter = L"Aircraft Scenario File (*.agc)\0*.agc\0All Files (*.*)\0*.*\0";
 		ofn.lpstrFile = szFileName;
@@ -441,10 +449,25 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 		if (GetOpenFileName(&ofn))
 		{
-			std::wstring wide(szFileName);
-			std::string final1 = ws2s(wide);
-			if (LoadAGC(final1)) {
+			std::string path = ws2s(std::wstring(szFileName));
 
+			FileReader reader;
+			try {
+				auto loaded_aircraft = reader.loadAgc(path);
+
+				// Now, integrate the parsed data into the application state
+				std::lock_guard<std::mutex> lock(g_acfMapMutex);
+				for (auto& acf_ptr : loaded_aircraft) {
+					// Check for duplicates before adding
+					if (AcfMap.find(acf_ptr->getCallSign()) == AcfMap.end()) {
+						addUserToLB(acf_ptr.get()); // Add to GUI listbox
+						AcfMap[acf_ptr->getCallSign()] = std::move(acf_ptr);
+					}
+				}
+			}
+			catch (const std::runtime_error& e) {
+				// Display the error to the user
+				MessageBoxA(hWnd, e.what(), "AGC Load Error", MB_OK | MB_ICONERROR);
 			}
 		}
 	}
@@ -466,10 +489,26 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 		if (GetOpenFileName(&ofn))
 		{
-			std::wstring wide(szFileName);
-			std::string final1 = ws2s(wide);
-			if (LoadAPT(final1)) {
+			std::string path = ws2s(std::wstring(szFileName));
 
+			// --- NEW REFACTORED WAY ---
+			FileReader reader;
+			auto loaded_airport = reader.loadApt(path);
+
+			if (loaded_airport) {
+				std::string icao_key = loaded_airport->icao;
+				// Add the new airport to the global map
+				// Note: The global `airports` map stores raw pointers, which is risky.
+				// It assumes another system is managing the Airport's lifetime.
+				// For now, we will leak it to match old behavior, but this should be fixed.
+				auto it = airports.find(icao_key);
+				if (it != airports.end()) {
+					delete it->second; // Delete the old one if it exists
+				}
+				airports[icao_key] = loaded_airport.release(); // Transfer ownership
+			}
+			else {
+				MessageBoxA(hWnd, "Failed to load or parse the airport file.", "APRT Load Error", MB_OK | MB_ICONERROR);
 			}
 		}
 	}

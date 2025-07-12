@@ -99,6 +99,9 @@
     <ClInclude Include="aircraft\command_handler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="nav\navaids.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SweatBoxTrainer.cpp">

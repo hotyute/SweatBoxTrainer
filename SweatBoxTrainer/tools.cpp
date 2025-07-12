@@ -59,12 +59,6 @@ std::vector<std::string> split(const std::string& s, const std::string& delim) {
 	return split(s, delim, -1);
 }
 
-char* s2ca1(const std::string& s) {
-	char* res = new char[s.size() + 1];
-	strncpy_s(res, s.size() + 1, s.c_str(), s.size() + 1);
-	return res;
-}
-
 int random(int start, int end)
 {
 	if (end < start) {
@@ -653,42 +647,87 @@ std::string frequency_to_string(int frequency)
 	return raw;
 }
 
-// Helper for comparing single characters case-insensitively
-static bool ci_char_equal(char c1, char c2) {
-	return std::tolower(static_cast<unsigned char>(c1)) ==
-		std::tolower(static_cast<unsigned char>(c2));
+// =======================================================================
+//          STRING UTILITIES IMPLEMENTATION
+// =======================================================================
+
+namespace detail {
+	// Policy for case-sensitive character comparison
+	struct CaseSensitiveCompare {
+		bool operator()(unsigned char c1, unsigned char c2) const {
+			return c1 == c2;
+		}
+	};
+
+	// Policy for case-insensitive character comparison
+	struct CaseInsensitiveCompare {
+		bool operator()(unsigned char c1, unsigned char c2) const {
+			return std::tolower(c1) == std::tolower(c2);
+		}
+	};
+} // namespace detail
+
+// --- Equality Implementations ---
+
+bool string_equal(const std::string& s1, const std::string& s2) {
+	// The standard library's operator== is already case-sensitive and optimized.
+	return s1 == s2;
 }
 
-// Implementation for case-insensitive string equality
 bool ci_string_equal(const std::string& s1, const std::string& s2) {
 	if (s1.length() != s2.length()) {
 		return false;
 	}
-	return std::equal(s1.begin(), s1.end(), s2.begin(), ci_char_equal);
+	return std::equal(s1.begin(), s1.end(), s2.begin(), s2.end(), detail::CaseInsensitiveCompare{});
 }
 
-// Implementation for case-insensitive starts_with
+
+// --- Prefix Implementations ---
+
+bool string_starts_with(const std::string& str, const std::string& prefix) {
+	if (str.length() < prefix.length()) {
+		return false;
+	}
+	return std::equal(prefix.begin(), prefix.end(), str.begin(), detail::CaseSensitiveCompare{});
+}
+
 bool ci_string_starts_with(const std::string& str, const std::string& prefix) {
 	if (str.length() < prefix.length()) {
 		return false;
 	}
-	return std::equal(prefix.begin(), prefix.end(), str.begin(), ci_char_equal);
+	return std::equal(prefix.begin(), prefix.end(), str.begin(), detail::CaseInsensitiveCompare{});
 }
 
-// Implementation for case-insensitive ends_with
+
+// --- Suffix Implementations ---
+
+bool string_ends_with(const std::string& str, const std::string& suffix) {
+	if (str.length() < suffix.length()) {
+		return false;
+	}
+	return std::equal(suffix.begin(), suffix.end(), str.end() - suffix.length(), detail::CaseSensitiveCompare{});
+}
+
 bool ci_string_ends_with(const std::string& str, const std::string& suffix) {
 	if (str.length() < suffix.length()) {
 		return false;
 	}
-	return std::equal(suffix.begin(), suffix.end(), str.end() - suffix.length(), ci_char_equal);
+	return std::equal(suffix.begin(), suffix.end(), str.end() - suffix.length(), detail::CaseInsensitiveCompare{});
 }
 
-// Implementation for case-insensitive contains (substring search)
+
+// --- Substring Implementations ---
+
+bool string_contains(const std::string& str, const std::string& substr) {
+	// The standard library's string::find is case-sensitive and optimized.
+	return str.find(substr) != std::string::npos;
+}
+
 bool ci_string_contains(const std::string& str, const std::string& substr) {
 	auto it = std::search(
 		str.begin(), str.end(),
 		substr.begin(), substr.end(),
-		ci_char_equal
+		detail::CaseInsensitiveCompare{}
 	);
 	return (it != str.end());
 }
