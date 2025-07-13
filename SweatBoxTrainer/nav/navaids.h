@@ -6,25 +6,25 @@
 
 // A simple structure for a navigational fix.
 struct Fix {
-    std::string name;
-    double latitude;
-    double longitude;
+    std::string name = "";
+    double latitude = 0;
+    double longitude = 0;
 };
 
 // A structure for a VOR.
 struct VOR {
-    std::string name;
-    double frequency;
-    double latitude;
-    double longitude;
+    std::string name = "";
+    double frequency = 99998;
+    double latitude = 0;
+    double longitude = 0;
 };
 
 // A structure for an NDB.
 struct NDB {
-    std::string name;
-    int frequency;
-    double latitude;
-    double longitude;
+    std::string name = "";
+    int frequency = 99998;
+    double latitude = 0;
+    double longitude = 0;
 };
 
 // This class will hold all the data parsed from an SCT file.

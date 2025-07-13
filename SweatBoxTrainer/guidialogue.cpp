@@ -20,11 +20,11 @@ void ConsoleLogger::Log(const std::wstring& message) {
     auto timePoint = std::chrono::system_clock::to_time_t(now);
     std::tm tm;
     localtime_s(&tm, &timePoint);
-    std::wstringstream timestream;
-    timestream << std::put_time(&tm, L"[%H:%M:%S] ");
+    std::wstringstream timeStream;
+    timeStream << std::put_time(&tm, L"[%H:%M:%S] ");
 
     std::lock_guard<std::mutex> lock(m_queueMutex);
-    m_consoleHistory.push_back(timestream.str() + message);
+    m_consoleHistory.push_back(timeStream.str() + message);
 }
 
 void ConsoleLogger::FlushToConsole() {

@@ -203,7 +203,7 @@ void RouteManager::updateNavigation(ACF_STATE& aircraft_state, AircraftState& st
 			}
 			else {
 				if (!ground_prev) {
-					// ... initial turn logic as before ...
+					// ... initial turn logic ...
 					double brng = get_bearing(state.latitude, state.longitude, ground_cur->y_, ground_cur->x_);
 					this->initialTurnAngle = fabs(state.heading - brng);
 					if (this->initialTurnAngle > 180.0) {

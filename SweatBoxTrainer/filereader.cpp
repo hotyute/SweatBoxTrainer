@@ -146,7 +146,6 @@ void FileReader::parseAgcLine(const std::string& line) {
         m_currentAgcAircraft->setHeavy(heavy);
         m_currentAgcAircraft->setAptIcao(args[10]);
         m_currentAgcAircraft->getAirport();
-        // Note: getAirport() will be called later when the aircraft is active.
     }
     else if (m_agcLineCounter == 1) {
         if (!m_currentAgcAircraft) return; // Skip if first line was bad
