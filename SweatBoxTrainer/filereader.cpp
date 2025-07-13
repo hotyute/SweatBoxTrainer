@@ -381,14 +381,14 @@ void FileReader::processRunways() {
         if (names.size() > 1) {
             // This is a reciprocal runway, e.g., "18/36"
             // Original runway (e.g., 18)
-            std::string name1 = names[0];
+            std::string name1 = names[1];
             m_currentApt->all.erase(rwy_ptr->name); // Erase old combined key
             rwy_ptr->name = name1;
             m_currentApt->all[name1] = rwy_ptr.get();
 
             // Create new runway for the other end (e.g., 36)
             auto other = std::make_unique<Runway>();
-            other->name = names[1];
+            other->name = names[0];
             std::reverse_copy(rwy_ptr->points.begin(), rwy_ptr->points.end(), std::back_inserter(other->points));
             for (auto* p : other->points) { p->parent = other.get(); }
 
