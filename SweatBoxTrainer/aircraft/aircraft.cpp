@@ -5,7 +5,7 @@
 #include "../packets_out.h"
 #include "../usermanager.h"
 #include "../tools/thread_pool.h"
-#include "../packets_out.h"
+#include "../globals.h"
 #include <iostream>
 
 // Define the global map here, but it should ideally be in an application context class
@@ -39,11 +39,18 @@ void Aircraft::update() {
 Airport* Aircraft::getAirport() {
 	// This is a temporary solution. Airport data should be managed elsewhere.
 	if (!apt_icao.empty() && apt_icao.length() > 3) {
-		std::string icao = apt_icao.substr(0, 4); // Example logic
+		std::string icao = apt_icao.substr(0, 4);
+
+		// The caching logic is still good: only search the map if we don't have
+		// a valid airport pointer or if the ICAO has changed.
 		if (!airport || !ci_string_equal(airport->icao, icao)) {
+			// Find the airport in the global map
 			auto it = airports.find(icao);
 			if (it != airports.end()) {
-				airport = it->second;
+				airport = it->second.get();
+			}
+			else {
+				airport = nullptr;
 			}
 		}
 	}

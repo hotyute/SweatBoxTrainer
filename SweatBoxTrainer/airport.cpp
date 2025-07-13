@@ -3,8 +3,6 @@
 #include "tools.h"
 #include "geoutils.h"
 
-std::unordered_map<std::string, Airport*> airports;
-
 Point2* TaxiPath::getPrevPoint(Point2* to, Point2* next)
 {
 	if (to->index < next->index)

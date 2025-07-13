@@ -93,6 +93,3 @@ public:
 
 	std::string icao;
 };
-
-// This map of non-owning pointers is fine, as the objects will be owned by something else (e.g. an AppContext class)
-extern std::unordered_map<std::string, Airport*> airports;

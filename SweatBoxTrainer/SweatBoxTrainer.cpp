@@ -491,21 +491,11 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 		{
 			std::string path = ws2s(std::wstring(szFileName));
 
-			// --- NEW REFACTORED WAY ---
 			FileReader reader;
 			auto loaded_airport = reader.loadApt(path);
 
 			if (loaded_airport) {
-				std::string icao_key = loaded_airport->icao;
-				// Add the new airport to the global map
-				// Note: The global `airports` map stores raw pointers, which is risky.
-				// It assumes another system is managing the Airport's lifetime.
-				// For now, we will leak it to match old behavior, but this should be fixed.
-				auto it = airports.find(icao_key);
-				if (it != airports.end()) {
-					delete it->second; // Delete the old one if it exists
-				}
-				airports[icao_key] = loaded_airport.release(); // Transfer ownership
+				airports[loaded_airport->icao] = std::move(loaded_airport);
 			}
 			else {
 				MessageBoxA(hWnd, "Failed to load or parse the airport file.", "APRT Load Error", MB_OK | MB_ICONERROR);

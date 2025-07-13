@@ -10,6 +10,7 @@
 #include "guidialogue.h"
 #include "airport.h"
 #include "tools.h"
+#include "globals.h"
 
 void save_info()
 {
@@ -103,18 +104,7 @@ void read_info()
                             auto loaded_airport = reader.loadApt(entry.path().string());
 
                             if (loaded_airport) {
-                                // 1. Get the key and store it safely in a local variable.
-                                std::string icao_key = loaded_airport->icao;
-
-                                // 2. Check for and delete any existing airport with this key.
-                                auto it = airports.find(icao_key);
-                                if (it != airports.end()) {
-                                    delete it->second; // This is safe.
-                                }
-
-                                // 3. Now, perform the insertion/assignment. The key is a safe local
-                                //    variable, so the order of evaluation no longer matters.
-                                airports[icao_key] = loaded_airport.release();
+                                airports[loaded_airport->icao] = std::move(loaded_airport);
                             }
                         }
                     }
