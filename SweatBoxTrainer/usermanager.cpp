@@ -4,6 +4,7 @@
 #include "tools.h"
 #include "packets_out.h"
 #include "globals.h"
+#include "sim/simulation_context.h"
 
 std::vector<Aircraft*> userStorage1;
 
@@ -54,8 +55,9 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 	Aircraft* raw_ptr = cur.get();
 	{
 		// The lock correctly protects the shared AcfMap collection
-		std::lock_guard<std::mutex> lock(g_acfMapMutex);
-		AcfMap[callsign] = std::move(cur); // Move ownership into the map
+		auto& ctx = SimulationContext::instance();
+		std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
+		ctx.aircraft()[callsign] = std::move(cur); // Move ownership into the map
 	}
 
 	addUserToLB(raw_ptr);

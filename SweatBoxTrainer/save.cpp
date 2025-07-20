@@ -11,6 +11,7 @@
 #include "airport.h"
 #include "tools.h"
 #include "globals.h"
+#include "sim/simulation_context.h"
 
 void save_info()
 {
@@ -102,9 +103,10 @@ void read_info()
                         {
                             // Use the new FileReader method
                             auto loaded_airport = reader.loadApt(entry.path().string());
+                            auto& ctx = SimulationContext::instance();
 
                             if (loaded_airport) {
-                                airports[loaded_airport->icao] = std::move(loaded_airport);
+                                ctx.airports()[loaded_airport->icao] = std::move(loaded_airport);
                             }
                         }
                     }

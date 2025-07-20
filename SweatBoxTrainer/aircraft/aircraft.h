@@ -162,8 +162,5 @@ private:
     // Friend classes if necessary, though it's better to use public interfaces
 };
 
-
-extern std::unordered_map<std::string, std::unique_ptr<Aircraft>> AcfMap;
-
 void addUserToLB(Aircraft* user);
 void DisplayAircraft();

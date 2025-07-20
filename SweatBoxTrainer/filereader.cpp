@@ -278,18 +278,20 @@ void FileReader::parseAptLine(const std::string& line) {
                 // Not an attribute, so it must be a point
                 std::vector<std::string> args = split(line, " ");
                 if (args.size() < 2) return; // Malformed point
-                Point2* p = new Point2(atodd(args[1]), atodd(args[0])); // x=lon, y=lat
+                auto p = std::make_unique<Point2>(atodd(args[1]), atodd(args[0])); // x=lon, y=lat
                 p->parent = m_currentAptPath;
-                p->index = static_cast<int>(pushBack(m_currentAptPath->points, p));
+                p->index = static_cast<int>(m_currentAptPath->points.size());
+                m_currentAptPath->points.push_back(std::move(p));
             }
         }
         else {
             // Taxiway and Parking sections only have points
             std::vector<std::string> args = split(line, " ");
             if (args.size() < 2) return; // Malformed point
-            Point2* p = new Point2(atodd(args[1]), atodd(args[0])); // x=lon, y=lat
+            auto p = std::make_unique<Point2>(atodd(args[1]), atodd(args[0])); // x=lon, y=lat
             p->parent = m_currentAptPath;
-            p->index = static_cast<int>(pushBack(m_currentAptPath->points, p));
+            p->index = static_cast<int>(m_currentAptPath->points.size());
+            m_currentAptPath->points.push_back(std::move(p));
         }
     }
     else if (m_currentAptApproach) {
@@ -372,25 +374,28 @@ void FileReader::parseSctLine(const std::string& line) {
 void FileReader::processRunways() {
     if (!m_currentApt) return;
 
-    // This is complex because we need to modify the owning vectors while iterating.
-    // It's safer to build a new list of runways and then swap.
     std::vector<std::unique_ptr<Runway>> processedRunways;
 
     for (auto& rwy_ptr : m_currentApt->runways) {
         std::vector<std::string> names = split(rwy_ptr->name, "/");
         if (names.size() > 1) {
-            // This is a reciprocal runway, e.g., "18/36"
-            // Original runway (e.g., 18)
+            // 1. original runway
             std::string name1 = names[1];
-            m_currentApt->all.erase(rwy_ptr->name); // Erase old combined key
+            m_currentApt->all.erase(rwy_ptr->name);
             rwy_ptr->name = name1;
             m_currentApt->all[name1] = rwy_ptr.get();
 
-            // Create new runway for the other end (e.g., 36)
+            // 2. reverse runway
             auto other = std::make_unique<Runway>();
             other->name = names[0];
-            std::reverse_copy(rwy_ptr->points.begin(), rwy_ptr->points.end(), std::back_inserter(other->points));
-            for (auto* p : other->points) { p->parent = other.get(); }
+
+            // deep-copy & fix parent/index
+            for (auto it = rwy_ptr->points.rbegin(); it != rwy_ptr->points.rend(); ++it) {
+                auto p = std::make_unique<Point2>(**it);
+                p->parent = other.get();
+                p->index = static_cast<int>(other->points.size());
+                other->points.push_back(std::move(p));
+            }
 
             m_currentApt->all[other->name] = other.get();
             processedRunways.push_back(std::move(other));

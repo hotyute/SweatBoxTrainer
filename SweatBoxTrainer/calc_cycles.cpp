@@ -8,6 +8,7 @@
 #include "tools.h"
 #include "globals.h"
 #include "aircraft/Aircraft.h"
+#include "sim/simulation_context.h"
 
 void update()
 {
@@ -23,22 +24,18 @@ void SimulationTask::execute() {
 
 void CalculateMovements()
 {
-	std::lock_guard<std::mutex> lock(g_acfMapMutex); // Lock the mutex
-	if (AcfMap.size() > 0) {
-		for (auto const& [key, acf_ptr] : AcfMap)
-		{
-			if (acf_ptr) {
-				Aircraft& aircraft = *acf_ptr;
+	auto& ctx = SimulationContext::instance();
+	std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
+	for (auto& [callsign, acPtr] : ctx.aircraft())
+	{
+		Aircraft& aircraft = *acPtr;
 
-				aircraft.update();
+		aircraft.update();
 
-				// --- MERGED LOGIC FROM PositionUpdates ---
-				// After all calculations are done for this aircraft, send its update.
-				//if (aircraft.connected) {
-				//	sendPositionUpdates(aircraft);
-				//}
-
-			}
-		}
+		// --- MERGED LOGIC FROM PositionUpdates ---
+		// After all calculations are done for this aircraft, send its update.
+		//if (aircraft.connected) {
+		//	sendPositionUpdates(aircraft);
+		//}
 	}
 }

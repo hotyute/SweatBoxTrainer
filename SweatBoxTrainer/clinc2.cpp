@@ -10,6 +10,7 @@
 #include "SweatBoxTrainer.h"
 #include "packets_in.h"
 #include "globals.h"
+#include "sim/simulation_context.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -407,9 +408,11 @@ void SocketPollingTask::execute() {
 	// We need to iterate over all connected aircraft and poll their sockets.
 
 	// PROTECT THIS LOOP WITH A MUTEX!
-	std::lock_guard<std::mutex> lock(g_acfMapMutex); // You'll need to create a global mutex for AcfMap
-	for (auto const& [key, val] : AcfMap) {
-		Aircraft& aircraft = *val;
+	auto& ctx = SimulationContext::instance();
+	std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
+	for (auto& [callsign, acPtr] : ctx.aircraft())
+	{
+		Aircraft& aircraft = *acPtr;
 		// The tcp_manager::poll_socket() logic needs to be refactored slightly.
 		// It should perform a single, non-blocking poll, not an infinite loop.
 		// Your current implementation already uses select with a timeout, which is good.

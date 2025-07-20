@@ -28,6 +28,7 @@
 #include "aircraft/Aircraft.h"
 #include "aircraft/command_handler.h"
 #include "globals.h"
+#include "sim/simulation_context.h"
 
 #ifdef _DEBUG
 #include "guicon.h"
@@ -455,13 +456,14 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			try {
 				auto loaded_aircraft = reader.loadAgc(path);
 
-				// Now, integrate the parsed data into the application state
-				std::lock_guard<std::mutex> lock(g_acfMapMutex);
+				auto& ctx = SimulationContext::instance();
+				std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
+
 				for (auto& acf_ptr : loaded_aircraft) {
-					// Check for duplicates before adding
-					if (AcfMap.find(acf_ptr->getCallSign()) == AcfMap.end()) {
-						addUserToLB(acf_ptr.get()); // Add to GUI listbox
-						AcfMap[acf_ptr->getCallSign()] = std::move(acf_ptr);
+					const std::string& cs = acf_ptr->getCallSign();
+					if (ctx.aircraft().find(cs) == ctx.aircraft().end()) {
+						addUserToLB(acf_ptr.get());               // GUI listbox
+						ctx.aircraft()[cs] = std::move(acf_ptr);  // ownership transfer
 					}
 				}
 			}
@@ -494,8 +496,9 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			FileReader reader;
 			auto loaded_airport = reader.loadApt(path);
 
+			auto& ctx = SimulationContext::instance();
 			if (loaded_airport) {
-				airports[loaded_airport->icao] = std::move(loaded_airport);
+				ctx.airports()[loaded_airport->icao] = std::move(loaded_airport);
 			}
 			else {
 				MessageBoxA(hWnd, "Failed to load or parse the airport file.", "APRT Load Error", MB_OK | MB_ICONERROR);
@@ -565,9 +568,11 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 void connect()
 {
-	for (auto it = AcfMap.begin(); it != AcfMap.end(); ++it)
+	auto& ctx = SimulationContext::instance();
+	std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
+	for (auto& [callsign, acPtr] : ctx.aircraft())
 	{
-		Aircraft& aircraft = *(it->second);
+		Aircraft& aircraft = *acPtr;
 		const AircraftState& state = aircraft.getState();
 		tcp_manager& tcp = aircraft.getConnection();
 		if (!aircraft.connected)

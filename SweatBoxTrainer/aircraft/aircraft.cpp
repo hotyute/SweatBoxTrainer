@@ -6,10 +6,8 @@
 #include "../usermanager.h"
 #include "../tools/thread_pool.h"
 #include "../globals.h"
+#include "../sim/simulation_context.h"
 #include <iostream>
-
-// Define the global map here, but it should ideally be in an application context class
-std::unordered_map<std::string, std::unique_ptr<Aircraft>> AcfMap;
 
 Aircraft::Aircraft() : m_connection(this) {
 	// Constructor logic if any
@@ -37,22 +35,15 @@ void Aircraft::update() {
 }
 
 Airport* Aircraft::getAirport() {
-	// This is a temporary solution. Airport data should be managed elsewhere.
-	if (!apt_icao.empty() && apt_icao.length() > 3) {
-		std::string icao = apt_icao.substr(0, 4);
+	if (apt_icao.empty() || apt_icao.length() < 4)
+		return nullptr;
 
-		// The caching logic is still good: only search the map if we don't have
-		// a valid airport pointer or if the ICAO has changed.
-		if (!airport || !ci_string_equal(airport->icao, icao)) {
-			// Find the airport in the global map
-			auto it = airports.find(icao);
-			if (it != airports.end()) {
-				airport = it->second.get();
-			}
-			else {
-				airport = nullptr;
-			}
-		}
+	std::string icao = apt_icao.substr(0, 4);
+	auto& ctx = SimulationContext::instance();
+
+	if (!airport || !ci_string_equal(airport->icao, icao)) {
+		auto it = ctx.airports().find(icao);
+		airport = (it != ctx.airports().end()) ? it->second.get() : nullptr;
 	}
 	return airport;
 }
@@ -120,32 +111,37 @@ void Aircraft::CollisionDetection()
 				state = ACF_STATE::TAXING;
 		}
 	}
-	else if (!AcfMap.empty() && state != ACF_STATE::HOLDING)
+	else if (state != ACF_STATE::HOLDING)
 	{
+		auto& ctx = SimulationContext::instance();
+		std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
+
+		if (ctx.aircraft().empty()) return;
+
 		Aircraft* hold_for = nullptr;
 		double last_distance = 0;
 		double decel_distance0 = GetDecelerationDistance(m_state.speed, 0.0, m_assignedValues.asdg_gnd_braking);
 
-		for (auto& it : AcfMap)
+		for (const auto& [callsign, otherPtr] : ctx.aircraft())
 		{
-			Aircraft& other = *it.second;
-			if (&other != this && other.onGround() && other.getAirport() == currentAirport)
+			Aircraft* other = otherPtr.get();
+			if (other != this && other->onGround() && other->getAirport() == currentAirport)
 			{
-				double cur_dist = GetDistance(other.GetNextLoc(), nextLoc);
+				double cur_dist = GetDistance(other->GetNextLoc(), nextLoc);
 				double dist = (300 / KNOTS_FT) + decel_distance0;
 				if (cur_dist <= dist)
 				{
-					double angle = get_angle(degrees(GetHeading(nextLoc, other.GetNextLoc())), m_state.heading);
+					double angle = get_angle(degrees(GetHeading(nextLoc, other->GetNextLoc())), m_state.heading);
 					if ((last_distance == 0.0 || cur_dist < last_distance) && angle <= 90.0)
 					{
 						// Simplified taxiway intersection logic
-						if (m_routeManager.ground_cur && other.m_routeManager.ground_cur &&
-							taxiIntersect(*m_routeManager.ground_cur, *other.m_routeManager.ground_cur))
+						if (m_routeManager.ground_cur && other->m_routeManager.ground_cur &&
+							taxiIntersect(*m_routeManager.ground_cur, *other->m_routeManager.ground_cur))
 						{
-							hold_for = it.second.get();
+							hold_for = otherPtr.get();
 							state = ACF_STATE::HOLDING;
 							last_distance = cur_dist;
-							AppendTextToConsole(s2ws(getCallSign() + ", holding for: " + other.getCallSign()));
+							AppendTextToConsole(s2ws(getCallSign() + ", holding for: " + other->getCallSign()));
 						}
 					}
 				}

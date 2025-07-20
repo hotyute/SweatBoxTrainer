@@ -84,14 +84,6 @@ int string_to_frequency(std::string frequency);
 
 std::string frequency_to_string(int frequency);
 
-template<typename T>
-size_t pushBack(std::vector<T>& v, T val)
-{
-	size_t r = v.size();
-	v.push_back(val);
-	return r;
-}
-
 // --- Equality ---
 // Case-sensitive string comparison.
 bool string_equal(const std::string& s1, const std::string& s2);
