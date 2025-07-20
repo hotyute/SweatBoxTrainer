@@ -22,7 +22,7 @@ static std::unordered_map<int, std::function<void(Aircraft*, BasicStream&)>> pac
 // =======================================================================
 // We take the logic from each 'if' block and move it into its own function.
 
-void handleUpdateCycleChange(Aircraft* connection_owner, BasicStream& stream) {
+static void handleUpdateCycleChange(Aircraft* connection_owner, BasicStream& stream) {
 	long long time = stream.readQWord();
 	printf("time_change: %s, %lld\n", connection_owner->getCallSign().c_str(), time);
 	connection_owner->setUpdateTime(time);
@@ -31,14 +31,14 @@ void handleUpdateCycleChange(Aircraft* connection_owner, BasicStream& stream) {
 	}
 }
 
-void handleUserMessage(Aircraft* connection_owner, BasicStream& stream) {
+static void handleUserMessage(Aircraft* connection_owner, BasicStream& stream) {
 	std::string callsign = stream.read_std_string();
 	std::string msg = stream.read_std_string();
 	// You could append this to the console, process it, etc.
 	// e.g., AppendTextToConsole(s2ws(std::string(callsign) + ": " + msg));
 }
 
-void handlePilotUpdate(Aircraft* connection_owner, BasicStream& stream) {
+static void handlePilotUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 
 	auto& ctx = SimulationContext::instance();
@@ -63,7 +63,7 @@ void handlePilotUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	// For now, this handler just reads the data.
 }
 
-void handleFrequencyCommands(Aircraft* connection_owner, BasicStream& stream) {
+static void handleFrequencyCommands(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	int frequency = stream.read3Byte();
 	bool asel = stream.read_unsigned_byte() == 1;
@@ -83,7 +83,7 @@ void handleFrequencyCommands(Aircraft* connection_owner, BasicStream& stream) {
 	}
 }
 
-void handleFlightPlanUpdate(Aircraft* connection_owner, BasicStream& stream) {
+static void handleFlightPlanUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 
 	auto& ctx = SimulationContext::instance();
@@ -106,7 +106,7 @@ void handleFlightPlanUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	}
 }
 
-void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
+static void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	AV_CLIENT type = static_cast<AV_CLIENT>(stream.read_unsigned_byte());
 	std::string callSign1 = stream.read_std_string();
@@ -152,7 +152,7 @@ void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 	}
 }
 
-void handleControllerUpdate(Aircraft* connection_owner, BasicStream& stream) {
+static void handleControllerUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	// As with pilot update, you'd find the controller and update their state.
 	// For now, just reading the data.
@@ -161,7 +161,7 @@ void handleControllerUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int flags = stream.read_unsigned_byte();
 }
 
-void handleScript(Aircraft* connection_owner, BasicStream& stream) {
+static void handleScript(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	int script_idx = stream.read_unsigned_short();
 	std::string assembly = stream.read_string();
