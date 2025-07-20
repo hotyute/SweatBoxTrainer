@@ -7,6 +7,7 @@
 #include "tools.h"
 #include "globals.h"
 #include "aircraft/command_handler.h"
+#include "sim/simulation_context.h"
 
 // =======================================================================
 // 1. Define the Packet Handler Dispatch Table
@@ -21,16 +22,16 @@ static std::unordered_map<int, std::function<void(Aircraft*, BasicStream&)>> pac
 // =======================================================================
 // We take the logic from each 'if' block and move it into its own function.
 
-void handleUpdateCycleChange(Aircraft* aircraft, BasicStream& stream) {
+void handleUpdateCycleChange(Aircraft* connection_owner, BasicStream& stream) {
 	long long time = stream.readQWord();
-	printf("time_change: %s, %lld\n", aircraft->getCallSign().c_str(), time);
-	aircraft->setUpdateTime(time);
+	printf("time_change: %s, %lld\n", connection_owner->getCallSign().c_str(), time);
+	connection_owner->setUpdateTime(time);
 	if (g_threadPool) { // Safety check
-		aircraft->startPositionUpdates(*g_threadPool);
+		connection_owner->startPositionUpdates(*g_threadPool);
 	}
 }
 
-void handleUserMessage(Aircraft* aircraft, BasicStream& stream) {
+void handleUserMessage(Aircraft* connection_owner, BasicStream& stream) {
 	char callsign[25];
 	stream.readString(callsign);
 	char msg[2048];
@@ -39,8 +40,14 @@ void handleUserMessage(Aircraft* aircraft, BasicStream& stream) {
 	// e.g., AppendTextToConsole(s2ws(std::string(callsign) + ": " + msg));
 }
 
-void handlePilotUpdate(Aircraft* aircraft, BasicStream& stream) {
+void handlePilotUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
+
+	auto& ctx = SimulationContext::instance();
+	// The calling SocketPollingTask holds the mutex, so this is safe.
+	Aircraft* target_aircraft = ctx.findAircraftByIndex(index);
+	if (!target_aircraft) return; // Received update for an unknown aircraft
+
 	long long lat = stream.readQWord();
 	long long lon = stream.readQWord();
 	double latitude = *(double*)&lat;
@@ -55,9 +62,12 @@ void handlePilotUpdate(Aircraft* aircraft, BasicStream& stream) {
 	int groundSpeed = stream.read_unsigned_short();
 	long long alt = stream.readQWord();
 	double altitude = *(double*)&alt;
+
+	// Note: Here you would update the state of 'target_aircraft', not 'connection_owner'
+	// For now, this handler just reads the data.
 }
 
-void handleFrequencyCommands(Aircraft* aircraft, BasicStream& stream) {
+void handleFrequencyCommands(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	int frequency = stream.read3Byte();
 	bool asel = stream.read_unsigned_byte() == 1;
@@ -68,25 +78,28 @@ void handleFrequencyCommands(Aircraft* aircraft, BasicStream& stream) {
 		std::string message = std::string(msg);
 		if (asel)
 		{
-			std::string pre_cursor = aircraft->getCallSign() + ", ";
+			std::string pre_cursor = connection_owner->getCallSign() + ", ";
 			std::size_t pos = message.find(pre_cursor);
 			if (pos != std::string::npos)
 			{
-				CommandHandlers::processCommand(*aircraft, message.substr(pos + pre_cursor.length()));
+				CommandHandlers::processCommand(*connection_owner, message.substr(pos + pre_cursor.length()));
 			}
 		}
 	}
 }
 
-void handleFlightPlanUpdate(Aircraft* aircraft, BasicStream& stream) {
+void handleFlightPlanUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
+
+	auto& ctx = SimulationContext::instance();
+	Aircraft* target_aircraft = ctx.findAircraftByIndex(index);
+	if (!target_aircraft) return;
+
 	int cur_cycle = stream.read_unsigned_short();
 	AV_CLIENT type = static_cast<AV_CLIENT>(stream.read_unsigned_byte());
 
-	// Again, find aircraft by index if this can be for other planes.
-	// If it's always for 'aircraft', then we can proceed.
 	if (type == AV_CLIENT::PILOT) {
-		FlightPlan& fp = aircraft->getFlightPlan();
+		FlightPlan& fp = target_aircraft->getFlightPlan();
 		char assigned_squawk[5], departure[5], arrival[5], alternate[5], cruise[6], ac_type[9], scratch[5], route[128], remarks[128];
 		stream.read_unsigned_byte();
 		stream.readString(assigned_squawk);
@@ -100,10 +113,13 @@ void handleFlightPlanUpdate(Aircraft* aircraft, BasicStream& stream) {
 		stream.readString(remarks);
 		// Now assign these values to fp
 		fp.squawkCode = assigned_squawk;
+		fp.departure = departure;
+		fp.arrival = arrival;
+		//... and so on
 	}
 }
 
-void handleCreateUser(Aircraft* aircraft, BasicStream& stream) {
+void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	AV_CLIENT type = static_cast<AV_CLIENT>(stream.read_unsigned_byte());
 	char callSign1[1024], full_name[1024], username[1024];
@@ -113,6 +129,9 @@ void handleCreateUser(Aircraft* aircraft, BasicStream& stream) {
 	int vis_range = stream.read_unsigned_short();
 	long long lat = stream.readQWord();
 	long long lon = stream.readQWord();
+	double latitude = *reinterpret_cast<double*>(&lat);
+	double longitude = *reinterpret_cast<double*>(&lon);
+
 	if (type == AV_CLIENT::CONTROLLER)
 	{
 		//do nothing but read the stream
@@ -136,14 +155,24 @@ void handleCreateUser(Aircraft* aircraft, BasicStream& stream) {
 		double pitch = num2 / 1024.0 * -360.0;
 		double roll = num3 / 1024.0 * -360.0;
 		double heading = num4 / 1024.0 * 360.0;
-		//user1->setUserIndex(index);
-		//userStorage1[index] = user1;
+
+		// The calling SocketPollingTask holds the mutex, so this is safe.
+		Aircraft* new_aircraft = createAircraft(callSign1, latitude, longitude, heading, 0, 0, 0, squawkMode, trans_code);
+		if (new_aircraft) {
+			new_aircraft->setUserIndex(index);
+			auto& ctx = SimulationContext::instance();
+			ctx.indexToCallsignMap()[index] = new_aircraft->getCallSign();
+			// Further initialization for the new aircraft...
+			new_aircraft->setHeavy(heavy);
+			new_aircraft->setAcfTitle(acfTitle);
+		}
 	}
 }
 
-void handleControllerUpdate(Aircraft* aircraft, BasicStream& stream) {
-	//Controller Update Packet
+void handleControllerUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
+	// As with pilot update, you'd find the controller and update their state.
+	// For now, just reading the data.
 	long long lat = stream.readQWord();
 	long long lon = stream.readQWord();
 	double latitude = *reinterpret_cast<double*>(&lat);
@@ -151,7 +180,7 @@ void handleControllerUpdate(Aircraft* aircraft, BasicStream& stream) {
 	int flags = stream.read_unsigned_byte();
 }
 
-void handleScript(Aircraft* aircraft, BasicStream& stream) {
+void handleScript(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	int script_idx = stream.read_unsigned_short();
 	std::string assembly = stream.read_string();
@@ -204,13 +233,49 @@ void initializePacketHandlers() {
 	// Using lambdas for simple or placeholder handlers
 	packetHandlers[7] = [](Aircraft* ac, BasicStream& s) { char msg[256]; s.readString(msg); };
 	packetHandlers[8] = [](Aircraft* ac, BasicStream& s) { char wx[256]; s.readString(wx); };
-	packetHandlers[12] = [](Aircraft* ac, BasicStream& s) { int index = s.read_unsigned_short(); /* Logic to delete user */ };
+	packetHandlers[12] = [](Aircraft* connection_owner, BasicStream& s) {
+		int index = s.read_unsigned_short();
+		auto& ctx = SimulationContext::instance();
+		Aircraft* target_aircraft = ctx.findAircraftByIndex(index);
+		if (target_aircraft) {
+			// Logic to delete user, e.g., mark for removal
+		}
+		};
 	packetHandlers[13] = [](Aircraft* ac, BasicStream& s) { /* Ping packet, do nothing or reply */ };
-	packetHandlers[16] = [](Aircraft* ac, BasicStream& s) { int index = s.read_unsigned_short(); int i = s.read_unsigned_byte(); int mode = i << 4, heavy = i & 0xF; };
-	packetHandlers[19] = [](Aircraft* ac, BasicStream& s) { int index = s.read_unsigned_short(); int vis_range = s.read_unsigned_short(); };
-	packetHandlers[20] = [](Aircraft* ac, BasicStream& s) { int index = s.read_unsigned_short(); char code[20]; s.readString(code); };
-	packetHandlers[21] = [](Aircraft* ac, BasicStream& s) { int index = s.read_unsigned_short(); int flags = s.read_unsigned_byte(); int freq = s.read_unsigned_int(); };
-	packetHandlers[23] = [](Aircraft* ac, BasicStream& s) { int index = s.read_unsigned_short(); int script_idx = s.read_unsigned_short(); };
+	packetHandlers[16] = [](Aircraft* connection_owner, BasicStream& s) {
+		int index = s.read_unsigned_short();
+		int i = s.read_unsigned_byte();
+		int mode = i << 4;
+		bool heavy = (i & 0xf) == 1;
+		auto& ctx = SimulationContext::instance();
+		Aircraft* target_aircraft = ctx.findAircraftByIndex(index);
+		if (target_aircraft) {
+			target_aircraft->setMode(mode);
+			target_aircraft->setHeavy(heavy);
+		}
+		};
+	packetHandlers[19] = [](Aircraft* connection_owner, BasicStream& s) {
+		int index = s.read_unsigned_short();
+		int vis_range = s.read_unsigned_short();
+		// find aircraft and set visibility
+		};
+	packetHandlers[20] = [](Aircraft* connection_owner, BasicStream& s) {
+		int index = s.read_unsigned_short();
+		char code[20];
+		s.readString(code);
+		// find aircraft and set something with code
+		};
+	packetHandlers[21] = [](Aircraft* connection_owner, BasicStream& s) {
+		int index = s.read_unsigned_short();
+		int flags = s.read_unsigned_byte();
+		int freq = s.read_unsigned_int();
+		// find aircraft and set something with flags/freq
+		};
+	packetHandlers[23] = [](Aircraft* connection_owner, BasicStream& s) {
+		int index = s.read_unsigned_short();
+		int script_idx = s.read_unsigned_short();
+		// find aircraft and do something with script
+		};
 
 	printf("Packet handlers initialized.\n");
 }

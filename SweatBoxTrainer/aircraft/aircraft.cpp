@@ -235,13 +235,20 @@ void Aircraft::stopPositionUpdates()
 	}
 }
 
-void Aircraft::disconnect(bool queue) // Assuming this will be moved into Aircraft class eventually
+void Aircraft::disconnect(bool queue)
 {
 	if (connected) {
 		closesocket(getConnection().sConnect);
 		sendDisconnect(*this);
 		getConnection().disconnect_socket();
 		connected = false;
+
+		// Clean up from context. This is called from tcp_manager::poll_socket, which
+		// is inside the SocketPollingTask loop, so the mutex is already held.
+		auto& ctx = SimulationContext::instance();
+		if (this->userIndex != -1) {
+			ctx.indexToCallsignMap().erase(this->userIndex);
+		}
 	}
 	// IMPORTANT: Stop the task when the aircraft disconnects
 	stopPositionUpdates();

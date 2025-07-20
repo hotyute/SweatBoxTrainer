@@ -105,7 +105,11 @@ DWORD tcp_manager::poll_socket() {
 
 							printf("update_time: %lld\n", updateTimeInMillis);
 							aircraft->setUserIndex(index);
-							userStorage1[index] = aircraft;
+
+							// The mutex is held by the calling SocketPollingTask, so this is safe.
+							auto& ctx = SimulationContext::instance();
+							ctx.indexToCallsignMap()[index] = aircraft->getCallSign();
+
 							aircraft->setUpdateTime(updateTimeInMillis);
 
 							if (g_threadPool) { // Safety check

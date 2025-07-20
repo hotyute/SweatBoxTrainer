@@ -15,29 +15,30 @@
 
 void save_info()
 {
-	BasicStream buf = BasicStream(256);
+    BasicStream buf = BasicStream(256);
 
-	buf.create_frame_var_size_word(1);
-	buf.write_string("");//"USER->getIdentity()->callsign.c_str());
-	buf.write_string("");//USER->getIdentity()->login_name.c_str());
-	buf.write_string("");//USER->getIdentity()->username.c_str());
-	buf.write_string("");// USER->getIdentity()->password.c_str());
-	buf.write_byte(0);// USER->getIdentity()->pilot_rating);
-	buf.end_frame_var_size_word();
+    buf.create_frame_var_size_word(1);
+    buf.write_string("");//"USER->getIdentity()->callsign.c_str());
+    buf.write_string("");//USER->getIdentity()->login_name.c_str());
+    buf.write_string("");//USER->getIdentity()->username.c_str());
+    buf.write_string("");// USER->getIdentity()->password.c_str());
+    buf.write_byte(0);// USER->getIdentity()->pilot_rating);
+    buf.end_frame_var_size_word();
 
-	buf.create_frame_var_size_word(2);
-	buf.write_string(LAST_AGC_PATH.c_str());
-	buf.write_string(LAST_APRT_DIR.c_str());
-	buf.write_string(LAST_SCT_PATH.c_str());
-	buf.end_frame_var_size_word();
+    buf.create_frame_var_size_word(2);
+    // These would now be retrieved from a central settings object/manager
+    buf.write_string(LAST_AGC_PATH.c_str());
+    buf.write_string(LAST_APRT_DIR.c_str());
+    buf.write_string(LAST_SCT_PATH.c_str());
+    buf.end_frame_var_size_word();
 
-	WCHAR path[MAX_PATH];
-	GetModuleFileNameW(NULL, path, MAX_PATH);
-	const auto full_path = std::filesystem::path(path).parent_path();
+    WCHAR path[MAX_PATH];
+    GetModuleFileNameW(NULL, path, MAX_PATH);
+    const auto full_path = std::filesystem::path(path).parent_path();
 
-	std::fstream myFile(full_path.string() + "\\data.bin", std::ios::out | std::ios::binary);
-	myFile.write(buf.data, buf.index);
-	myFile.close();
+    std::fstream myFile(full_path.string() + "\\data.bin", std::ios::out | std::ios::binary);
+    myFile.write(buf.data, buf.index);
+    myFile.close();
 }
 
 void read_info()
@@ -88,16 +89,16 @@ void read_info()
         {
             if (frame_size > 0)
             {
-                // Read the saved paths
-                std::string agc_path = buf.read_string();
-                std::string aprt_dir = buf.read_string();
-                std::string sct_path = buf.read_string(); // Renamed from pof_path for clarity
+                // Read the saved paths into the global settings variables
+                LAST_AGC_PATH = buf.read_string();
+                LAST_APRT_DIR = buf.read_string();
+                LAST_SCT_PATH = buf.read_string();
 
                 // --- THIS IS THE REFACTORED LOGIC ---
-                if (!aprt_dir.empty() && std::filesystem::exists(aprt_dir) && std::filesystem::is_directory(aprt_dir))
+                if (!LAST_APRT_DIR.empty() && std::filesystem::exists(LAST_APRT_DIR) && std::filesystem::is_directory(LAST_APRT_DIR))
                 {
-                    AppendTextToConsole(L"Loading saved airport data from: " + s2ws(aprt_dir));
-                    for (const auto& entry : std::filesystem::directory_iterator(aprt_dir))
+                    AppendTextToConsole(L"Loading saved airport data from: " + s2ws(LAST_APRT_DIR));
+                    for (const auto& entry : std::filesystem::directory_iterator(LAST_APRT_DIR))
                     {
                         if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".aprt")
                         {
@@ -113,7 +114,7 @@ void read_info()
                 }
 
                 // Future logic for reloading AGC or SCT files would go here,
-                // using reader.loadAgc(agc_path) or reader.loadSct(sct_path).
+                // using reader.loadAgc(LAST_AGC_PATH) or reader.loadSct(LAST_SCT_PATH).
             }
         }
     }

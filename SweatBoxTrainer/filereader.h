@@ -1,5 +1,3 @@
-// --- START OF MODIFIED filereader.h ---
-
 #pragma once
 
 #include <string>
@@ -47,4 +45,5 @@ private:
     static std::unique_ptr<Aircraft> createAircraftFromParams(const std::string& callsign, double latitude, double longitude, double heading, double speed, double altitude, double verticalSpeed, int mode, const std::string& squawkCode);
 };
 
+// Global settings are now managed elsewhere (e.g., an AppSettings class/singleton)
 extern std::string LAST_AGC_PATH, LAST_APRT_DIR, LAST_SCT_PATH;

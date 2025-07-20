@@ -6,8 +6,6 @@
 #include "globals.h"
 #include "sim/simulation_context.h"
 
-std::vector<Aircraft*> userStorage1;
-
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode)
 {
@@ -53,13 +51,15 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 
 	// 8. Add the new aircraft to the global collections
 	Aircraft* raw_ptr = cur.get();
-	{
-		// The lock correctly protects the shared AcfMap collection
-		auto& ctx = SimulationContext::instance();
-		std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
-		ctx.aircraft()[callsign] = std::move(cur); // Move ownership into the map
-	}
 
-	addUserToLB(raw_ptr);
+	// The lock is now managed by the caller (e.g., SocketPollingTask).
+	auto& ctx = SimulationContext::instance();
+	ctx.aircraft()[callsign] = std::move(cur); // Move ownership into the map
+
+	// NOTE: Calling addUserToLB from a non-GUI thread is unsafe.
+	// This functionality should be handled by the GUI thread, for example by
+	// observing changes in the SimulationContext or using PostMessage.
+	// The call has been removed from here to prevent race conditions.
+	// addUserToLB(raw_ptr); 
 	return raw_ptr;
 }

@@ -228,14 +228,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		create_controls(hWnd);
 
-		//Event* display_updates = new GraphicsUIUpdates();
-		//display_updates->eAction.setTicks(0);
-		//event_manager1->addEvent(display_updates);
-
-		//CreateThread(NULL, 0, EventThread1, hWnd, 0, NULL);
-		//CreateThread(NULL, 0, SocketThread1, hWnd, 0, NULL);
-		//CreateThread(NULL, 0, CalcThread1, hWnd, 0, NULL);
-
 		// --- START NEW SYSTEM ---
 		g_simulationTask->start();
 		g_guiUpdateTask->start();
@@ -243,20 +235,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		read_info();
 
-		userStorage1.resize(MAX_AIRCRAFT_SIZE);
-
-		/*if (!LAST_APRT_DIR.empty()) {
-
-			if (std::filesystem::exists(LAST_APRT_DIR) && std::filesystem::is_directory(LAST_APRT_DIR))
-			{
-				for (const auto& entry : std::filesystem::directory_iterator(LAST_APRT_DIR))
-				{
-					if (std::filesystem::is_regular_file(entry) && entry.path().extension() == ".aprt")
-						LoadAPT(entry.path().string());
-				}
-			}
-		}*/
-
+		// userStorage1 is no longer needed.
+		// userStorage1.resize(MAX_AIRCRAFT_SIZE);
 	}
 	break;
 	case WM_COMMAND:
@@ -418,11 +398,16 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 		if (GetOpenFileName(&ofn))
 		{
 			std::string path = ws2s(std::wstring(szFileName));
+			LAST_SCT_PATH = path; // Update setting
 
 			FileReader reader;
 			auto sector_data = reader.loadSct(path);
 
 			if (sector_data) {
+				// Access the context and move the data
+				auto& ctx = SimulationContext::instance();
+				// ctx.setSectorData(std::move(sector_data)); // Assuming context has a place for it
+
 				std::wstring msg = L"Successfully loaded " + std::to_wstring(sector_data->fixes.size()) + L" fixes, "
 					+ std::to_wstring(sector_data->vors.size()) + L" VORs, and "
 					+ std::to_wstring(sector_data->ndbs.size()) + L" NDBs.";
@@ -451,6 +436,7 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 		if (GetOpenFileName(&ofn))
 		{
 			std::string path = ws2s(std::wstring(szFileName));
+			LAST_AGC_PATH = path; // Update setting
 
 			FileReader reader;
 			try {
@@ -492,6 +478,8 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 		if (GetOpenFileName(&ofn))
 		{
 			std::string path = ws2s(std::wstring(szFileName));
+			size_t found = path.find_last_of("/\\");
+			LAST_APRT_DIR = path.substr(0, found);
 
 			FileReader reader;
 			auto loaded_airport = reader.loadApt(path);
@@ -960,6 +948,5 @@ void DisplayAircraft() {
 void GuiUpdateTask::execute() {
 	// This replaces the old GraphicsUIUpdates event
 	DisplayAircraft();
-	g_consoleLogger.FlushToConsole(); 
+	g_consoleLogger.FlushToConsole();
 }
-

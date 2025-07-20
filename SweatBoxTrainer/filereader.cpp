@@ -1,5 +1,3 @@
-// --- START OF REFACTORED filereader.cpp ---
-
 #include "filereader.h"
 
 #include <fstream>
@@ -9,7 +7,8 @@
 #include "tools.h"
 #include "aircraft/Aircraft.h" // For class definitions
 
-// Define these here, but they should be moved to a settings/app context class.
+// These should be moved to a settings/app context class to avoid globals.
+// For now, they are left but their modification logic is moved to the caller.
 std::string LAST_AGC_PATH, LAST_APRT_DIR, LAST_SCT_PATH;
 
 // --- Public Method Implementations ---
@@ -25,7 +24,7 @@ std::vector<std::unique_ptr<Aircraft>> FileReader::loadAgc(const std::string& pa
         throw std::runtime_error("Unable to open AGC file: " + path);
     }
 
-    LAST_AGC_PATH = path; // Update setting
+    // The caller is now responsible for updating LAST_AGC_PATH
 
     std::string line;
     std::string commentStart = ";";
@@ -62,9 +61,7 @@ std::unique_ptr<Airport> FileReader::loadApt(const std::string& path) {
         return nullptr; // Indicate failure by returning a null pointer
     }
 
-    // Update setting
-    size_t found = path.find_last_of("/\\");
-    LAST_APRT_DIR = path.substr(0, found);
+    // The caller is now responsible for updating LAST_APRT_DIR
 
     std::string line;
     std::string commentStart = ";";
@@ -104,7 +101,7 @@ std::unique_ptr<SectorData> FileReader::loadSct(const std::string& path) {
         return nullptr; // Indicate failure
     }
 
-    LAST_SCT_PATH = path; // Update setting
+    // The caller is now responsible for updating LAST_SCT_PATH
 
     std::string line;
     std::string commentStart = ";";

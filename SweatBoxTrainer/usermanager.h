@@ -21,8 +21,6 @@ FLIGHT_PLAN_UPDATE_PACKET = 10,
 REQUEST_FLIGHT_PLAN_PACKET = 11,
 PRIVATE_MESSAGE_PACKET = 12;
 
-extern std::vector<Aircraft*> userStorage1;
-
 Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode);
 
