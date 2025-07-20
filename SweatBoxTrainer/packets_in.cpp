@@ -32,10 +32,8 @@ void handleUpdateCycleChange(Aircraft* connection_owner, BasicStream& stream) {
 }
 
 void handleUserMessage(Aircraft* connection_owner, BasicStream& stream) {
-	char callsign[25];
-	stream.readString(callsign);
-	char msg[2048];
-	stream.readString(msg);
+	std::string callsign = stream.read_std_string();
+	std::string msg = stream.read_std_string();
 	// You could append this to the console, process it, etc.
 	// e.g., AppendTextToConsole(s2ws(std::string(callsign) + ": " + msg));
 }
@@ -47,11 +45,10 @@ void handlePilotUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	// The calling SocketPollingTask holds the mutex, so this is safe.
 	Aircraft* target_aircraft = ctx.findAircraftByIndex(index);
 	if (!target_aircraft) return; // Received update for an unknown aircraft
+	
 
-	long long lat = stream.readQWord();
-	long long lon = stream.readQWord();
-	double latitude = *(double*)&lat;
-	double longitude = *(double*)&lon;
+	double latitude = std::bit_cast<double>(stream.readQWord());
+	double longitude = std::bit_cast<double>(stream.readQWord());
 	long long hash = stream.readQWord();
 	unsigned long long num2 = hash >> 22;
 	unsigned int num3 = hash >> 12 & 1023u;
@@ -60,8 +57,7 @@ void handlePilotUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	double roll = num3 / 1024.0 * -360.0;
 	double heading = num4 / 1024.0 * 360.0;
 	int groundSpeed = stream.read_unsigned_short();
-	long long alt = stream.readQWord();
-	double altitude = *(double*)&alt;
+	double altitude = std::bit_cast<double>(stream.readQWord());
 
 	// Note: Here you would update the state of 'target_aircraft', not 'connection_owner'
 	// For now, this handler just reads the data.
@@ -71,8 +67,7 @@ void handleFrequencyCommands(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	int frequency = stream.read3Byte();
 	bool asel = stream.read_unsigned_byte() == 1;
-	char msg[2048];
-	stream.readString(msg);
+	std::string msg = stream.read_std_string();
 	if (frequency == command_freq)
 	{
 		std::string message = std::string(msg);
@@ -100,21 +95,13 @@ void handleFlightPlanUpdate(Aircraft* connection_owner, BasicStream& stream) {
 
 	if (type == AV_CLIENT::PILOT) {
 		FlightPlan& fp = target_aircraft->getFlightPlan();
-		char assigned_squawk[5], departure[5], arrival[5], alternate[5], cruise[6], ac_type[9], scratch[5], route[128], remarks[128];
 		stream.read_unsigned_byte();
-		stream.readString(assigned_squawk);
-		stream.readString(departure);
-		stream.readString(arrival);
-		stream.readString(alternate);
-		stream.readString(cruise);
-		stream.readString(ac_type);
-		stream.readString(scratch);
-		stream.readString(route);
-		stream.readString(remarks);
+		std::vector<std::string> vars(9);
+		for (auto& var : vars) { var = stream.read_std_string(); }
 		// Now assign these values to fp
-		fp.squawkCode = assigned_squawk;
-		fp.departure = departure;
-		fp.arrival = arrival;
+		fp.squawkCode = vars[0];
+		fp.departure = vars[1];
+		fp.arrival = vars[2];
 		//... and so on
 	}
 }
@@ -122,15 +109,12 @@ void handleFlightPlanUpdate(Aircraft* connection_owner, BasicStream& stream) {
 void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	AV_CLIENT type = static_cast<AV_CLIENT>(stream.read_unsigned_byte());
-	char callSign1[1024], full_name[1024], username[1024];
-	stream.readString(callSign1);
-	stream.readString(username);
-	stream.readString(full_name);
+	std::string callSign1 = stream.read_std_string();
+	std::string username = stream.read_std_string();
+	std::string full_name = stream.read_std_string();
 	int vis_range = stream.read_unsigned_short();
-	long long lat = stream.readQWord();
-	long long lon = stream.readQWord();
-	double latitude = *reinterpret_cast<double*>(&lat);
-	double longitude = *reinterpret_cast<double*>(&lon);
+	double latitude = std::bit_cast<double>(stream.readQWord());
+	double longitude = std::bit_cast<double>(stream.readQWord());
 
 	if (type == AV_CLIENT::CONTROLLER)
 	{
@@ -141,10 +125,8 @@ void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 	}
 	else if (type == AV_CLIENT::PILOT)
 	{
-		char acfTitle[1024];
-		stream.readString(acfTitle);
-		char trans_code[1024];
-		stream.readString(trans_code);
+		std::string acfTitle = stream.read_std_string();
+		std::string trans_code = stream.read_std_string();
 		int m = stream.read_unsigned_byte();
 		long long hash = stream.readQWord();
 		int squawkMode = m >> 4;
@@ -157,7 +139,7 @@ void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 		double heading = num4 / 1024.0 * 360.0;
 
 		// The calling SocketPollingTask holds the mutex, so this is safe.
-		Aircraft* new_aircraft = createAircraft(callSign1, latitude, longitude, heading, 0, 0, 0, squawkMode, trans_code);
+		auto new_aircraft = createAircraft(callSign1, latitude, longitude, heading, 0, 0, 0, squawkMode, trans_code);
 		if (new_aircraft) {
 			new_aircraft->setUserIndex(index);
 			auto& ctx = SimulationContext::instance();
@@ -165,6 +147,7 @@ void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 			// Further initialization for the new aircraft...
 			new_aircraft->setHeavy(heavy);
 			new_aircraft->setAcfTitle(acfTitle);
+			ctx.aircraft()[new_aircraft->getCallSign()] = std::move(new_aircraft); // Caller adds to context
 		}
 	}
 }
@@ -173,10 +156,8 @@ void handleControllerUpdate(Aircraft* connection_owner, BasicStream& stream) {
 	int index = stream.read_unsigned_short();
 	// As with pilot update, you'd find the controller and update their state.
 	// For now, just reading the data.
-	long long lat = stream.readQWord();
-	long long lon = stream.readQWord();
-	double latitude = *reinterpret_cast<double*>(&lat);
-	double longitude = *reinterpret_cast<double*>(&lon);
+	double latitude = std::bit_cast<double>(stream.readQWord());
+	double longitude = std::bit_cast<double>(stream.readQWord());
 	int flags = stream.read_unsigned_byte();
 }
 

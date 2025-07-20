@@ -6,7 +6,7 @@
 #include "globals.h"
 #include "sim/simulation_context.h"
 
-Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
+std::unique_ptr<Aircraft> createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
 	double verticalSpeed, int mode, std::string squawkCode)
 {
 	// 1. Create the new aircraft object. It contains all its own components.
@@ -49,17 +49,10 @@ Aircraft* createAircraft(std::string callsign, double latitude, double longitude
 	// 7. Initialize the network connection
 	cur->getConnection().init_set();
 
-	// 8. Add the new aircraft to the global collections
-	Aircraft* raw_ptr = cur.get();
-
-	// The lock is now managed by the caller (e.g., SocketPollingTask).
-	auto& ctx = SimulationContext::instance();
-	ctx.aircraft()[callsign] = std::move(cur); // Move ownership into the map
-
 	// NOTE: Calling addUserToLB from a non-GUI thread is unsafe.
 	// This functionality should be handled by the GUI thread, for example by
 	// observing changes in the SimulationContext or using PostMessage.
 	// The call has been removed from here to prevent race conditions.
 	// addUserToLB(raw_ptr); 
-	return raw_ptr;
+	return cur;
 }

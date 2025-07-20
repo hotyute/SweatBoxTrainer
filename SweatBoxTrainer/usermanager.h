@@ -21,7 +21,6 @@ FLIGHT_PLAN_UPDATE_PACKET = 10,
 REQUEST_FLIGHT_PLAN_PACKET = 11,
 PRIVATE_MESSAGE_PACKET = 12;
 
-Aircraft* createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude,
-	double verticalSpeed, int mode, std::string squawkCode);
+std::unique_ptr<Aircraft> createAircraft(std::string callsign, double latitude, double longitude, double heading, double speed, double altitude, double verticalSpeed, int mode, std::string squawkCode);
 
 const int command_freq = 18300, msg_freq = 99998;
