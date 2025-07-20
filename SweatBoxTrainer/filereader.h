@@ -41,8 +41,6 @@ private:
     void parseAptLine(const std::string& line);
     void parseSctLine(const std::string& line); // New helper for SCT
     void processRunways();
-
-    static std::unique_ptr<Aircraft> createAircraftFromParams(const std::string& callsign, double latitude, double longitude, double heading, double speed, double altitude, double verticalSpeed, int mode, const std::string& squawkCode);
 };
 
 // Global settings are now managed elsewhere (e.g., an AppSettings class/singleton)

@@ -6,6 +6,7 @@
 
 #include "tools.h"
 #include "aircraft/Aircraft.h" // For class definitions
+#include "usermanager.h"
 
 // These should be moved to a settings/app context class to avoid globals.
 // For now, they are left but their modification logic is moved to the caller.
@@ -136,7 +137,7 @@ void FileReader::parseAgcLine(const std::string& line) {
         int mode = squawk_mode[0] == 'C' ? 1 : squawk_mode[0] == 'I' ? 2 : 0;
         bool heavy = args[8][0] == 'H';
 
-        m_currentAgcAircraft = createAircraftFromParams(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
+        m_currentAgcAircraft = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
             (int)atodd(args[5]), (int)atodd(args[6]), mode, args[9]);
 
         m_currentAgcAircraft->getDefaultValues().speed = atodd(args[4]);
@@ -403,39 +404,4 @@ void FileReader::processRunways() {
         }
     }
     m_currentApt->runways.swap(processedRunways);
-}
-
-// Factory function to be used internally by the FileReader
-std::unique_ptr<Aircraft> FileReader::createAircraftFromParams(const std::string& callsign, double latitude, double longitude, double heading, double speed, double altitude, double verticalSpeed, int mode, const std::string& squawkCode)
-{
-    auto cur = std::make_unique<Aircraft>();
-
-    cur->setType(AV_CLIENT::PILOT);
-    cur->setMode(mode);
-    cur->setSquawkCode(squawkCode);
-
-    Identity& id = *cur->getIdentity();
-    AircraftState& state = cur->getState();
-    AssignedValues& av = cur->getAssignedValues();
-
-    id.callsign = callsign;
-    id.username = "971202";
-    id.login_name = "Samuel Mason";
-    id.password = "password";
-    id.pilot_rating = 1;
-
-    state.latitude = latitude;
-    state.longitude = longitude;
-    state.altitude = altitude;
-    state.speed = speed;
-    state.heading = heading;
-    state.verticalSpeed = verticalSpeed;
-
-    av.asdg_altitude = altitude;
-    av.asdg_speed = speed;
-    av.asgd_heading = heading;
-
-    cur->getConnection().init_set();
-
-    return cur; // Return the unique_ptr, transferring ownership
 }
