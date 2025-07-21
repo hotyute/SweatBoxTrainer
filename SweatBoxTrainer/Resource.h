@@ -23,6 +23,24 @@
 #define ID_FILE_OPEN_AGC 40005
 #define ID_SETTINGS_AOT 40007
 #define ID_FILE_SAVE 40008
+
+#define ID_VIEW_FPL_BUTTON  144 // Button on main window
+
+// Flight Plan Dialog
+#define IDD_FLIGHTPLAN              130 // The Dialog itself
+#define IDC_FP_CALLSIGN             1001
+#define IDC_FP_AIRCRAFT_TYPE        1002
+#define IDC_FP_FLIGHT_RULES         1003
+#define IDC_FP_DEPARTURE            1004
+#define IDC_FP_ARRIVAL              1005
+#define IDC_FP_ALTERNATE            1006
+#define IDC_FP_CRUISE_ALT           1007
+#define IDC_FP_SQUAWK               1008
+#define IDC_FP_SCRATCHPAD           1009
+#define IDC_FP_ROUTE                1010
+#define IDC_FP_REMARKS              1011
+#define IDC_FP_CLOSE                1012 // The Close button on the dialog
+
 #define CONSOLE_TEXT 122
 #define COMMANDS_LBL 1211
 #define COMMAND_TEXT 123

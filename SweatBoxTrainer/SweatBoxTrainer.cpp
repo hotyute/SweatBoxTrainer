@@ -27,7 +27,7 @@
 #include "packets_in.h"
 #include "aircraft/Aircraft.h"
 #include "aircraft/command_handler.h"
-#include "globals.h" // <<< USE THE NEW GLOBALS
+#include "globals.h"
 #include "sim/simulation_context.h"
 
 #ifdef _DEBUG
@@ -37,6 +37,9 @@
 #define MAX_LOADSTRING 100
 
 #define PROTO_VERSION 32698
+
+// --- NEW: Custom Windows message to tell the FPL window to update ---
+#define WM_APP_FPL_UPDATE (WM_USER + 1)
 
 void HandleSelectedLB(DWORD iSelected);
 
@@ -61,6 +64,8 @@ DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX /* | WS
 HWND altitude = NULL, heading = NULL, latitude_hdl = NULL, longitude_hdl, speed_hdl = NULL, track_hdl = NULL, data_hdl = NULL,
 vs_hdl = NULL, command_text = NULL, console_text = NULL, mode_button = NULL;
 
+HWND hFplWnd = NULL;
+
 Aircraft* displayed = nullptr;
 
 HFONT hFont = CreateFont(20, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
@@ -80,11 +85,7 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-
-// REMOVED: Old global task and thread pool pointers. They are now in g_app.
-// std::unique_ptr<SimulationTask> g_simulationTask;
-// std::unique_ptr<GuiUpdateTask> g_guiUpdateTask;
-// std::unique_ptr<SocketPollingTask> g_socketPollingTask;
+INT_PTR CALLBACK    FlightPlanDlgProc(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -127,10 +128,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// Main message loop:
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{
-		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+		if (hFplWnd == NULL || !IsDialogMessage(hFplWnd, &msg))
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
 		}
 	}
 
@@ -323,6 +327,19 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	// Parse the menu selections:
 	switch (wmId)
 	{
+	case ID_VIEW_FPL_BUTTON:
+	{
+		if (displayed && hFplWnd == NULL)
+		{
+			hFplWnd = CreateDialogParam(hInst, MAKEINTRESOURCE(IDD_FLIGHTPLAN), hWnd, FlightPlanDlgProc, (LPARAM)displayed);
+			ShowWindow(hFplWnd, SW_SHOW);
+		}
+		else if (hFplWnd != NULL)
+		{
+			SetForegroundWindow(hFplWnd);
+		}
+	}
+	break;
 	case MODE_BUTTON:
 	{
 		if (displayed)
@@ -427,13 +444,12 @@ LRESULT CALLBACK HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				for (auto& acf_ptr : loaded_aircraft) {
 					const std::string& cs = acf_ptr->getCallSign();
 					if (ctx.aircraft().find(cs) == ctx.aircraft().end()) {
-						addUserToLB(acf_ptr.get());               // GUI listbox
-						ctx.aircraft()[cs] = std::move(acf_ptr);  // ownership transfer
+						addUserToLB(acf_ptr.get());
+						ctx.aircraft()[cs] = std::move(acf_ptr);
 					}
 				}
 			}
 			catch (const std::runtime_error& e) {
-				// Display the error to the user
 				MessageBoxA(hWnd, e.what(), "AGC Load Error", MB_OK | MB_ICONERROR);
 			}
 		}
@@ -533,6 +549,90 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
+
+// --- NEW: Helper function to populate the FPL dialog with an aircraft's data ---
+void UpdateFplDialog(HWND hDlg, Aircraft* aircraft)
+{
+	if (!hDlg || !aircraft) return;
+
+	// Store the new aircraft pointer in the window's user data for future reference if needed
+	SetWindowLongPtr(hDlg, DWLP_USER, (LONG_PTR)aircraft);
+
+	// Set the window title
+	std::string title = "Flight Plan - " + aircraft->getCallSign();
+	SetWindowText(hDlg, s2ws(title).c_str());
+
+	// Get the flight plan to populate the fields
+	FlightPlan& fp = aircraft->getFlightPlan();
+
+	// Populate all the text boxes
+	SetDlgItemText(hDlg, IDC_FP_CALLSIGN, s2ws(aircraft->getCallSign()).c_str());
+	SetDlgItemText(hDlg, IDC_FP_AIRCRAFT_TYPE, s2ws(fp.acType).c_str());
+
+	std::wstring fr_text;
+	if (fp.flightRules == 0) fr_text = L"VFR";
+	else if (fp.flightRules == 1) fr_text = L"IFR";
+	else fr_text = L"SVFR";
+	SetDlgItemText(hDlg, IDC_FP_FLIGHT_RULES, fr_text.c_str());
+
+	SetDlgItemText(hDlg, IDC_FP_SQUAWK, s2ws(fp.squawkCode).c_str());
+	SetDlgItemText(hDlg, IDC_FP_DEPARTURE, s2ws(fp.departure).c_str());
+	SetDlgItemText(hDlg, IDC_FP_ARRIVAL, s2ws(fp.arrival).c_str());
+	SetDlgItemText(hDlg, IDC_FP_ALTERNATE, s2ws(fp.alternate).c_str());
+	SetDlgItemText(hDlg, IDC_FP_CRUISE_ALT, s2ws(fp.cruise).c_str());
+	SetDlgItemText(hDlg, IDC_FP_SCRATCHPAD, s2ws(fp.scratchPad).c_str());
+	SetDlgItemText(hDlg, IDC_FP_ROUTE, s2ws(fp.route).c_str());
+	SetDlgItemText(hDlg, IDC_FP_REMARKS, s2ws(fp.remarks).c_str());
+}
+
+// --- MODIFIED: Dialog Procedure for the Flight Plan Window ---
+INT_PTR CALLBACK FlightPlanDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+	{
+		// On creation, lParam contains the pointer to the Aircraft object.
+		// We use our helper to do the initial population.
+		UpdateFplDialog(hDlg, (Aircraft*)lParam);
+		return (INT_PTR)TRUE;
+	}
+
+	// --- NEW: Handle our custom update message ---
+	case WM_APP_FPL_UPDATE:
+	{
+		// When we receive this message, lParam contains the new Aircraft pointer.
+		// We use the same helper function to refresh the dialog.
+		UpdateFplDialog(hDlg, (Aircraft*)lParam);
+		return (INT_PTR)TRUE;
+	}
+
+	case WM_COMMAND:
+	{
+		if (LOWORD(wParam) == IDC_FP_CLOSE || LOWORD(wParam) == IDCANCEL)
+		{
+			DestroyWindow(hDlg);
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+
+	case WM_CLOSE:
+	{
+		DestroyWindow(hDlg);
+		return (INT_PTR)TRUE;
+	}
+
+	case WM_DESTROY:
+	{
+		hFplWnd = NULL;
+		return (INT_PTR)TRUE;
+	}
+	}
+	return (INT_PTR)FALSE;
+}
+
+
 void connect()
 {
 	auto& ctx = SimulationContext::instance();
@@ -544,7 +644,6 @@ void connect()
 		tcp_manager& tcp = aircraft.getConnection();
 		if (!aircraft.connected)
 		{
-			//34.142.27.168
 			const std::string ip = "127.0.0.1";
 			if (tcp.connectNew(ip, 4403))
 			{
@@ -831,6 +930,12 @@ void create_controls(HWND hwnd) {
 	SendMessage(mode_button, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 	SendMessage(mode_button, EM_LIMITTEXT, 25, 0L);
 
+	CreateWindowEx(NULL, L"BUTTON", L"View FPL",
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | SS_CENTER,
+		785, 115, 90, 30,
+		hwnd, (HMENU)ID_VIEW_FPL_BUTTON, NULL, NULL
+	);
+
 	aircraftList = CreateWindowEx(WS_EX_STATICEDGE, L"LISTBOX", NULL,
 		WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_NOTIFY | LBS_HASSTRINGS | LBS_SORT | WS_BORDER,
 		10, 17,
@@ -850,6 +955,7 @@ void addUserToLB(Aircraft* user) {
 	SendMessage(aircraftList, LB_SETITEMDATA, pos, (LPARAM)user);
 }
 
+// --- MODIFIED: The listbox selection handler ---
 void HandleSelectedLB(DWORD iSelected)
 {
 	Aircraft* acf = (Aircraft*)SendMessage(aircraftList, LB_GETITEMDATA, iSelected, 0);
@@ -857,9 +963,14 @@ void HandleSelectedLB(DWORD iSelected)
 	{
 		displayed = acf;
 		AircraftState& state = displayed->getState();
-		// Mark all fields as dirty to force a full UI refresh for the new aircraft
 		state.MarkAllDirty();
 		DisplayAircraft();
+
+		// --- NEW: If the FPL window is open, send it a message to update ---
+		if (hFplWnd != NULL)
+		{
+			SendMessage(hFplWnd, WM_APP_FPL_UPDATE, 0, (LPARAM)acf);
+		}
 	}
 }
 
@@ -867,7 +978,6 @@ void DisplayAircraft() {
 	if (displayed)
 	{
 		const AircraftState& state = displayed->getState();
-		// Only update controls if the corresponding data is dirty
 		if (state.IsDirty(AircraftDirtyFlags::ALTITUDE)) {
 			std::wstring alt = std::to_wstring((int)state.altitude);
 			SetWindowText(altitude, alt.c_str());
@@ -899,7 +1009,6 @@ void DisplayAircraft() {
 		}
 
 		if (state.IsDirty(AircraftDirtyFlags::TRACK)) {
-			// Access route manager for track info
 			const RouteManager& rm = displayed->getRouteManager();
 			if (displayed->onGround() && rm.ground_cur && rm.ground_cur->parent) {
 				SetWindowText(track_hdl, std::wstring(rm.ground_cur->parent->name.begin(), rm.ground_cur->parent->name.end()).c_str());
@@ -920,13 +1029,11 @@ void DisplayAircraft() {
 			displayed->getMode() == 0 ? SetWindowText(mode_button, L"SQUAWK: S") : SetWindowText(mode_button, L"SQUAWK: C");
 		}
 
-		// After updating the UI, clear all dirty flags for this aircraft
 		displayed->getState().ClearDirtyFlags();
 	}
 }
 
 void GuiUpdateTask::execute() {
-	// This replaces the old GraphicsUIUpdates event
 	DisplayAircraft();
-	g_app.consoleLogger.FlushToConsole(); // Use the logger from the app context
+	g_app.consoleLogger.FlushToConsole();
 }
