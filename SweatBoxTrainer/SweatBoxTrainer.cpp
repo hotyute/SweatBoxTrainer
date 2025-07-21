@@ -27,7 +27,7 @@
 #include "packets_in.h"
 #include "aircraft/Aircraft.h"
 #include "aircraft/command_handler.h"
-#include "globals.h"
+#include "globals.h" // <<< USE THE NEW GLOBALS
 #include "sim/simulation_context.h"
 
 #ifdef _DEBUG
@@ -81,10 +81,10 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	HandleWndCommands(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-// Global thread pool and tasks (could be wrapped in an "Application" class later)
-std::unique_ptr<SimulationTask> g_simulationTask;
-std::unique_ptr<GuiUpdateTask> g_guiUpdateTask;
-std::unique_ptr<SocketPollingTask> g_socketPollingTask; // From clinc2.h
+// REMOVED: Old global task and thread pool pointers. They are now in g_app.
+// std::unique_ptr<SimulationTask> g_simulationTask;
+// std::unique_ptr<GuiUpdateTask> g_guiUpdateTask;
+// std::unique_ptr<SocketPollingTask> g_socketPollingTask;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -100,22 +100,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	RedirectIOToConsole();
 #endif
 
-	// TODO: Place code here.
-
-	// --- Initialize Packet Handlers ---
+	// --- Initialize Core Systems ---
 	initializePacketHandlers();
-
-	// --- Initialize Command Handlers ---
 	CommandHandlers::initialize();
 
-	// --- Initialize Thread Pool and Scheduler ---
-	g_threadPool = std::make_unique<ThreadPool>();
-	TimedTask::startSchedulerThread(); // Start the scheduler once.
-
-	// Initialize tasks
-	g_simulationTask = std::make_unique<SimulationTask>(*g_threadPool);
-	g_guiUpdateTask = std::make_unique<GuiUpdateTask>(*g_threadPool);
-	g_socketPollingTask = std::make_unique<SocketPollingTask>(*g_threadPool);
+	// --- Initialize our Application Context ---
+	g_app.initialize();
 
 	// Initialize global strings
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -145,9 +135,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	// --- Application Shutdown ---
-	TimedTask::stopSchedulerThread(); // Stop scheduler before thread pool
-	g_threadPool->~ThreadPool(); // Explicitly destroy the thread pool.
-	// Smart pointers will clean up the task objects.
+	g_app.shutdown();
 
 	return (int)msg.wParam;
 }
@@ -227,16 +215,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 	{
 		create_controls(hWnd);
-
-		// --- START NEW SYSTEM ---
-		g_simulationTask->start();
-		g_guiUpdateTask->start();
-		g_socketPollingTask->start();
-
+		// Tasks are now started in g_app.initialize(), so this is much cleaner.
 		read_info();
-
-		// userStorage1 is no longer needed.
-		// userStorage1.resize(MAX_AIRCRAFT_SIZE);
 	}
 	break;
 	case WM_COMMAND:
@@ -254,9 +234,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	break;
 	case WM_DESTROY:
 	{
-		if (g_simulationTask) g_simulationTask->stop();
-		if (g_guiUpdateTask) g_guiUpdateTask->stop();
-		if (g_socketPollingTask) g_socketPollingTask->stop();
+		// Shutdown logic is now handled when wWinMain exits.
+		// We just need to post the quit message to break the GetMessage loop.
 		done = true;
 		PostQuitMessage(0);
 	}
@@ -696,7 +675,8 @@ void create_controls(HWND hwnd) {
 	SendMessage(console_text, WM_SETFONT, (WPARAM)hFont2, MAKELPARAM(TRUE, 0));
 	SendMessage(console_text, EM_LIMITTEXT, 0, 0L);
 
-	g_consoleLogger.Init(console_text);
+	// Initialize the console logger, now through the app context
+	g_app.consoleLogger.Init(console_text);
 
 	HWND lbl_altitude = CreateWindowEx(NULL, L"STATIC", L"Altitude:",
 		WS_VISIBLE | WS_CHILD | SS_CENTER | ES_READONLY,
@@ -948,5 +928,5 @@ void DisplayAircraft() {
 void GuiUpdateTask::execute() {
 	// This replaces the old GraphicsUIUpdates event
 	DisplayAircraft();
-	g_consoleLogger.FlushToConsole();
+	g_app.consoleLogger.FlushToConsole(); // Use the logger from the app context
 }

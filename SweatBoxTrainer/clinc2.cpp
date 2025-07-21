@@ -112,8 +112,8 @@ DWORD tcp_manager::poll_socket() {
 
 							aircraft->setUpdateTime(updateTimeInMillis);
 
-							if (g_threadPool) { // Safety check
-								aircraft->startPositionUpdates(*g_threadPool);
+							if (g_app.threadPool) { // Safety check
+								aircraft->startPositionUpdates(*g_app.threadPool);
 							}
 
 							hand_shake = false;

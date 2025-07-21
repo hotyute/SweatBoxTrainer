@@ -26,8 +26,8 @@ static void handleUpdateCycleChange(Aircraft* connection_owner, BasicStream& str
 	long long time = stream.readQWord();
 	printf("time_change: %s, %lld\n", connection_owner->getCallSign().c_str(), time);
 	connection_owner->setUpdateTime(time);
-	if (g_threadPool) { // Safety check
-		connection_owner->startPositionUpdates(*g_threadPool);
+	if (g_app.threadPool) { // Safety check
+		connection_owner->startPositionUpdates(*g_app.threadPool);
 	}
 }
 

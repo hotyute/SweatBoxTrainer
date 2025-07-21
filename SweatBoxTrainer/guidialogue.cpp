@@ -2,13 +2,14 @@
 #include "windows.h"
 
 #include "guidialogue.h"
+#include "globals.h" // <<< INCLUDE aU GLOBALS
 #include <chrono>
 #include <iomanip>
 #include <sstream>
 #include <algorithm> // For std::min
 
 // Define the global instance
-ConsoleLogger g_consoleLogger;
+ConsoleLogger g_consoleLogger; // This instance is now inside g_app, but AppendTextToConsole is a global helper.
 
 void ConsoleLogger::Init(HWND hConsole) {
     m_hConsole = hConsole;
@@ -97,6 +98,7 @@ int ConsoleLogger::CalculateMaxVisibleLines() {
     return (clientRect.bottom - clientRect.top) / lineHeight;
 }
 
+// This global helper now logs to the logger inside our AppContext
 void AppendTextToConsole(const std::wstring& text) {
-    g_consoleLogger.Log(text);
+    g_app.consoleLogger.Log(text);
 }
