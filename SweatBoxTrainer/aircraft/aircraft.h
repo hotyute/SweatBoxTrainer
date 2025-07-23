@@ -13,6 +13,7 @@
 #include "../airport.h"
 #include "../constants.h"
 #include "../clinc2.h"
+#include "AircraftPingTask.h"
 
 class AircraftPositionUpdateTask;
 class RouteManager;
@@ -80,6 +81,8 @@ public:
 
     void startPositionUpdates(ThreadPool& pool);
     void stopPositionUpdates();
+    void startPingUpdates(ThreadPool& pool);
+    void stopPingUpdates();
 
     void disconnect(bool queue);
 
@@ -158,6 +161,7 @@ private:
     void pass_standard_pitch(double altitude);
 
     std::unique_ptr<AircraftPositionUpdateTask> m_positionUpdateTask;
+    std::unique_ptr<AircraftPingTask> m_pingTask;
 
     // Friend classes if necessary, though it's better to use public interfaces
 };

@@ -12,18 +12,15 @@ void AppContext::initialize() {
     simulationTask = std::make_unique<SimulationTask>(*threadPool);
     guiUpdateTask = std::make_unique<GuiUpdateTask>(*threadPool);
     socketPollingTask = std::make_unique<SocketPollingTask>(*threadPool);
-    pingTask = std::make_unique<PingTask>(*threadPool);
 
     // --- Start Tasks ---
     simulationTask->start();
     guiUpdateTask->start();
     socketPollingTask->start();
-    pingTask->start();
 }
 
 void AppContext::shutdown() {
     // --- Stop tasks in a safe order ---
-    if (pingTask) pingTask->stop();
     if (socketPollingTask) socketPollingTask->stop();
     if (guiUpdateTask) guiUpdateTask->stop();
     if (simulationTask) simulationTask->stop();

@@ -7,7 +7,6 @@
 #include "SweatBoxTrainer.h"   // For GuiUpdateTask
 #include "clinc2.h"            // For SocketPollingTask
 #include "guidialogue.h"       // For ConsoleLogger
-#include "aircraft/PingTask.h" 
 
 // Forward declarations
 class SimulationTask;
@@ -24,7 +23,6 @@ public:
     std::unique_ptr<SimulationTask> simulationTask;
     std::unique_ptr<GuiUpdateTask> guiUpdateTask;
     std::unique_ptr<SocketPollingTask> socketPollingTask;
-    std::unique_ptr<PingTask> pingTask;
 
     // UI and Data Objects
     ConsoleLogger consoleLogger;

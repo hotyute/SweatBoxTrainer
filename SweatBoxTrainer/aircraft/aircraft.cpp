@@ -16,6 +16,7 @@ Aircraft::Aircraft() : m_connection(this) {
 
 Aircraft::~Aircraft() {
 	stopPositionUpdates();
+	stopPingUpdates();
 }
 
 void Aircraft::update() {
@@ -235,6 +236,26 @@ void Aircraft::stopPositionUpdates()
 	}
 }
 
+void Aircraft::startPingUpdates(ThreadPool& pool)
+{
+	// This logic ensures we don't create duplicate tasks.
+	if (m_pingTask && m_pingTask->isRunning()) {
+		return; // Already running, nothing to do.
+	}
+
+	// Create and start a new ping task for this aircraft.
+	m_pingTask = std::make_unique<AircraftPingTask>(pool, *this);
+	m_pingTask->start();
+}
+
+void Aircraft::stopPingUpdates()
+{
+	if (m_pingTask) {
+		m_pingTask->stop();
+		m_pingTask.reset(); // Destroys the task object.
+	}
+}
+
 void Aircraft::disconnect(bool queue)
 {
 	if (connected) {
@@ -252,4 +273,5 @@ void Aircraft::disconnect(bool queue)
 	}
 	// IMPORTANT: Stop the task when the aircraft disconnects
 	stopPositionUpdates();
+	stopPingUpdates();
 }

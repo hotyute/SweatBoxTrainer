@@ -114,6 +114,7 @@ DWORD tcp_manager::poll_socket() {
 
 							if (g_app.threadPool) { // Safety check
 								aircraft->startPositionUpdates(*g_app.threadPool);
+								aircraft->startPingUpdates(*g_app.threadPool);
 							}
 
 							hand_shake = false;

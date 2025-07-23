@@ -105,7 +105,7 @@
     <ClInclude Include="sim\simulation_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="aircraft\PingTask.h">
+    <ClInclude Include="aircraft\AircraftPingTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -182,7 +182,7 @@
     <ClCompile Include="sim\simulation_context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="aircraft\PingTask.cpp">
+    <ClCompile Include="aircraft\AircraftPingTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
