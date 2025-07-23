@@ -12,7 +12,6 @@
 class SimulationTask;
 class GuiUpdateTask;
 class SocketPollingTask;
-class PingTask;
 
 class AppContext {
 public:
