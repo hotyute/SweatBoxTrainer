@@ -18,8 +18,8 @@ void SimulationTask::execute() {
 	// The core simulation logic goes here.
 	CalculateMovements();
 
-	// The ping logic needs to be adapted. It shouldn't be tied to a wall-clock check inside the loop.
-	// A separate TimedTask is a much better design for this.
+	// The ping logic has been moved to its own dedicated PingTask.
+	// No more clock-checking here!
 }
 
 void CalculateMovements()

@@ -36,10 +36,11 @@ void sendPositionUpdates(Aircraft& user) {
 	BasicStream out = BasicStream(40);
 	const AircraftState& state = user.getState();
 	out.create_frame_var_size(_AIRCRAFT_POS_UPDATE);
-	double lat = state.latitude;
-	double lon = state.longitude;
-	const long long latitude = *reinterpret_cast<long long*>(&lat);
-	const long long longitude = *reinterpret_cast<long long*>(&lon);
+
+	// Use std::bit_cast to safely reinterpret double as long long
+	long long latitude = std::bit_cast<long long>(state.latitude);
+	long long longitude = std::bit_cast<long long>(state.longitude);
+
 	out.write_qword(latitude);
 	out.write_qword(longitude);
 	const long long infoHash = ((static_cast<long long>(static_cast<int>((state.pitch * 1024.0) / -360.0))) << 22)

@@ -92,6 +92,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_ LPWSTR    lpCmdLine,
 	_In_ int       nCmdShow)
 {
+
+	WSADATA wsaData;
+	WORD DLLVersion = MAKEWORD(2, 2); // Use 2.2 for modern Winsock
+	int wsaErr = WSAStartup(DLLVersion, &wsaData);
+	if (wsaErr != 0) {
+		MessageBox(NULL, L"WSAStartup failed with error.", L"Startup Error", MB_OK | MB_ICONERROR);
+		return 1; // Cannot continue without networking
+	}
+
 	MainThreadId_G = ::GetCurrentThreadId();
 
 	UNREFERENCED_PARAMETER(hPrevInstance);
@@ -140,6 +149,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// --- Application Shutdown ---
 	g_app.shutdown();
+
+	WSACleanup();
 
 	return (int)msg.wParam;
 }

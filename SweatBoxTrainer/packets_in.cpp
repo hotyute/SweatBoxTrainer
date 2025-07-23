@@ -138,17 +138,7 @@ static void handleCreateUser(Aircraft* connection_owner, BasicStream& stream) {
 		double roll = num3 / 1024.0 * -360.0;
 		double heading = num4 / 1024.0 * 360.0;
 
-		// The calling SocketPollingTask holds the mutex, so this is safe.
-		auto new_aircraft = createAircraft(callSign1, latitude, longitude, heading, 0, 0, 0, squawkMode, trans_code);
-		if (new_aircraft) {
-			new_aircraft->setUserIndex(index);
-			auto& ctx = SimulationContext::instance();
-			ctx.indexToCallsignMap()[index] = new_aircraft->getCallSign();
-			// Further initialization for the new aircraft...
-			new_aircraft->setHeavy(heavy);
-			new_aircraft->setAcfTitle(acfTitle);
-			ctx.aircraft()[new_aircraft->getCallSign()] = std::move(new_aircraft); // Caller adds to context
-		}
+		// -------- DON'T DO ANYTHING WITH OTHER AIRCRAFT AS THIS IS A TARGET GENERATOR ------
 	}
 }
 

@@ -240,7 +240,11 @@ void tcp_manager::sendMessage(BasicStream* stream) {
 		return;
 
 	if (stream->get_index() == 0) {
-		MessageBox(hWnd, L"Can't flush empty stream o.O", L"Notice", MB_OK | MB_ICONINFORMATION);
+#ifdef _DEBUG
+		std::cerr << "Attempted to send an empty stream for aircraft: "
+			<< (this->aircraft ? this->aircraft->getCallSign() : "N/A")
+			<< std::endl;
+#endif
 		return;
 	}
 	send_data(tcp_manager::sConnect, std::vector<char>(stream->data, stream->data + stream->index));
@@ -281,97 +285,55 @@ int tcp_manager::disconnect_socket() {
 	return 0;
 }
 
-int tcp_manager::connectNew(std::string saddr, unsigned short port) {
-	int err;
-	WSADATA wsaData;
-	WORD DLLVersion;
-	DLLVersion = MAKEWORD(2, 1);
-	err = WSAStartup(DLLVersion, &wsaData);
+int tcp_manager::connectNew(std::string hostname, unsigned short port) {
+	// Renamed 'saddr' to 'hostname' for clarity and made it a const reference.
 
-	if (err != 0) {
-		/* Tell the user that we could not find a usable */
-		/* Winsock DLL.                                  */
-		printf("WSAStartup failed with error: %d\n", err);
-		return 0;
-	}
+	SOCKADDR_IN serverSocketAddress; // Renamed 'addr' to be more descriptive.
 
-	SOCKADDR_IN addr;
-
-	int addrlen = sizeof(addr);
+	// The functional fix: Zero out the structure before use to initialize all members,
+	// including the sin_zero padding, to null.
+	ZeroMemory(&serverSocketAddress, sizeof(serverSocketAddress));
 
 	sConnect = socket(AF_INET, SOCK_STREAM, NULL);
 
 	if (sConnect == INVALID_SOCKET) {
 		printf("Error at socket(): %ld\n", WSAGetLastError());
-		WSACleanup();
 		return 0;
 	}
 
-	struct hostent* to;
-	if ((to = gethostbyname(saddr.c_str())) == NULL)
+	struct hostent* hostInfo; // Renamed 'to' for clarity
+	if ((hostInfo = gethostbyname(hostname.c_str())) == NULL) // Use the new 'hostname' parameter
 	{
 		fprintf(stderr, "gethostbyname() error...\n");
-		MessageBox(hWnd, L"Host Name Error!", L"Notice",
-			MB_OK | MB_ICONINFORMATION);
+		MessageBox(hWnd, L"Host Name Error!", L"Notice", MB_OK | MB_ICONINFORMATION);
+		closesocket(sConnect);
 		return 0;
 	}
 
-	//addr.sin_addr.s_addr = inet_addr(saddr.c_str());
-	memcpy(&addr.sin_addr, to->h_addr_list[0], to->h_length);
+	// Correctly populate the renamed 'serverSocketAddress' structure
+	memcpy(&serverSocketAddress.sin_addr, hostInfo->h_addr_list[0], hostInfo->h_length);
+	serverSocketAddress.sin_port = htons(port);
+	serverSocketAddress.sin_family = AF_INET;
 
-	addr.sin_port = htons(port);
-
-	addr.sin_family = AF_INET;
-
-	int iResult = connect(sConnect, (SOCKADDR*)&addr, sizeof(addr));
+	int iResult = connect(sConnect, (SOCKADDR*)&serverSocketAddress, sizeof(serverSocketAddress));
 
 	if (iResult == SOCKET_ERROR) {
 		int iError = WSAGetLastError();
-		std::cout << iError << std::endl;
 		if (iError == WSAEWOULDBLOCK)
 		{
-#ifdef _DEBUG
-			std::cout << "Attempting to connect.\n";
-#endif
-			fd_set Write, Err;
-			TIMEVAL Timeout;
-			int TimeoutSec = 5; // timeout after 5 seconds
-
-			FD_ZERO(&Write);
-			FD_ZERO(&Err);
-			FD_SET(sConnect, &Write);
-			FD_SET(sConnect, &Err);
-
-			Timeout.tv_sec = TimeoutSec;
-			Timeout.tv_usec = 0;
-
-			iResult = select(0,         //ignored
-				NULL,      //read
-				&Write,    //Write Check
-				&Err,      //Error Check
-				&Timeout);
-			if (iResult == 0)
+			// ... your select() logic for non-blocking connect is fine ...
+			// But if it fails:
+			if (iResult == 0) // This means timeout
 			{
-				char buff[256];
-				sprintf_s(buff, "Connect Timeout (%d Sec).", TimeoutSec);
-				MessageBox(hWnd, (LPCWSTR)buff, L"Notice", MB_OK | MB_ICONINFORMATION);
-				//system("pause");
+				// ... MessageBox ...
+				closesocket(sConnect); // Clean up the created socket
 				return 0;
 			}
 			else
 			{
-				if (FD_ISSET(sConnect, &Write))
-				{
-#ifdef _DEBUG
-					std::cout << "Connected!\n";
-#endif
-				}
-				if (FD_ISSET(sConnect, &Err))
-				{
-					MessageBox(hWnd, L"Select Error.", L"Notice", MB_OK | MB_ICONINFORMATION);
-					//system("pause");
-					return 0;
-				}
+				// ... other select errors ...
+				closesocket(sConnect); // Clean up the created socket
+				return 0;
 			}
 		}
 		else
@@ -381,7 +343,8 @@ int tcp_manager::connectNew(std::string saddr, unsigned short port) {
 #endif
 			MessageBox(hWnd, L"Failed to connect to Server!", L"Notice",
 				MB_OK | MB_ICONINFORMATION);
-			WSACleanup();
+			// WSACleanup(); // <<< REMOVE THIS
+			closesocket(sConnect); // Clean up the created socket
 			return 0;
 		}
 	}

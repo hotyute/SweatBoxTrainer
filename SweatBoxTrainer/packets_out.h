@@ -10,7 +10,7 @@ void updateSquawk(Aircraft& user);
 void sendDisconnect(Aircraft& user);
 void sendPingPacket(Aircraft& user);
 void sendUserMessage(Aircraft& user, int frequency, std::string to, std::string message);
-void sendTempData(Aircraft& user, std::string& assembly, const void*& data, ...);
+void sendTempData(Aircraft& user, std::string& assembly, const void* data, ...);
 
 
 // --- NEW INSTANCED TASK CLASS ---

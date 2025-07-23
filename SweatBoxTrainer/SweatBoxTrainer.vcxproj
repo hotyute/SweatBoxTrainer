@@ -150,6 +150,7 @@
     <ClInclude Include="aircraft\AircraftState.h" />
     <ClInclude Include="aircraft\command_handler.h" />
     <ClInclude Include="aircraft\FlightModel.h" />
+    <ClInclude Include="aircraft\PingTask.h" />
     <ClInclude Include="aircraft\RouteManager.h" />
     <ClInclude Include="airport.h" />
     <ClInclude Include="basic_stream.h" />
@@ -181,6 +182,7 @@
     <ClCompile Include="aircraft\aircraft.cpp" />
     <ClCompile Include="aircraft\command_handler.cpp" />
     <ClCompile Include="aircraft\FlightModel.cpp" />
+    <ClCompile Include="aircraft\PingTask.cpp" />
     <ClCompile Include="aircraft\RouteManager.cpp" />
     <ClCompile Include="airport.cpp" />
     <ClCompile Include="basic_stream.cpp" />
