@@ -174,6 +174,9 @@ namespace CommandHandlers {
             if (rm.runway_ctx && (rm.runway_ctx == rm.HoldingDepart) && rm.ground_cur) {
                 Runway* runway = rm.runway_ctx;
                 Point2& cur = *rm.ground_cur;
+                /*Point2& cur = rm.ground_cur->parent->name == runway->name ? *rm.ground_cur :
+                    (rm.ground_next && rm.ground_next->parent->name == runway->name) ? *rm.ground_next :
+                    (rm.ground_next_next && rm.ground_next_next->parent->name == runway->name) ? *rm.ground_next_next : *rm.ground_cur;*/
                 if (cur.parent && cur.parent->name == runway->name) {
                     rm.resetPath(aircraft.getAssignedValues(), aircraft.getDefaultValues());
                     rm.ground_points.push_back(&cur);

@@ -151,7 +151,7 @@ void FileReader::parseAgcLine(const std::string& line) {
         if (args.size() < 9) throw std::runtime_error("Invalid flight plan line.");
 
         FlightPlan& fp = m_currentAgcAircraft->getFlightPlan();
-        fp.flightRules = (args[0][0] == 'I' ? 1 : (args[0][0] == 'V' ? 0 : 2));
+        fp.flightRules = (args[0][0] == 'I' ? 0 : (args[0][0] == 'V' ? 1 : 2));
         fp.acType = args[1].length() > 9 ? args[1].substr(0, 8) : args[1];
         fp.departure = args[2].length() > 4 ? args[2].substr(0, 3) : args[2];
         fp.arrival = args[3].length() > 4 ? args[3].substr(0, 3) : args[3];
@@ -372,36 +372,61 @@ void FileReader::parseSctLine(const std::string& line) {
 void FileReader::processRunways() {
     if (!m_currentApt) return;
 
-    std::vector<std::unique_ptr<Runway>> processedRunways;
+    std::vector<std::unique_ptr<Runway>> newRunways;
+    newRunways.reserve(m_currentApt->runways.size() * 2); // Pre-allocate
 
-    for (auto& rwy_ptr : m_currentApt->runways) {
-        std::vector<std::string> names = split(rwy_ptr->name, "/");
-        if (names.size() > 1) {
-            // 1. original runway
-            std::string name1 = names[1];
-            m_currentApt->all.erase(rwy_ptr->name);
-            rwy_ptr->name = name1;
-            m_currentApt->all[name1] = rwy_ptr.get();
+    auto processRunway = [this, &newRunways](auto& rwy_ptr) {
+        const auto names = split(rwy_ptr->name, "/");
 
-            // 2. reverse runway
-            auto other = std::make_unique<Runway>();
-            other->name = names[0];
-
-            // deep-copy & fix parent/index
-            for (auto it = rwy_ptr->points.rbegin(); it != rwy_ptr->points.rend(); ++it) {
-                auto p = std::make_unique<Point2>(**it);
-                p->parent = other.get();
-                p->index = static_cast<int>(other->points.size());
-                other->points.push_back(std::move(p));
-            }
-
-            m_currentApt->all[other->name] = other.get();
-            processedRunways.push_back(std::move(other));
-            processedRunways.push_back(std::move(rwy_ptr));
+        // Handle single-name runways immediately
+        if (names.size() != 2) {
+            newRunways.push_back(std::move(rwy_ptr));
+            return;
         }
-        else {
-            processedRunways.push_back(std::move(rwy_ptr));
+
+        // Validate names BEFORE modifying state
+        if (m_currentApt->all.contains(names[0]) ||
+            m_currentApt->all.contains(names[1])) {
+            // Handle duplicate names (log error in real implementation)
+            newRunways.push_back(std::move(rwy_ptr));
+            return;
         }
+
+        // 1. Process primary runway (second name)
+        const std::string primaryName = names[0];
+        auto& primaryRwy = rwy_ptr;
+        primaryRwy->name = primaryName;
+        m_currentApt->all[primaryName] = primaryRwy.get();
+
+        // 2. Create reverse runway (first name)
+        auto reverseRwy = std::make_unique<Runway>();
+        reverseRwy->name = names[1];
+        reverseRwy->points.reserve(primaryRwy->points.size());
+
+        // Efficient point transfer with index correction
+        for (int i = 0; i < primaryRwy->points.size(); ++i) {
+            const int reverseIndex = primaryRwy->points.size() - 1 - i;
+            auto& srcPoint = primaryRwy->points[reverseIndex];
+
+            auto newPoint = std::make_unique<Point2>(*srcPoint);
+            newPoint->parent = reverseRwy.get();
+            newPoint->index = i;  // CORRECT sequential index
+
+            reverseRwy->points.push_back(std::move(newPoint));
+        }
+
+        // Atomic map update AFTER runway is fully constructed
+        m_currentApt->all[reverseRwy->name] = reverseRwy.get();
+
+        // Add both runways (reverse first for logical ordering)
+        newRunways.push_back(std::move(reverseRwy));
+        newRunways.push_back(std::move(primaryRwy));
+        };
+
+    // Process all runways with exception safety
+    for (auto& rwy : m_currentApt->runways) {
+        processRunway(rwy);
     }
-    m_currentApt->runways.swap(processedRunways);
+
+    m_currentApt->runways = std::move(newRunways);
 }

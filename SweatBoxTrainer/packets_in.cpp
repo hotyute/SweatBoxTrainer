@@ -95,14 +95,12 @@ static void handleFlightPlanUpdate(Aircraft* connection_owner, BasicStream& stre
 
 	if (type == AV_CLIENT::PILOT) {
 		FlightPlan& fp = target_aircraft->getFlightPlan();
-		stream.read_unsigned_byte();
+		int fr = stream.read_unsigned_byte();
 		std::vector<std::string> vars(9);
 		for (auto& var : vars) { var = stream.read_std_string(); }
 		// Now assign these values to fp
-		fp.squawkCode = vars[0];
-		fp.departure = vars[1];
-		fp.arrival = vars[2];
-		//... and so on
+		fp.flightRules = fr;
+		fp.updateFlightPlan(vars[0], vars[1], vars[2], vars[3], vars[4], vars[5], vars[6], vars[7], vars[8]);
 	}
 }
 

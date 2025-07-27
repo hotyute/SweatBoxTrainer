@@ -20,19 +20,30 @@ Aircraft::~Aircraft() {
 }
 
 void Aircraft::update() {
-	// High-level update logic
+	try {
+		// High-level update logic
 
-	// 1. Update Physics
-	m_flightModel.updateState(m_state, m_assignedValues, m_perfValues, m_defaultValues, onGround(), state == ACF_STATE::HOLDING, state == ACF_STATE::TAKEOFF);
+		// 1. Update Physics
+		m_flightModel.updateState(m_state, m_assignedValues, m_perfValues, m_defaultValues, onGround(), state == ACF_STATE::HOLDING, state == ACF_STATE::TAKEOFF);
 
-	// 2. Update Navigation
-	if (m_state.speed > 0 && state != ACF_STATE::HOLDING && state != ACF_STATE::IDLE) {
-		m_routeManager.updateNavigation(state, m_state, m_assignedValues, m_defaultValues, m_perfValues, getAirport());
+		// 2. Update Navigation
+		if (m_state.speed > 0 && state != ACF_STATE::HOLDING && state != ACF_STATE::IDLE) {
+			m_routeManager.updateNavigation(state, m_state, m_assignedValues, m_defaultValues, m_perfValues, getAirport());
+		}
+
+		// 3. Check for collisions and other state changes
+		CollisionDetection();
+		CheckFrameFlags();
 	}
-
-	// 3. Check for collisions and other state changes
-	CollisionDetection();
-	CheckFrameFlags();
+	catch (const std::exception& e) {
+		AppendTextToConsole(s2ws("Aircraft update error: " + std::string(e.what())));
+		// Reset to safe state
+		state = ACF_STATE::IDLE;
+	}
+	catch (...) {
+		AppendTextToConsole(s2ws("Critical aircraft update error"));
+		state = ACF_STATE::IDLE;
+	}
 }
 
 Airport* Aircraft::getAirport() {
@@ -115,7 +126,7 @@ void Aircraft::CollisionDetection()
 	else if (state != ACF_STATE::HOLDING)
 	{
 		auto& ctx = SimulationContext::instance();
-		std::lock_guard<std::mutex> lock(ctx.aircraftMutex());
+		// The lock guard is not needed here. The caller (CalculateMovements) on same thread, handles it.
 
 		if (ctx.aircraft().empty()) return;
 
@@ -126,7 +137,10 @@ void Aircraft::CollisionDetection()
 		for (const auto& [callsign, otherPtr] : ctx.aircraft())
 		{
 			Aircraft* other = otherPtr.get();
-			if (other != this && other->onGround() && other->getAirport() == currentAirport)
+
+			if (!other || other == this) continue;
+
+			if (other->onGround() && other->getAirport() == currentAirport)
 			{
 				double cur_dist = GetDistance(other->GetNextLoc(), nextLoc);
 				double dist = (300 / KNOTS_FT) + decel_distance0;
@@ -204,14 +218,6 @@ FlightPlan::FlightPlan()
 	FlightPlan::cruise = "";
 	FlightPlan::route = "";
 	FlightPlan::remarks = "";
-}
-
-void FlightPlan::updateFlightPlan(char* depart, char* arrive)
-{
-	FlightPlan::squawkCode = "0000";
-	FlightPlan::departure = depart;
-	FlightPlan::arrival = arrive;
-	FlightPlan::cycle++;
 }
 
 void Aircraft::startPositionUpdates(ThreadPool& pool)
