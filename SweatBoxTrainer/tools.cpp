@@ -509,7 +509,7 @@ Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat,
 		return nullptr;
 	}
 
-	// initial/final bearings between points
+	// initial/final bearings between nodes
 	double brngA = acos((sin(lat2) - sin(lat1) * cos(dist12)) /
 		(sin(dist12) * cos(lat1)));
 	if (isnan(brngA)) {

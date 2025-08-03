@@ -264,7 +264,7 @@ void FileReader::parseAptLine(const std::string& line) {
     if (m_currentAptPath) {
         // We are inside a [PARKING], [TAXIWAY], or [RUNWAY] section
         if (m_currentAptPath->type == PATHTYPE::RUNWAY) {
-            // Runway sections can have attributes or points
+            // Runway sections can have attributes or nodes
             auto* rwy = static_cast<Runway*>(m_currentAptPath);
             if (line.rfind("turnoff=", 0) == 0) {
                 rwy->turnoff = split(line, "=")[1];
@@ -278,18 +278,18 @@ void FileReader::parseAptLine(const std::string& line) {
                 if (args.size() < 2) return; // Malformed point
                 auto p = std::make_unique<Point2>(atodd(args[1]), atodd(args[0])); // x=lon, y=lat
                 p->parent = m_currentAptPath;
-                p->index = static_cast<int>(m_currentAptPath->points.size());
-                m_currentAptPath->points.push_back(std::move(p));
+                p->index = static_cast<int>(m_currentAptPath->nodes.size());
+                m_currentAptPath->nodes.push_back(std::move(p));
             }
         }
         else {
-            // Taxiway and Parking sections only have points
+            // Taxiway and Parking sections only have nodes
             std::vector<std::string> args = split(line, " ");
             if (args.size() < 2) return; // Malformed point
             auto p = std::make_unique<Point2>(atodd(args[1]), atodd(args[0])); // x=lon, y=lat
             p->parent = m_currentAptPath;
-            p->index = static_cast<int>(m_currentAptPath->points.size());
-            m_currentAptPath->points.push_back(std::move(p));
+            p->index = static_cast<int>(m_currentAptPath->nodes.size());
+            m_currentAptPath->nodes.push_back(std::move(p));
         }
     }
     else if (m_currentAptApproach) {
@@ -401,18 +401,18 @@ void FileReader::processRunways() {
         // 2. Create reverse runway (first name)
         auto reverseRwy = std::make_unique<Runway>();
         reverseRwy->name = names[1];
-        reverseRwy->points.reserve(primaryRwy->points.size());
+        reverseRwy->nodes.reserve(primaryRwy->nodes.size());
 
         // Efficient point transfer with index correction
-        for (int i = 0; i < primaryRwy->points.size(); ++i) {
-            const int reverseIndex = primaryRwy->points.size() - 1 - i;
-            auto& srcPoint = primaryRwy->points[reverseIndex];
+        for (int i = 0; i < primaryRwy->nodes.size(); ++i) {
+            const int reverseIndex = primaryRwy->nodes.size() - 1 - i;
+            auto& srcPoint = primaryRwy->nodes[reverseIndex];
 
             auto newPoint = std::make_unique<Point2>(*srcPoint);
             newPoint->parent = reverseRwy.get();
             newPoint->index = i;  // CORRECT sequential index
 
-            reverseRwy->points.push_back(std::move(newPoint));
+            reverseRwy->nodes.push_back(std::move(newPoint));
         }
 
         // Atomic map update AFTER runway is fully constructed

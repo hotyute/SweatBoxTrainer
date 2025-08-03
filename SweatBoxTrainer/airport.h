@@ -13,7 +13,7 @@ public:
     virtual ~TaxiPath() = default;
     PATHTYPE type = PATHTYPE::NONE;
     std::string name;
-    std::vector<std::unique_ptr<Point2>> points;
+    std::vector<std::unique_ptr<Point2>> nodes;
 
     Point2* getPrevPoint(Point2* to, Point2* next);
     Point2* getNextPoint(Point2* last, Point2* p2);
