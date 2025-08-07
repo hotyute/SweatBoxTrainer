@@ -1,6 +1,3 @@
-#define NOMINMAX
-#include "windows.h"
-
 #include "guidialogue.h"
 #include "globals.h" // <<< INCLUDE aU GLOBALS
 #include <chrono>

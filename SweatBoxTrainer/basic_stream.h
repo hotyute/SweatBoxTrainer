@@ -1,7 +1,5 @@
 #pragma once
 
-#define NOMINMAX
-
 #include <iostream>
 #include <cstdint>
 #include <winsock2.h>

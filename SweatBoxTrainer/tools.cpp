@@ -283,7 +283,7 @@ double get_per_hour(double value, double interval_ms)
 
 double get_angle(double a1, double a2)
 {
-	return min(fmod((a1 - a2 + 360), 360), fmod((a2 - a1 + 360), 360));
+	return std::min(fmod((a1 - a2 + 360), 360), fmod((a2 - a1 + 360), 360));
 }
 
 double get_angle_unsigned(double brgto, double brgfrom)

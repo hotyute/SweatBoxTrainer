@@ -1,8 +1,6 @@
 // SweatBoxTrainer.cpp : Defines the entry point for the application.
 //
 
-#define NOMINMAX
-
 #include "SweatBoxTrainer.h"
 #include "framework.h"
 #include "packets_out.h"
