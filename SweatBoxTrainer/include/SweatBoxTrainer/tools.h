@@ -1,0 +1,109 @@
+#pragma once
+
+#include <iostream>
+#include <vector>
+
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+#include "SweatBoxTrainer/point2d.h"
+
+std::vector<std::string> split(const std::string&, const std::string&, int times);
+std::vector<std::string> split(const std::string& s, const std::string& delim);
+
+int random(int start, int end);
+long long doubleToRawBits(double x);
+double NauticalMilesPerDegreeLon(double lat);
+Point2 getLocFromBearing(double latitude, double longitude, double distance, double bearing);
+double GetDistance(const Point2& p1, const Point2& p2);
+double GetDistance(double lat, double lon, Point2* p);
+double GetDistance(double lat1, double lat2, double lon1, double lon2);
+long double distanceTo(long double lat1, long double long1, long double lat2, long double long2);
+double GetHeading(const Point2 &p1, const Point2 &p2);
+double GetHeading(double lat1, double lat2, double lon1, double lon2);
+double GetCTE(double current_lat, double current_lon, double dest_lat, double dest_lon, double track_angle);
+double GetCTE2(Point2& p_from, Point2& p_to, double acf_lat, double acf_lon, double speed);
+double get_roll(double start_roll, double end_roll, double total_ms, long long interval_ms);
+double get_radius_of_turn(double angle, double radius);
+double get_rot(double roll, double TAS, long long interval_ms);
+double get_rot(double roll, double TAS);
+double get_per_second(double acceleration, double interval_ms);
+double get_distance(double speed, long long interval_ms);
+double get_per_minute(double value, double interval_ms);
+double get_per_hour(double value, double interval_ms);
+double get_angle(double brgto, double brgfrom);
+double get_angle_unsigned(double brgto, double brgfrom);
+double radians(double degs);
+double degrees(double rads);
+double dist(double lat1, double lon1, double lat2, double lon2);
+double dist2(double x1, double y1, double x2, double y2);
+double round_up(double value, int decimal_places);
+std::wstring s2ws(const std::string& s);
+std::string ws2s(const std::wstring& wstr);
+double atodd(std::string in);
+
+bool pnpoly(int nvert, int* vertx, int* verty, int testx, int testy);
+
+void capitalize(std::string& str);
+
+std::string ltrim(std::string s);
+
+std::string rtrim(std::string s);
+
+std::string trim(std::string s);
+
+double hdg(double heading);
+
+double get_bearing(double lat1, double long1, double lat2, double long2);
+
+bool intersects(Point2& p1, Point2& p2, Point2& c, double r);
+
+double line_dist(Point2& l1, Point2& l2, Point2& p);
+
+double pointToLineDistance(Point2& l1, Point2& l2, Point2& p);
+
+Point2* intersect(double $p1_lat, double $p1_lon, double $brng1, double $p2_lat, double $p2_lon, double $brng2);
+
+bool isHeavyAngle(const Point2 &o, const Point2 &p, const Point2 &p2);
+
+double TurnRadius(double speed, double turnRate);
+
+double HeadingDelta(double hdg1, double hdg2);
+
+double GetDecelerationDistance(double initialSpeed, double finalSpeed, double decelRate);
+
+double CalcTaxiTurnRate(double turnAngle);
+
+double CalcTaxiSpeed(double turnAngle, double maxSpeed);
+
+std::string FormatAltitude(std::string altitude);
+
+bool is_digits(const std::string& str);
+
+int string_to_frequency(std::string frequency);
+
+std::string frequency_to_string(int frequency);
+
+// --- Equality ---
+// Case-sensitive string comparison.
+bool string_equal(const std::string& s1, const std::string& s2);
+// Case-insensitive string comparison.
+bool ci_string_equal(const std::string& s1, const std::string& s2);
+
+// --- Prefix ---
+// Case-sensitive check if a string starts with a prefix.
+bool string_starts_with(const std::string& str, const std::string& prefix);
+// Case-insensitive check if a string starts with a prefix.
+bool ci_string_starts_with(const std::string& str, const std::string& prefix);
+
+// --- Suffix ---
+// Case-sensitive check if a string ends with a suffix.
+bool string_ends_with(const std::string& str, const std::string& suffix);
+// Case-insensitive check if a string ends with a suffix.
+bool ci_string_ends_with(const std::string& str, const std::string& suffix);
+
+// --- Substring ---
+// Case-sensitive check if a string contains a substring.
+bool string_contains(const std::string& str, const std::string& substr);
+// Case-insensitive check if a string contains a substring.
+bool ci_string_contains(const std::string& str, const std::string& substr);

@@ -1,205 +1,220 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
+    <Filter Include="include">
+      <UniqueIdentifier>{9F0F4D67-BFD1-47C0-988A-3008B70DAB50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\aircraft">
+      <UniqueIdentifier>{0B6A9296-06EF-4A63-9B81-85F26D024AB9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\nav">
+      <UniqueIdentifier>{4E8D7B24-FD25-497A-9345-D54952B9B4E7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\sim">
+      <UniqueIdentifier>{AC31E147-D25C-4B45-A5F7-6E93F2E01CF7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\tools">
+      <UniqueIdentifier>{B53D5B2C-E9E3-4F58-B0C4-D734403A5875}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="src\aircraft">
+      <UniqueIdentifier>{DF3E85B2-7535-4C4E-A36E-9AADE42CBA3A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
+    <Filter Include="src\sim">
+      <UniqueIdentifier>{45204003-F3E8-47AD-AD00-982FF425D951}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\tools">
+      <UniqueIdentifier>{8D1770BD-3B8D-4C2E-8B38-86AB8B84F8EE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="resources">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\aircraft.h">
+      <Filter>include\aircraft</Filter>
     </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\AircraftState.h">
+      <Filter>include\aircraft</Filter>
     </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\command_handler.h">
+      <Filter>include\aircraft</Filter>
     </ClInclude>
-    <ClInclude Include="SweatBoxTrainer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\FlightModel.h">
+      <Filter>include\aircraft</Filter>
     </ClInclude>
-    <ClInclude Include="tools.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\AircraftPingTask.h">
+      <Filter>include\aircraft</Filter>
     </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\RouteManager.h">
+      <Filter>include\aircraft</Filter>
     </ClInclude>
-    <ClInclude Include="clinc2.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\airport.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="usermanager.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\basic_stream.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="filereader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\calc_cycles.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="guicon.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\clinc2.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="constants.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\config.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="packets_out.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\constants.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="point2d.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\filereader.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="calc_cycles.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\framework.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="airport.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\geoutils.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="geoutils.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\globals.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="basic_stream.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\guicon.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="save.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\guidialogue.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="guidialogue.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\nav\navaids.h">
+      <Filter>include\nav</Filter>
     </ClInclude>
-    <ClInclude Include="tools\thread_pool.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\packets_in.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="tools\timed_task.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\packets_out.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="globals.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\point2d.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="packets_in.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\Resource.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="aircraft\aircraft.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\save.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="aircraft\RouteManager.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\sim\simulation_context.h">
+      <Filter>include\sim</Filter>
     </ClInclude>
-    <ClInclude Include="aircraft\AircraftState.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\SweatBoxTrainer.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="aircraft\FlightModel.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\targetver.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="aircraft\command_handler.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\tools.h">
+      <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="nav\navaids.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\tools\thread_pool.h">
+      <Filter>include\tools</Filter>
     </ClInclude>
-    <ClInclude Include="sim\simulation_context.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\tools\timed_task.h">
+      <Filter>include\tools</Filter>
     </ClInclude>
-    <ClInclude Include="aircraft\AircraftPingTask.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="include\SweatBoxTrainer\usermanager.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SweatBoxTrainer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\aircraft\aircraft.cpp">
+      <Filter>src\aircraft</Filter>
     </ClCompile>
-    <ClCompile Include="tools.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\aircraft\command_handler.cpp">
+      <Filter>src\aircraft</Filter>
     </ClCompile>
-    <ClCompile Include="config.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\aircraft\FlightModel.cpp">
+      <Filter>src\aircraft</Filter>
     </ClCompile>
-    <ClCompile Include="clinc2.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\aircraft\AircraftPingTask.cpp">
+      <Filter>src\aircraft</Filter>
     </ClCompile>
-    <ClCompile Include="usermanager.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\aircraft\RouteManager.cpp">
+      <Filter>src\aircraft</Filter>
     </ClCompile>
-    <ClCompile Include="filereader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\airport.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="guicon.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\basic_stream.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="packets_out.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\calc_cycles.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="point2d.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\clinc2.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="calc_cycles.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\config.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="airport.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\filereader.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="geoutils.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\geoutils.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="basic_stream.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\globals.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="save.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\guicon.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="guidialogue.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\guidialogue.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="tools\thread_pool.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\packets_in.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="tools\timed_task.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\packets_out.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="globals.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\point2d.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="packets_in.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\save.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="aircraft\aircraft.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\sim\simulation_context.cpp">
+      <Filter>src\sim</Filter>
     </ClCompile>
-    <ClCompile Include="aircraft\FlightModel.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\SweatBoxTrainer.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="aircraft\RouteManager.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\tools.cpp">
+      <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="aircraft\command_handler.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\tools\thread_pool.cpp">
+      <Filter>src\tools</Filter>
     </ClCompile>
-    <ClCompile Include="sim\simulation_context.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\tools\timed_task.cpp">
+      <Filter>src\tools</Filter>
     </ClCompile>
-    <ClCompile Include="aircraft\AircraftPingTask.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\usermanager.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SweatBoxTrainer.rc">
-      <Filter>Resource Files</Filter>
+    <ResourceCompile Include="resources\SweatBoxTrainer.rc">
+      <Filter>resources</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="small.ico">
-      <Filter>Resource Files</Filter>
+    <Image Include="resources\SBT.ico">
+      <Filter>resources</Filter>
     </Image>
-    <Image Include="SweatBoxTrainer.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="SBT.ico">
-      <Filter>Resource Files</Filter>
+    <Image Include="resources\SweatBoxTrainer.ico">
+      <Filter>resources</Filter>
     </Image>
   </ItemGroup>
 </Project>

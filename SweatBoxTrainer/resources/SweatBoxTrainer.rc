@@ -1,0 +1,162 @@
+//Microsoft Visual C++ generated resource script.
+//
+#include "SweatBoxTrainer/Resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "SweatBoxTrainer/targetver.h"
+#endif
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE 9, 1
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+
+IDI_SWEATBOXTRAINER       ICON         "SBT.ico"
+IDI_SMALL               ICON         "SBT.ico"
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDC_SWEATBOXTRAINER ACCELERATORS
+BEGIN
+    "?",            IDM_ABOUT,              ASCII,  ALT
+    "/",            IDM_ABOUT,              ASCII,  ALT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 170, 62
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About SweatBox Trainer"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,21,20
+    LTEXT           "SweatBox Trainer, Version 1.0",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Copyright (c) 2021",IDC_STATIC,42,26,114,8
+    DEFPUSHBUTTON   "OK",IDOK,113,41,50,14,WS_GROUP
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 163
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+1 TEXTINCLUDE
+BEGIN
+    "SweatBoxTrainer/Resource.h\0"
+END
+
+2 TEXTINCLUDE
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""SweatBoxTrainer/targetver.h""\r\n"
+    "#endif\r\n"
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+   IDC_SWEATBOXTRAINER   "SWEATBOXTRAINER"
+   IDS_APP_TITLE       "SweatBox Trainer"
+END
+
+#endif
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE resource.
+//
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
+IDD_FLIGHTPLAN DIALOGEX 0, 0, 360, 200
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Flight Plan"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+DEFPUSHBUTTON   "Close", IDC_FP_CLOSE, 303, 179, 50, 14
+LTEXT           "Callsign:", IDC_STATIC, 7, 9, 36, 8
+EDITTEXT        IDC_FP_CALLSIGN, 50, 7, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Aircraft Type:", IDC_STATIC, 150, 9, 52, 8
+EDITTEXT        IDC_FP_AIRCRAFT_TYPE, 210, 7, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Flight Rules:", IDC_STATIC, 7, 29, 50, 8
+EDITTEXT        IDC_FP_FLIGHT_RULES, 50, 27, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Departure:", IDC_STATIC, 7, 53, 42, 8
+EDITTEXT        IDC_FP_DEPARTURE, 50, 51, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Arrival:", IDC_STATIC, 150, 53, 42, 8
+EDITTEXT        IDC_FP_ARRIVAL, 210, 51, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Alternate:", IDC_STATIC, 7, 73, 42, 8
+EDITTEXT        IDC_FP_ALTERNATE, 50, 71, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Cruise Alt:", IDC_STATIC, 150, 73, 42, 8
+EDITTEXT        IDC_FP_CRUISE_ALT, 210, 71, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Squawk:", IDC_STATIC, 150, 29, 42, 8
+EDITTEXT        IDC_FP_SQUAWK, 210, 27, 80, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Scratchpad:", IDC_STATIC, 7, 93, 44, 8
+EDITTEXT        IDC_FP_SCRATCHPAD, 50, 91, 240, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Route:", IDC_STATIC, 7, 113, 28, 8
+EDITTEXT        IDC_FP_ROUTE, 7, 125, 346, 14, ES_AUTOHSCROLL | ES_READONLY
+LTEXT           "Remarks:", IDC_STATIC, 7, 145, 34, 8
+EDITTEXT        IDC_FP_REMARKS, 7, 157, 346, 14, ES_AUTOHSCROLL | ES_READONLY
+END

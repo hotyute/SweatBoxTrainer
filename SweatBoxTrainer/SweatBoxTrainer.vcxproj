@@ -70,6 +70,10 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\msvc\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <LibraryPath>$(LibraryPath)</LibraryPath>
@@ -88,10 +92,14 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NOMINMAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -100,13 +108,17 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NOMINMAX;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -117,19 +129,25 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NOMINMAX;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -138,80 +156,83 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="aircraft\aircraft.h" />
-    <ClInclude Include="aircraft\AircraftState.h" />
-    <ClInclude Include="aircraft\command_handler.h" />
-    <ClInclude Include="aircraft\FlightModel.h" />
-    <ClInclude Include="aircraft\AircraftPingTask.h" />
-    <ClInclude Include="aircraft\RouteManager.h" />
-    <ClInclude Include="airport.h" />
-    <ClInclude Include="basic_stream.h" />
-    <ClInclude Include="calc_cycles.h" />
-    <ClInclude Include="clinc2.h" />
-    <ClInclude Include="config.h" />
-    <ClInclude Include="constants.h" />
-    <ClInclude Include="filereader.h" />
-    <ClInclude Include="framework.h" />
-    <ClInclude Include="geoutils.h" />
-    <ClInclude Include="globals.h" />
-    <ClInclude Include="guicon.h" />
-    <ClInclude Include="guidialogue.h" />
-    <ClInclude Include="nav\navaids.h" />
-    <ClInclude Include="packets_in.h" />
-    <ClInclude Include="packets_out.h" />
-    <ClInclude Include="point2d.h" />
-    <ClInclude Include="Resource.h" />
-    <ClInclude Include="save.h" />
-    <ClInclude Include="sim\simulation_context.h" />
-    <ClInclude Include="SweatBoxTrainer.h" />
-    <ClInclude Include="targetver.h" />
-    <ClInclude Include="tools.h" />
-    <ClInclude Include="tools\thread_pool.h" />
-    <ClInclude Include="tools\timed_task.h" />
-    <ClInclude Include="usermanager.h" />
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\aircraft.h" />
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\AircraftState.h" />
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\command_handler.h" />
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\FlightModel.h" />
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\AircraftPingTask.h" />
+    <ClInclude Include="include\SweatBoxTrainer\aircraft\RouteManager.h" />
+    <ClInclude Include="include\SweatBoxTrainer\airport.h" />
+    <ClInclude Include="include\SweatBoxTrainer\basic_stream.h" />
+    <ClInclude Include="include\SweatBoxTrainer\calc_cycles.h" />
+    <ClInclude Include="include\SweatBoxTrainer\clinc2.h" />
+    <ClInclude Include="include\SweatBoxTrainer\config.h" />
+    <ClInclude Include="include\SweatBoxTrainer\constants.h" />
+    <ClInclude Include="include\SweatBoxTrainer\filereader.h" />
+    <ClInclude Include="include\SweatBoxTrainer\framework.h" />
+    <ClInclude Include="include\SweatBoxTrainer\geoutils.h" />
+    <ClInclude Include="include\SweatBoxTrainer\globals.h" />
+    <ClInclude Include="include\SweatBoxTrainer\guicon.h" />
+    <ClInclude Include="include\SweatBoxTrainer\guidialogue.h" />
+    <ClInclude Include="include\SweatBoxTrainer\nav\navaids.h" />
+    <ClInclude Include="include\SweatBoxTrainer\packets_in.h" />
+    <ClInclude Include="include\SweatBoxTrainer\packets_out.h" />
+    <ClInclude Include="include\SweatBoxTrainer\point2d.h" />
+    <ClInclude Include="include\SweatBoxTrainer\Resource.h" />
+    <ClInclude Include="include\SweatBoxTrainer\save.h" />
+    <ClInclude Include="include\SweatBoxTrainer\sim\simulation_context.h" />
+    <ClInclude Include="include\SweatBoxTrainer\SweatBoxTrainer.h" />
+    <ClInclude Include="include\SweatBoxTrainer\targetver.h" />
+    <ClInclude Include="include\SweatBoxTrainer\tools.h" />
+    <ClInclude Include="include\SweatBoxTrainer\tools\thread_pool.h" />
+    <ClInclude Include="include\SweatBoxTrainer\tools\timed_task.h" />
+    <ClInclude Include="include\SweatBoxTrainer\usermanager.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="aircraft\aircraft.cpp" />
-    <ClCompile Include="aircraft\command_handler.cpp" />
-    <ClCompile Include="aircraft\FlightModel.cpp" />
-    <ClCompile Include="aircraft\AircraftPingTask.cpp" />
-    <ClCompile Include="aircraft\RouteManager.cpp" />
-    <ClCompile Include="airport.cpp" />
-    <ClCompile Include="basic_stream.cpp" />
-    <ClCompile Include="calc_cycles.cpp" />
-    <ClCompile Include="clinc2.cpp" />
-    <ClCompile Include="config.cpp" />
-    <ClCompile Include="filereader.cpp" />
-    <ClCompile Include="geoutils.cpp" />
-    <ClCompile Include="globals.cpp" />
-    <ClCompile Include="guicon.cpp" />
-    <ClCompile Include="guidialogue.cpp" />
-    <ClCompile Include="packets_in.cpp" />
-    <ClCompile Include="packets_out.cpp" />
-    <ClCompile Include="point2d.cpp" />
-    <ClCompile Include="save.cpp" />
-    <ClCompile Include="sim\simulation_context.cpp" />
-    <ClCompile Include="SweatBoxTrainer.cpp" />
-    <ClCompile Include="tools.cpp" />
-    <ClCompile Include="tools\thread_pool.cpp" />
-    <ClCompile Include="tools\timed_task.cpp" />
-    <ClCompile Include="usermanager.cpp" />
+    <ClCompile Include="src\aircraft\aircraft.cpp" />
+    <ClCompile Include="src\aircraft\command_handler.cpp" />
+    <ClCompile Include="src\aircraft\FlightModel.cpp" />
+    <ClCompile Include="src\aircraft\AircraftPingTask.cpp" />
+    <ClCompile Include="src\aircraft\RouteManager.cpp" />
+    <ClCompile Include="src\airport.cpp" />
+    <ClCompile Include="src\basic_stream.cpp" />
+    <ClCompile Include="src\calc_cycles.cpp" />
+    <ClCompile Include="src\clinc2.cpp" />
+    <ClCompile Include="src\config.cpp" />
+    <ClCompile Include="src\filereader.cpp" />
+    <ClCompile Include="src\geoutils.cpp" />
+    <ClCompile Include="src\globals.cpp" />
+    <ClCompile Include="src\guicon.cpp" />
+    <ClCompile Include="src\guidialogue.cpp" />
+    <ClCompile Include="src\packets_in.cpp" />
+    <ClCompile Include="src\packets_out.cpp" />
+    <ClCompile Include="src\point2d.cpp" />
+    <ClCompile Include="src\save.cpp" />
+    <ClCompile Include="src\sim\simulation_context.cpp" />
+    <ClCompile Include="src\SweatBoxTrainer.cpp" />
+    <ClCompile Include="src\tools.cpp" />
+    <ClCompile Include="src\tools\thread_pool.cpp" />
+    <ClCompile Include="src\tools\timed_task.cpp" />
+    <ClCompile Include="src\usermanager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="SweatBoxTrainer.rc" />
+    <ResourceCompile Include="resources\SweatBoxTrainer.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="SBT.ico" />
-    <Image Include="small.ico" />
-    <Image Include="SweatBoxTrainer.ico" />
+    <Image Include="resources\SBT.ico" />
+    <Image Include="resources\SweatBoxTrainer.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
