@@ -1,5 +1,6 @@
 #include "RouteManager.h"
 
+#include <algorithm>
 #include <iostream>
 
 #include "../tools.h"
@@ -7,6 +8,14 @@
 #include "../constants.h"
 #include "Aircraft.h"
 #include "../guidialogue.h"
+
+namespace {
+	bool pointOnPath(Point2* point, TaxiPath* path)
+	{
+		return point && path && point->parent &&
+			(point->parent == path || point->parent->name == path->name);
+	}
+}
 
 void RouteManager::prepareRoute(Airport* airport, const AircraftState& state)
 {
@@ -121,6 +130,42 @@ void RouteManager::HoldAt(Airport* airport, std::string name)
 	}
 }
 
+bool RouteManager::prepareRunwayDeparturePath(Runway* runway)
+{
+	if (!runway || !ground_cur)
+		return false;
+
+	Point2* runway_entry = nullptr;
+	if (pointOnPath(ground_cur, runway))
+	{
+		runway_entry = ground_cur;
+		ground_points.clear();
+	}
+	else
+	{
+		auto entry = std::find_if(ground_points.begin(), ground_points.end(),
+			[runway](Point2* point) { return pointOnPath(point, runway); });
+
+		if (entry == ground_points.end())
+			return false;
+
+		runway_entry = *entry;
+		ground_points.erase(entry + 1, ground_points.end());
+	}
+
+	Point2* runway_end = runway->getEnd();
+	runway->getPoints(runway_entry, runway_end, ground_points);
+	if (runway_end && runway_entry != runway_end &&
+		(ground_points.empty() || ground_points.back() != runway_end))
+	{
+		ground_points.push_back(runway_end);
+	}
+
+	ground_next = ground_points.empty() ? nullptr : ground_points.front();
+	ground_next_next = ground_points.size() > 1 ? ground_points[1] : nullptr;
+	return true;
+}
+
 double RouteManager::calculateGS(const AircraftState& state, double thresh_lat, double thresh_lon, double threshelevation_ft, double capture_ft)
 {
 	double deltaLatNm = (state.latitude - thresh_lat) * 60.0;
@@ -186,7 +231,7 @@ void RouteManager::updateNavigation(ACF_STATE& aircraft_state, AircraftState& st
 	}
 	else { // On Ground
 		if (ground_cur) {
-			if (arrived(state, assigned, defaults, perf)) {
+			if (arrived(state, assigned, defaults)) {
 				if (ground_cur) {
 					state.MarkDirty(AircraftDirtyFlags::TRACK | AircraftDirtyFlags::DATA);
 					AppendTextToConsole(L"[Arrived at : " +
@@ -251,7 +296,7 @@ bool RouteManager::isHoldingForTakeoff() const {
 	return runway_ctx && HoldingDepart && runway_ctx == HoldingDepart;
 }
 
-double RouteManager::GetTrackTurnData(const AircraftState& state)
+double RouteManager::GetTrackTurnAngle(const AircraftState& state)
 {
 	if (ground_cur && ground_next)
 	{
@@ -260,7 +305,16 @@ double RouteManager::GetTrackTurnData(const AircraftState& state)
 		double locBrg1 = degrees(GetHeading(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_));
 
 		double angle = get_angle(locBrg1, locBrg0);
-		return CalcTaxiTurnRate(angle);
+		return angle;
+	}
+	return 0.0;
+}
+
+double RouteManager::GetTrackTurnData(const AircraftState& state)
+{
+	if (ground_cur && ground_next)
+	{
+		return CalcTaxiTurnRate(GetTrackTurnAngle(state));
 	}
 	return DEFAULT_TURN_RATE;
 }
@@ -269,15 +323,40 @@ double RouteManager::GetTrackSpeedData(const AircraftState& state, const Default
 {
 	if (ground_cur && ground_next)
 	{
-		double locBrg0 = ground_prev ? degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_))
-			: degrees(GetHeading(state.latitude, ground_cur->y_, state.longitude, ground_cur->x_));
-		double locBrg1 = degrees(GetHeading(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_));
-
-		double angle = get_angle(locBrg1, locBrg0);
-
-		return CalcTaxiSpeed(angle, defaults.speed);
+		return CalcTaxiSpeed(GetTrackTurnAngle(state), defaults.speed);
 	}
 	return defaults.speed;
+}
+
+double RouteManager::GetTurnLeadDistance(const AircraftState& state, const DefaultValues& defaults)
+{
+	if (!ground_cur || !ground_next)
+		return 0.0;
+
+	double angle = GetTrackTurnAngle(state);
+	double turnRate = GetTrackTurnData(state);
+	double trackSpeed = GetTrackSpeedData(state, defaults);
+	double turnRadius = TurnRadius(trackSpeed, turnRate);
+	return get_radius_of_turn(angle, turnRadius);
+}
+
+void RouteManager::updateTurnSpeedControl(const AircraftState& state, AssignedValues& assigned, const DefaultValues& defaults)
+{
+	if (!ground_cur || !ground_next)
+		return;
+
+	double trackSpeed = GetTrackSpeedData(state, defaults);
+	if (assigned.asdg_speed <= trackSpeed)
+		return;
+
+	double leadDistance = GetTurnLeadDistance(state, defaults);
+	double decelDistance = GetDecelerationDistance(state.speed, trackSpeed, assigned.asdg_gnd_braking);
+	double distToPoint = GetDistance(state.latitude, state.longitude, ground_cur);
+
+	if (distToPoint <= leadDistance + decelDistance)
+	{
+		assigned.asdg_speed = trackSpeed;
+	}
 }
 
 bool RouteManager::OnTrack(const AircraftState& state)
@@ -342,12 +421,14 @@ void RouteManager::checkPathHolds(ACF_STATE& aircraft_state, const AircraftState
 	}
 }
 
-bool RouteManager::arrived(AircraftState& state, AssignedValues& assigned, const DefaultValues& defaults, const PerfValues& perf)
+bool RouteManager::arrived(AircraftState& state, AssignedValues& assigned, const DefaultValues& defaults)
 {
 	if (!ground_cur || !ground_next)
 		return false;
 
-	if (isTurnReady(state, assigned, perf))
+	updateTurnSpeedControl(state, assigned, defaults);
+
+	if (isTurnReady(state, defaults))
 	{
 		double new_turn_rate = GetTrackTurnData(state);
 		if (assigned.asdg_gnd_turn_rate != new_turn_rate) {
@@ -362,27 +443,11 @@ bool RouteManager::arrived(AircraftState& state, AssignedValues& assigned, const
 	return defaultTurnDistance(state);
 }
 
-bool RouteManager::isTurnReady(const AircraftState& state, const AssignedValues& assigned, const PerfValues& perf)
+bool RouteManager::isTurnReady(const AircraftState& state, const DefaultValues& defaults)
 {
 	if (!ground_cur || !ground_next) return false;
 
-	double turn_rate = GetTrackTurnData(state);
-
-	double locBrg0 = ground_prev ? hdg(degrees(GetHeading(ground_prev->y_, ground_cur->y_, ground_prev->x_, ground_cur->x_))) :
-		hdg(degrees(GetHeading(state.latitude, ground_cur->y_, state.longitude, ground_cur->x_)));
-	double locBrg1 = hdg(degrees(GetHeading(ground_cur->y_, ground_next->y_, ground_cur->x_, ground_next->x_)));
-
-	double angle = get_angle(locBrg1, locBrg0);
-	double dist_pt = GetDistance(state.latitude, state.longitude, ground_cur);
-
-	double track_speed = GetTrackSpeedData(state, DefaultValues()); // Pass a default for now
-	double turnRadius = TurnRadius(track_speed, turn_rate);
-	double leadDistance = tan(radians(angle / 2.0)) * turnRadius;
-
-	if ((dist_pt - leadDistance) <= GetDecelerationDistance(state.speed, track_speed, assigned.asdg_gnd_braking)) {
-		// This logic should be in the main update loop, not here
-		// assigned.asdg_speed = track_speed;
-	}
+	double leadDistance = GetTurnLeadDistance(state, defaults);
 
 	return circularDistance(state, ground_cur, ((leadDistance * KNOTS_KM)) * 1000.0);
 }

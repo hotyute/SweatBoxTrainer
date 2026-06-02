@@ -23,6 +23,18 @@ namespace CommandHandlers {
     // The dispatch table. 'static' keeps it private to this file.
     static std::unordered_map<std::string, HandlerFunc> s_commandHandlers;
 
+    void ensureTaxiSpeed(Aircraft& aircraft) {
+        DefaultValues& defaults = aircraft.getDefaultValues();
+        AssignedValues& assigned = aircraft.getAssignedValues();
+
+        if (defaults.speed <= 0.0) {
+            defaults.speed = DefaultValues().speed;
+        }
+
+        if (assigned.asdg_speed <= 0.0) {
+            assigned.asdg_speed = defaults.speed;
+        }
+    }
 
     // --- Individual Handler Functions ---
 
@@ -60,6 +72,7 @@ namespace CommandHandlers {
 
         rm.prepareRoute(aircraft.getAirport(), aircraft.getState());
         if (rm.pollRoute()) {
+            ensureTaxiSpeed(aircraft);
             aircraft.state = ACF_STATE::TAXING;
         }
 
@@ -151,17 +164,12 @@ namespace CommandHandlers {
                 aircraft.state = ACF_STATE::TAXING;
             }
             else if (rm.runway_ctx && (rm.runway_ctx == rm.HoldingDepart) && rm.ground_cur) {
-                // Complex logic... keeping as is for now
                 Runway* runway = rm.runway_ctx;
-                Point2& cur = *rm.ground_cur;
-                if (cur.parent && cur.parent->name == runway->name) {
-                    rm.resetPath(aircraft.getAssignedValues(), aircraft.getDefaultValues());
+                if (rm.prepareRunwayDeparturePath(runway)) {
+                    ensureTaxiSpeed(aircraft);
                     rm.resetHolding();
-                    rm.ground_points.push_back(&cur);
-                    runway->getPoints(&cur, runway->getEnd(), rm.ground_points);
-                    rm.ground_points.push_back(runway->getEnd());
-                    rm.pollRoute();
                     rm.queue_takeoff = true;
+                    rm.lineup = false;
                     aircraft.state = ACF_STATE::TAXING;
                 }
             }
@@ -173,16 +181,8 @@ namespace CommandHandlers {
         if (aircraft.onGround() && aircraft.state == ACF_STATE::HOLDING && rm.HoldingDepart) {
             if (rm.runway_ctx && (rm.runway_ctx == rm.HoldingDepart) && rm.ground_cur) {
                 Runway* runway = rm.runway_ctx;
-                Point2& cur = *rm.ground_cur;
-                /*Point2& cur = rm.ground_cur->parent->name == runway->name ? *rm.ground_cur :
-                    (rm.ground_next && rm.ground_next->parent->name == runway->name) ? *rm.ground_next :
-                    (rm.ground_next_next && rm.ground_next_next->parent->name == runway->name) ? *rm.ground_next_next : *rm.ground_cur;*/
-                if (cur.parent && cur.parent->name == runway->name) {
-                    rm.resetPath(aircraft.getAssignedValues(), aircraft.getDefaultValues());
-                    rm.ground_points.push_back(&cur);
-                    runway->getPoints(&cur, runway->getEnd(), rm.ground_points);
-                    rm.ground_points.push_back(runway->getEnd());
-                    rm.pollRoute();
+                if (rm.prepareRunwayDeparturePath(runway)) {
+                    ensureTaxiSpeed(aircraft);
                     rm.queue_takeoff = true;
                     rm.lineup = true;
                     aircraft.state = ACF_STATE::TAXING;

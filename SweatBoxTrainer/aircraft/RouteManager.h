@@ -41,6 +41,7 @@ public:
     void resetHolding();
     void resetContext();
     void HoldAt(Airport* airport, std::string name);
+    bool prepareRunwayDeparturePath(Runway* runway);
     
     // This is the main navigation logic function
     void updateNavigation(ACF_STATE& aircraft_state, AircraftState& state, AssignedValues& assigned, DefaultValues& defaults, const PerfValues& perf, Airport* airport);
@@ -54,12 +55,15 @@ private:
     double calculateGS(const AircraftState& state, double station_lat, double station_lon, double thresh_ft, double capture_ft);
     double calculateLoc(const AircraftState& state, const AssignedValues& assigned, double dest_lat, double dest_lon, double loc_brg, double default_hdg, bool onGround);
     double calculateGain(const AircraftState& state, const AssignedValues& assigned, Point2 cur, Point2 prev, double loc_brg, bool onGround);
+    double GetTrackTurnAngle(const AircraftState& state);
     double GetTrackTurnData(const AircraftState& state);
     double GetTrackSpeedData(const AircraftState& state, const DefaultValues& defaults);
+    double GetTurnLeadDistance(const AircraftState& state, const DefaultValues& defaults);
+    void updateTurnSpeedControl(const AircraftState& state, AssignedValues& assigned, const DefaultValues& defaults);
     void checkRateReset(AssignedValues& assigned, DefaultValues& defaults, bool no_track);
     void checkPathHolds(ACF_STATE& aircraft_state, const AircraftState& state, const AssignedValues& assigned);
-    bool arrived(AircraftState& state, AssignedValues& assigned, const DefaultValues& defaults, const PerfValues& perf);
-    bool isTurnReady(const AircraftState& state, const AssignedValues& assigned, const PerfValues& perf);
+    bool arrived(AircraftState& state, AssignedValues& assigned, const DefaultValues& defaults);
+    bool isTurnReady(const AircraftState& state, const DefaultValues& defaults);
     bool defaultTurnDistance(const AircraftState& state);
     bool circularDistance(const AircraftState& state, Point2* p, double distance_meters);
     void refreshRoute();

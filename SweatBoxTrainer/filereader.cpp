@@ -140,7 +140,10 @@ void FileReader::parseAgcLine(const std::string& line) {
         m_currentAgcAircraft = createAircraft(args[0], atodd(args[1]), atodd(args[2]), atodd(args[3]), atodd(args[4]),
             (int)atodd(args[5]), (int)atodd(args[6]), mode, args[9]);
 
-        m_currentAgcAircraft->getDefaultValues().speed = atodd(args[4]);
+        double initialSpeed = atodd(args[4]);
+        if (initialSpeed > 0.0) {
+            m_currentAgcAircraft->getDefaultValues().speed = initialSpeed;
+        }
         m_currentAgcAircraft->setHeavy(heavy);
         m_currentAgcAircraft->setAptIcao(args[10]);
         m_currentAgcAircraft->getAirport();

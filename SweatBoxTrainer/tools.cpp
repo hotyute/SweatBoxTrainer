@@ -578,7 +578,10 @@ double HeadingDelta(double hdg1, double hdg2)
 
 double GetDecelerationDistance(double initialSpeed, double finalSpeed, double decelRate)
 {
-	return ((initialSpeed * initialSpeed) - (finalSpeed * finalSpeed)) / (2.0 * decelRate * 3600.0) * DEG_PER_NM;
+	if (decelRate <= 0.0 || initialSpeed <= finalSpeed)
+		return 0.0;
+
+	return ((initialSpeed * initialSpeed) - (finalSpeed * finalSpeed)) / (2.0 * decelRate * 3600.0);
 }
 
 double CalcTaxiTurnRate(double turnAngle)
@@ -593,13 +596,15 @@ double CalcTaxiTurnRate(double turnAngle)
 
 double CalcTaxiSpeed(double turnAngle, double maxSpeed)
 {
-	if (turnAngle < 1.0)
+	turnAngle = std::clamp(turnAngle, 0.0, 180.0);
+
+	if (turnAngle < 1.0 || maxSpeed <= SPEED_MIN)
 		return maxSpeed;
 
 	double turnSpeed = maxSpeed;
 	if (turnAngle > 45.0) {
-		double pct = (turnAngle - 45.0) / (180.0 - 45.0);
-		turnSpeed = SPEED_MIN + ((maxSpeed - SPEED_MIN) * (1.0 * pct));
+		double pct = std::min((turnAngle - 45.0) / (90.0 - 45.0), 1.0);
+		turnSpeed = SPEED_MIN + ((maxSpeed - SPEED_MIN) * (1.0 - pct));
 	}
 	return turnSpeed;
 }

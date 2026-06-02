@@ -9,6 +9,19 @@
 #include "../sim/simulation_context.h"
 #include <iostream>
 
+namespace {
+	bool routePointOnPath(Point2* point, TaxiPath* path)
+	{
+		return point && path && point->parent &&
+			(point->parent == path || point->parent->name == path->name);
+	}
+
+	bool routeSegmentOnPath(Point2* from, Point2* to, TaxiPath* path)
+	{
+		return routePointOnPath(from, path) && routePointOnPath(to, path);
+	}
+}
+
 Aircraft::Aircraft() : m_connection(this) {
 	// Constructor logic if any
 	std::fill_n(frequency, sizeof(frequency) / sizeof(frequency[0]), 99998);
@@ -85,7 +98,8 @@ void Aircraft::CheckFrameFlags()
 	{
 		if (m_routeManager.OnTrack(m_state))
 		{
-			if (m_routeManager.queue_takeoff && m_routeManager.runway_ctx)
+			if (m_routeManager.queue_takeoff && m_routeManager.runway_ctx &&
+				routeSegmentOnPath(m_routeManager.ground_prev, m_routeManager.ground_cur, m_routeManager.runway_ctx))
 			{
 				if (!m_routeManager.lineup)
 				{
